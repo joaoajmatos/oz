@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -10,14 +11,20 @@ import (
 	"github.com/oz-tools/oz/internal/workspace"
 )
 
+// errValidationFailed is returned when a workspace fails validation.
+// main.go translates this to exit code 1.
+var errValidationFailed = errors.New("validation failed")
+
 var validateCmd = &cobra.Command{
 	Use:   "validate [path]",
 	Short: "Lint a workspace against the oz convention",
 	Long: `Validate checks a workspace for required files, directories, and structure.
 
 Exit code 0 = valid. Exit code 1 = invalid. Suitable for CI.`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runValidate,
+	Args:          cobra.MaximumNArgs(1),
+	RunE:          runValidate,
+	SilenceErrors: true,
+	SilenceUsage:  true,
 }
 
 func runValidate(cmd *cobra.Command, args []string) error {
@@ -48,6 +55,5 @@ func runValidate(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "FAIL %s\n", ws.Root)
-	os.Exit(1)
-	return nil
+	return errValidationFailed
 }

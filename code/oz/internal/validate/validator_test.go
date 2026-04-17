@@ -1,0 +1,176 @@
+package validate_test
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/oz-tools/oz/internal/validate"
+	"github.com/oz-tools/oz/internal/workspace"
+)
+
+// validWorkspace scaffolds a minimal workspace that passes all checks.
+func validWorkspace(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+
+	for _, d := range []string{"agents", "specs/decisions", "docs", "context", "skills", "rules", "notes"} {
+		mkdir(t, filepath.Join(dir, d))
+	}
+
+	write(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS.md\n")
+	write(t, filepath.Join(dir, "OZ.md"), "oz standard: v0.1\nproject: test\ndescription: test\n")
+	write(t, filepath.Join(dir, "README.md"), "# test\n")
+
+	agentDir := filepath.Join(dir, "agents", "coding")
+	mkdir(t, agentDir)
+	write(t, filepath.Join(agentDir, "AGENT.md"), "# coding Agent\n\n## Role\n\n## Read-chain\n\n## Responsibilities\n")
+
+	return dir
+}
+
+func runValidate(t *testing.T, dir string) *validate.Result {
+	t.Helper()
+	ws, err := workspace.New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return validate.Validate(ws)
+}
+
+func TestValidate_ValidWorkspace(t *testing.T) {
+	result := runValidate(t, validWorkspace(t))
+	if !result.Valid() {
+		t.Errorf("expected valid workspace, got findings: %v", result.Findings)
+	}
+}
+
+func TestValidate_MissingRequiredFile_AGENTSmd(t *testing.T) {
+	dir := validWorkspace(t)
+	os.Remove(filepath.Join(dir, "AGENTS.md"))
+	requireError(t, runValidate(t, dir), "AGENTS.md")
+}
+
+func TestValidate_MissingRequiredFile_OZmd(t *testing.T) {
+	dir := validWorkspace(t)
+	os.Remove(filepath.Join(dir, "OZ.md"))
+	requireError(t, runValidate(t, dir), "OZ.md")
+}
+
+func TestValidate_MissingRecommendedFile_IsWarning(t *testing.T) {
+	dir := validWorkspace(t)
+	os.Remove(filepath.Join(dir, "README.md"))
+	result := runValidate(t, dir)
+	if !result.Valid() {
+		t.Error("missing recommended file should not fail validation")
+	}
+	requireWarning(t, result, "README.md")
+}
+
+func TestValidate_MissingRequiredDirectories(t *testing.T) {
+	for _, d := range []string{"agents", "specs/decisions", "docs", "context", "skills", "rules", "notes"} {
+		t.Run(d, func(t *testing.T) {
+			dir := validWorkspace(t)
+			os.RemoveAll(filepath.Join(dir, d))
+			requireError(t, runValidate(t, dir), d)
+		})
+	}
+}
+
+func TestValidate_MissingRecommendedDirectory_IsWarning(t *testing.T) {
+	dir := validWorkspace(t)
+	// code/ is recommended and was never created in validWorkspace
+	result := runValidate(t, dir)
+	requireWarning(t, result, "code/")
+	for _, f := range result.Findings {
+		if f.Severity == validate.Error {
+			t.Errorf("unexpected error finding: %s", f.Message)
+		}
+	}
+}
+
+func TestValidate_OZmd_MissingVersionField(t *testing.T) {
+	dir := validWorkspace(t)
+	write(t, filepath.Join(dir, "OZ.md"), "project: test\ndescription: no version\n")
+	requireError(t, runValidate(t, dir), "oz standard")
+}
+
+func TestValidate_OZmd_EmptyVersionField(t *testing.T) {
+	dir := validWorkspace(t)
+	write(t, filepath.Join(dir, "OZ.md"), "oz standard: \nproject: test\n")
+	requireError(t, runValidate(t, dir), "oz standard")
+}
+
+func TestValidate_Agent_MissingAGENTmd(t *testing.T) {
+	dir := validWorkspace(t)
+	os.Remove(filepath.Join(dir, "agents", "coding", "AGENT.md"))
+	requireError(t, runValidate(t, dir), "AGENT.md")
+}
+
+func TestValidate_Agent_MissingRequiredSections(t *testing.T) {
+	for _, section := range []string{"## Role", "## Read-chain", "## Responsibilities"} {
+		t.Run(section, func(t *testing.T) {
+			dir := validWorkspace(t)
+			full := "# coding Agent\n\n## Role\n\n## Read-chain\n\n## Responsibilities\n"
+			write(t, filepath.Join(dir, "agents", "coding", "AGENT.md"),
+				strings.ReplaceAll(full, section+"\n", ""))
+			requireError(t, runValidate(t, dir), section)
+		})
+	}
+}
+
+func TestResult_Valid_OnlyWarnings(t *testing.T) {
+	r := &validate.Result{Findings: []validate.Finding{
+		{Severity: validate.Warning, Message: "some warning"},
+	}}
+	if !r.Valid() {
+		t.Error("expected Valid() == true with only warnings")
+	}
+}
+
+func TestResult_Valid_WithError(t *testing.T) {
+	r := &validate.Result{Findings: []validate.Finding{
+		{Severity: validate.Warning, Message: "warning"},
+		{Severity: validate.Error, Message: "error"},
+	}}
+	if r.Valid() {
+		t.Error("expected Valid() == false when an error is present")
+	}
+}
+
+// helpers
+
+func requireError(t *testing.T, result *validate.Result, substr string) {
+	t.Helper()
+	for _, f := range result.Findings {
+		if f.Severity == validate.Error && strings.Contains(f.Message, substr) {
+			return
+		}
+	}
+	t.Errorf("expected an error finding containing %q\nfindings: %v", substr, result.Findings)
+}
+
+func requireWarning(t *testing.T, result *validate.Result, substr string) {
+	t.Helper()
+	for _, f := range result.Findings {
+		if f.Severity == validate.Warning && strings.Contains(f.Message, substr) {
+			return
+		}
+	}
+	t.Errorf("expected a warning finding containing %q\nfindings: %v", substr, result.Findings)
+}
+
+func write(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func mkdir(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0755); err != nil {
+		t.Fatal(err)
+	}
+}
