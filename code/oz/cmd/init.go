@@ -177,6 +177,7 @@ func promptChoice(r *bufio.Reader, label string, choices []string, defaultVal st
 // printTree prints a minimal view of the scaffolded workspace.
 func printTree(root string, claudeMD bool) {
 	entries := []string{
+		".gitignore",
 		"AGENTS.md",
 		"OZ.md",
 		"README.md",

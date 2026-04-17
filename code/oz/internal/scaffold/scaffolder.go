@@ -108,6 +108,7 @@ func createRootFiles(root string, data templateData) error {
 		name string
 		tmpl string
 	}{
+		{".gitignore", rootGitignoreTmpl},
 		{"OZ.md", ozMDTmpl},
 		{"AGENTS.md", agentsMDTmpl},
 		{"README.md", readmeTmpl},
@@ -172,7 +173,7 @@ func WriteCLAUDEMD(root, name, description string) error {
 }
 
 func createOZDir(root string) error {
-	return writeTemplate(filepath.Join(root, ".oz", ".gitignore"), ozDirGitignoreTmpl, nil)
+	return os.MkdirAll(filepath.Join(root, ".oz"), 0755)
 }
 
 func createClaudeMD(root string, data templateData) error {
