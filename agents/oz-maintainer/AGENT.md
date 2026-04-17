@@ -24,6 +24,7 @@ Read these files in order before starting any task:
 4. `specs/oz-project-specification.md` — canonical oz workspace convention (full read)
 5. `docs/architecture.md` — system architecture overview
 6. `docs/open-items.md` — open questions and known issues
+7. `docs/test-plan.md` — test strategy (review for coverage gaps and staleness)
 
 For each agent directory that is relevant to your task, also read its `AGENT.md`.
 

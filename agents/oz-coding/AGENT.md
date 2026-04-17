@@ -23,6 +23,7 @@ Read these files in order before starting any task:
 3. `rules/coding-guidelines.md` — hard constraints for all code
 4. `docs/architecture.md` — system architecture overview
 5. `docs/open-items.md` — open questions and known issues
+6. `docs/test-plan.md` — test strategy and per-package coverage requirements
 6. `specs/oz-project-specification.md` — canonical project spec (full read)
 
 Check `specs/decisions/` for any ADRs relevant to the task at hand.
