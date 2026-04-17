@@ -1,0 +1,17 @@
+# OZ.md — Workspace Manifest
+
+oz standard: {{.OZVersion}}
+project: {{.Name}}
+description: {{.Description}}
+
+## Registered Agents
+{{range .Agents}}
+- **{{.Name}}**: `agents/{{.Name}}/AGENT.md`
+{{- end}}
+
+## Source of Truth Hierarchy
+
+1. `specs/` — highest trust. Architectural decisions and specifications.
+2. `docs/` — architecture docs, open items.
+3. `context/` — shared agent context snapshots.
+4. `notes/` — lowest trust. Raw thinking, crystallize via `oz crystallize`.

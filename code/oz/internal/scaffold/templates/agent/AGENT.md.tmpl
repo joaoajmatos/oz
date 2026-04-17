@@ -1,0 +1,36 @@
+# {{.Name}} Agent
+{{if .Description}}
+> {{.Description}}
+{{end}}
+## Role
+
+<!-- Describe what this agent is responsible for. -->
+
+## Responsibilities
+
+-
+
+## Out of scope
+
+-
+
+## Read-chain
+
+Read these files in order before starting any task:
+
+1. `AGENTS.md` — workspace entry point
+2. `OZ.md` — workspace manifest
+{{- if eq .Type "coding"}}
+3. `rules/coding-guidelines.md` — hard constraints
+4. `docs/architecture.md` — system architecture
+5. `docs/open-items.md` — open questions and known issues
+{{- else}}
+3. `docs/architecture.md` — system architecture
+4. `docs/open-items.md` — open questions and known issues
+{{- end}}
+
+<!-- Add spec files relevant to this agent's domain. -->
+
+## Context topics
+
+<!-- List `context/<topic>` entries this agent should read. -->

@@ -193,7 +193,8 @@ oz/                              # the oz repo is itself an oz workspace
 │       │   │   └── workspace.go
 │       │   ├── scaffold/        # scaffolding logic for oz init
 │       │   │   ├── scaffolder.go
-│       │   │   └── templates.go
+│       │   │   ├── templates_embed.go  # //go:embed all:templates
+│       │   │   └── templates/          # *.tmpl (text/template sources)
 │       │   └── validate/        # validation logic for oz validate
 │       │       └── validator.go
 │       └── go.mod
@@ -246,10 +247,13 @@ Detects and represents an oz workspace. Provides:
 ### Templates
 
 All generated markdown files follow consistent templates.
-Key templates: `OZ.md`, `AGENTS.md`, `AGENT.md`, `coding-guidelines.md`,
+Key outputs: `OZ.md`, `AGENTS.md`, `AGENT.md`, `coding-guidelines.md`,
 `architecture.md`, `open-items.md`, `decisions/_template.md`, `code/README.md`.
 
-Templates should be embedded in the binary using Go's `embed` package.
+Sources live as `*.tmpl` files under `internal/scaffold/templates/` (Go
+`text/template` syntax). They are embedded at build time via
+`internal/scaffold/templates_embed.go` (`//go:embed all:templates`) so the `oz`
+binary has no runtime dependency on those files on disk.
 
 ### CLI
 
@@ -301,7 +305,8 @@ code/oz/go.mod
 code/oz/main.go
 code/oz/internal/convention/convention.go
 code/oz/internal/workspace/workspace.go
-code/oz/internal/scaffold/templates.go
+code/oz/internal/scaffold/templates_embed.go
+code/oz/internal/scaffold/templates/
 code/oz/internal/scaffold/scaffolder.go
 code/oz/cmd/init.go
 ```

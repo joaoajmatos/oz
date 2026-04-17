@@ -1,0 +1,31 @@
+# AGENTS.md — LLM Entry Point
+
+> You are entering an oz workspace. Read this file first.
+
+## Project
+
+**{{.Name}}**: {{.Description}}
+
+## How to navigate this workspace
+
+1. Find your role below.
+2. Read your `AGENT.md` file.
+3. Follow the read-chain in your agent definition before starting any task.
+
+## Agents
+{{range .Agents}}
+### {{.Name}}
+
+Agent definition: `agents/{{.Name}}/AGENT.md`
+{{end}}
+## Source of Truth Hierarchy
+
+When information conflicts, trust this order (highest to lowest):
+
+1. `specs/` — architectural decisions and specifications
+2. `docs/` — architecture docs, open items
+3. `context/` — shared agent context snapshots
+4. `notes/` — raw thinking (lowest trust)
+
+Code is the source of truth for behaviour. When code and spec diverge, the code
+wins — but the spec is flagged and updated to reflect reality.

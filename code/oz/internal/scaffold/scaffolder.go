@@ -34,6 +34,9 @@ type templateData struct {
 	Agents      []AgentConfig
 }
 
+// scaffoldStep is one ordered phase of workspace scaffolding.
+type scaffoldStep func() error
+
 // Scaffold creates a full oz workspace at path using cfg.
 func Scaffold(path string, cfg Config) error {
 	abs, err := filepath.Abs(path)
@@ -48,36 +51,24 @@ func Scaffold(path string, cfg Config) error {
 		Agents:      cfg.Agents,
 	}
 
-	if err := createDirectories(abs); err != nil {
-		return err
-	}
-	if err := createRootFiles(abs, data); err != nil {
-		return err
-	}
-	if err := createAgentFiles(abs, cfg.Agents); err != nil {
-		return err
-	}
-	if err := createDocFiles(abs, data); err != nil {
-		return err
-	}
-	if err := createSpecFiles(abs); err != nil {
-		return err
-	}
-	if err := createRulesFiles(abs); err != nil {
-		return err
-	}
-	if err := createCodeDir(abs, cfg.CodeMode, data); err != nil {
-		return err
-	}
-	if err := createOZDir(abs); err != nil {
-		return err
+	steps := []scaffoldStep{
+		func() error { return createDirectories(abs) },
+		func() error { return createRootFiles(abs, data) },
+		func() error { return createAgentFiles(abs, cfg.Agents) },
+		func() error { return createDocFiles(abs, data) },
+		func() error { return createSpecFiles(abs) },
+		func() error { return createRulesFiles(abs) },
+		func() error { return createCodeDir(abs, cfg.CodeMode, data) },
+		func() error { return createOZDir(abs) },
 	}
 	if cfg.ClaudeMD {
-		if err := createClaudeMD(abs, data); err != nil {
+		steps = append(steps, func() error { return createClaudeMD(abs, data) })
+	}
+	for _, step := range steps {
+		if err := step(); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -105,16 +96,16 @@ func createDirectories(root string) error {
 
 func createRootFiles(root string, data templateData) error {
 	files := []struct {
-		name string
+		dest string
 		tmpl string
 	}{
-		{".gitignore", rootGitignoreTmpl},
-		{"OZ.md", ozMDTmpl},
-		{"AGENTS.md", agentsMDTmpl},
-		{"README.md", readmeTmpl},
+		{".gitignore", "templates/root.gitignore.tmpl"},
+		{"OZ.md", "templates/OZ.md.tmpl"},
+		{"AGENTS.md", "templates/AGENTS.md.tmpl"},
+		{"README.md", "templates/README.md.tmpl"},
 	}
 	for _, f := range files {
-		if err := writeTemplate(filepath.Join(root, f.name), f.tmpl, data); err != nil {
+		if err := writeTemplate(filepath.Join(root, f.dest), f.tmpl, data); err != nil {
 			return err
 		}
 	}
@@ -127,7 +118,7 @@ func createAgentFiles(root string, agents []AgentConfig) error {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("creating agent dir %s: %w", agent.Name, err)
 		}
-		if err := writeTemplate(filepath.Join(dir, "AGENT.md"), agentMDTmpl, agent); err != nil {
+		if err := writeTemplate(filepath.Join(dir, "AGENT.md"), "templates/agent/AGENT.md.tmpl", agent); err != nil {
 			return err
 		}
 	}
@@ -136,14 +127,14 @@ func createAgentFiles(root string, agents []AgentConfig) error {
 
 func createDocFiles(root string, data templateData) error {
 	files := []struct {
-		name string
+		dest string
 		tmpl string
 	}{
-		{"docs/architecture.md", architectureTmpl},
-		{"docs/open-items.md", openItemsTmpl},
+		{"docs/architecture.md", "templates/docs/architecture.md.tmpl"},
+		{"docs/open-items.md", "templates/docs/open-items.md.tmpl"},
 	}
 	for _, f := range files {
-		if err := writeTemplate(filepath.Join(root, f.name), f.tmpl, data); err != nil {
+		if err := writeTemplate(filepath.Join(root, f.dest), f.tmpl, data); err != nil {
 			return err
 		}
 	}
@@ -153,7 +144,7 @@ func createDocFiles(root string, data templateData) error {
 func createSpecFiles(root string) error {
 	return writeTemplate(
 		filepath.Join(root, "specs/decisions/_template.md"),
-		decisionTemplateTmpl,
+		"templates/specs/decisions/_template.md.tmpl",
 		nil,
 	)
 }
@@ -161,7 +152,7 @@ func createSpecFiles(root string) error {
 func createRulesFiles(root string) error {
 	return writeTemplate(
 		filepath.Join(root, "rules/coding-guidelines.md"),
-		codingGuidelinesTmpl,
+		"templates/rules/coding-guidelines.md.tmpl",
 		nil,
 	)
 }
@@ -177,7 +168,7 @@ func createOZDir(root string) error {
 }
 
 func createClaudeMD(root string, data templateData) error {
-	return writeTemplate(filepath.Join(root, "CLAUDE.md"), claudeMDTmpl, data)
+	return writeTemplate(filepath.Join(root, "CLAUDE.md"), "templates/CLAUDE.md.tmpl", data)
 }
 
 func createCodeDir(root, mode string, data templateData) error {
@@ -187,26 +178,32 @@ func createCodeDir(root, mode string, data templateData) error {
 	}
 	return writeTemplate(
 		filepath.Join(root, "code/README.md"),
-		codeREADMETmpl,
+		"templates/code/README.md.tmpl",
 		data,
 	)
 }
 
-// writeTemplate renders tmpl with data and writes the result to path.
-// If data is nil the template is written as-is (no substitutions).
-func writeTemplate(path, tmplStr string, data any) error {
-	t, err := template.New("").Parse(tmplStr)
+// writeTemplate loads an embedded text/template by tmplPath (relative to
+// internal/scaffold/templates/), renders it with data, and writes to destPath.
+// If data is nil and the template has no actions, the file is written unchanged.
+func writeTemplate(destPath, tmplPath string, data any) error {
+	raw, err := scaffoldTemplates.ReadFile(tmplPath)
 	if err != nil {
-		return fmt.Errorf("parsing template for %s: %w", filepath.Base(path), err)
+		return fmt.Errorf("loading template %s: %w", tmplPath, err)
+	}
+
+	t, err := template.New(filepath.Base(tmplPath)).Parse(string(raw))
+	if err != nil {
+		return fmt.Errorf("parsing template for %s: %w", filepath.Base(destPath), err)
 	}
 
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, data); err != nil {
-		return fmt.Errorf("rendering template for %s: %w", filepath.Base(path), err)
+		return fmt.Errorf("rendering template for %s: %w", filepath.Base(destPath), err)
 	}
 
-	if err := os.WriteFile(path, buf.Bytes(), 0644); err != nil {
-		return fmt.Errorf("writing %s: %w", path, err)
+	if err := os.WriteFile(destPath, buf.Bytes(), 0644); err != nil {
+		return fmt.Errorf("writing %s: %w", destPath, err)
 	}
 	return nil
 }
