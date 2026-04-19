@@ -17,6 +17,7 @@
 package testws
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -254,7 +255,27 @@ func (b *Builder) Build() *Workspace {
 		}
 	}
 
+	// Write semantic overlay if provided.
+	if b.overlay != nil {
+		if err := b.writeOverlay(dir, b.overlay); err != nil {
+			b.t.Fatalf("testws: write semantic overlay: %v", err)
+		}
+	}
+
 	return &Workspace{t: b.t, path: dir}
+}
+
+// writeOverlay serialises the semantic overlay to context/semantic.json.
+func (b *Builder) writeOverlay(root string, o *SemanticOverlay) error {
+	path := filepath.Join(root, "context", "semantic.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(o, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0644)
 }
 
 // writeMarkdown writes a fileDef as a markdown file, creating parent dirs.
@@ -363,6 +384,12 @@ type Workspace struct {
 
 // Path returns the absolute path to the workspace root.
 func (w *Workspace) Path() string { return w.path }
+
+// Cleanup removes the workspace directory. Calling this is optional — the
+// directory is automatically removed when the test ends via t.TempDir().
+func (w *Workspace) Cleanup() {
+	_ = os.RemoveAll(w.path)
+}
 
 // ReadFile reads a file relative to the workspace root.
 func (w *Workspace) ReadFile(rel string) ([]byte, error) {

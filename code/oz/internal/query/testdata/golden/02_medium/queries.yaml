@@ -184,6 +184,31 @@ queries:
     min_confidence: 0.4
     expected_candidates: ["backend", "qa", "auth"]
 
+  # --- additional unambiguous queries to reach 50 ---
+  - query: "add rate limiting middleware to the API"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  - query: "implement dark mode toggle in the settings page"
+    expected_agent: frontend
+    min_confidence: 0.7
+
+  - query: "set up blue-green deployment for zero-downtime releases"
+    expected_agent: infra
+    min_confidence: 0.7
+
+  - query: "build a cohort analysis report for user retention"
+    expected_agent: data
+    min_confidence: 0.7
+
+  - query: "conduct a security review of the new file upload feature"
+    expected_agent: security
+    min_confidence: 0.7
+
+  - query: "write Detox tests for the mobile onboarding flow"
+    expected_agent: mobile
+    min_confidence: 0.7
+
   # --- no clear owner ---
   - query: "what is the capital of France"
     expected_agent: ""
