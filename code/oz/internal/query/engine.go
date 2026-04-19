@@ -3,6 +3,7 @@ package query
 import (
 	ozcontext "github.com/oz-tools/oz/internal/context"
 	"github.com/oz-tools/oz/internal/graph"
+	"github.com/oz-tools/oz/internal/semantic"
 )
 
 // Options configures a query execution.
@@ -95,6 +96,9 @@ func Run(workspacePath, queryText string) Result {
 // loadRelevantConcepts reads context/semantic.json (if present) and returns
 // concept names owned by agentName. Returns nil when no overlay exists.
 func loadRelevantConcepts(workspacePath, agentName string, _ *graph.Graph) []string {
-	// Semantic overlay is Sprint 5 — stub returns nil.
-	return nil
+	o, err := semantic.Load(workspacePath)
+	if err != nil || o == nil {
+		return nil
+	}
+	return semantic.ConceptsForAgent(o, agentName)
 }

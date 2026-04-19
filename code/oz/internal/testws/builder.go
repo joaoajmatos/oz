@@ -17,7 +17,6 @@
 package testws
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/oz-tools/oz/internal/scaffold"
+	"github.com/oz-tools/oz/internal/semantic"
 )
 
 // Builder constructs oz-compliant workspaces for tests.
@@ -265,17 +265,36 @@ func (b *Builder) Build() *Workspace {
 	return &Workspace{t: b.t, path: dir}
 }
 
-// writeOverlay serialises the semantic overlay to context/semantic.json.
+// writeOverlay converts the simplified test overlay to the full semantic.json
+// format and writes it to context/semantic.json.
 func (b *Builder) writeOverlay(root string, o *SemanticOverlay) error {
-	path := filepath.Join(root, "context", "semantic.json")
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return err
+	full := &semantic.Overlay{
+		SchemaVersion: semantic.SchemaVersion,
+		GraphHash:     o.GraphHash,
 	}
-	data, err := json.MarshalIndent(o, "", "  ")
-	if err != nil {
-		return err
+	for _, c := range o.Concepts {
+		conceptID := "concept:" + slugify(c.Name)
+		agentNodeID := "agent:" + c.OwnedBy
+		full.Concepts = append(full.Concepts, semantic.Concept{
+			ID:         conceptID,
+			Name:       c.Name,
+			Tag:        semantic.TagExtracted,
+			Confidence: 1.0,
+		})
+		full.Edges = append(full.Edges, semantic.ConceptEdge{
+			From:       conceptID,
+			To:         agentNodeID,
+			Type:       semantic.EdgeTypeAgentOwnsConcept,
+			Tag:        semantic.TagExtracted,
+			Confidence: 1.0,
+		})
 	}
-	return os.WriteFile(path, data, 0644)
+	return semantic.Write(root, full)
+}
+
+// slugify converts a concept name to a URL-friendly slug for use in concept IDs.
+func slugify(name string) string {
+	return strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 }
 
 // writeMarkdown writes a fileDef as a markdown file, creating parent dirs.

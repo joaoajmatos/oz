@@ -1,0 +1,212 @@
+min_accuracy: 0.93
+
+queries:
+  # --- backend (5) ---
+  - query: "add a new REST endpoint for creating project invitations"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  - query: "write a database migration to add a unique index on users.email"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  - query: "implement cursor-based pagination for the tasks list endpoint"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  - query: "add a background job to process webhook delivery retries"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  - query: "optimize the N+1 query in the comments API handler"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  # --- frontend (5) ---
+  - query: "add a loading skeleton to the project list page in React"
+    expected_agent: frontend
+    min_confidence: 0.65
+
+  - query: "implement drag-and-drop card reordering on the kanban board"
+    expected_agent: frontend
+    min_confidence: 0.7
+
+  - query: "fix the dark mode toggle on the account settings page"
+    expected_agent: frontend
+    min_confidence: 0.7
+
+  - query: "integrate the new project invitations API into the React web app"
+    expected_agent: frontend
+    min_confidence: 0.6
+
+  - query: "add client-side form validation to the signup page components"
+    expected_agent: frontend
+    min_confidence: 0.7
+
+  # --- mobile (5) ---
+  - query: "implement push notification handling for new task assignments on iOS"
+    expected_agent: mobile
+    min_confidence: 0.7
+
+  - query: "add offline sync so Android users can edit tasks without a connection"
+    expected_agent: mobile
+    min_confidence: 0.7
+
+  - query: "submit the v3.2 build to the App Store for review"
+    expected_agent: mobile
+    min_confidence: 0.7
+
+  - query: "fix the crash on Android when opening a project with more than 100 tasks"
+    expected_agent: mobile
+    min_confidence: 0.7
+
+  - query: "implement deep link routing for iOS push notification taps"
+    expected_agent: mobile
+    min_confidence: 0.7
+
+  # --- infra (5) ---
+  - query: "add a new Kubernetes deployment manifest for the webhook worker"
+    expected_agent: infra
+    min_confidence: 0.7
+
+  - query: "the GitHub Actions deploy workflow is failing on the production step"
+    expected_agent: infra
+    min_confidence: 0.7
+
+  - query: "provision a new AWS S3 bucket in the cloud infrastructure for file storage"
+    expected_agent: infra
+    min_confidence: 0.6
+
+  - query: "set up a Datadog monitor for API p99 latency exceeding 1 second"
+    expected_agent: infra
+    min_confidence: 0.4
+
+  - query: "update the Docker base image to fix the critical OS vulnerability"
+    expected_agent: infra
+    min_confidence: 0.6
+
+  # --- data (5) ---
+  - query: "build an ETL pipeline to import Salesforce leads into the data warehouse"
+    expected_agent: data
+    min_confidence: 0.7
+
+  - query: "create a Metabase dashboard for monthly recurring revenue analytics"
+    expected_agent: data
+    min_confidence: 0.5
+
+  - query: "run an A/B test analysis on the new onboarding checklist experiment"
+    expected_agent: data
+    min_confidence: 0.7
+
+  - query: "model the user activity events table in the analytics warehouse"
+    expected_agent: data
+    min_confidence: 0.7
+
+  - query: "add dbt transformations for the weekly cohort retention report"
+    expected_agent: data
+    min_confidence: 0.7
+
+  # --- auth (5) ---
+  - query: "implement GitHub OAuth login flow for the developer plan"
+    expected_agent: auth
+    min_confidence: 0.7
+
+  - query: "add TOTP-based MFA enforcement for organization admin accounts"
+    expected_agent: auth
+    min_confidence: 0.7
+
+  - query: "extend the JWT access token lifetime from 1 hour to 24 hours"
+    expected_agent: auth
+    min_confidence: 0.7
+
+  - query: "fix the Redis session expiry bug that logs users out prematurely"
+    expected_agent: auth
+    min_confidence: 0.6
+
+  - query: "implement token rotation on refresh to reduce replay attack risk"
+    expected_agent: auth
+    min_confidence: 0.65
+
+  # --- docs (5) ---
+  - query: "write API reference documentation for the new webhooks endpoint"
+    expected_agent: docs
+    min_confidence: 0.7
+
+  - query: "update the onboarding guide to cover the new GitHub OAuth flow"
+    expected_agent: docs
+    min_confidence: 0.6
+
+  - query: "write the product documentation changelog for v3.2.0"
+    expected_agent: docs
+    min_confidence: 0.5
+
+  - query: "add a troubleshooting section to the SDK integration guide"
+    expected_agent: docs
+    min_confidence: 0.65
+
+  - query: "update the API reference docs to cover the new cursor pagination format"
+    expected_agent: docs
+    min_confidence: 0.4
+
+  # --- design (5) ---
+  - query: "add a destructive-action color variant to the Figma design system"
+    expected_agent: design
+    min_confidence: 0.65
+
+  - query: "update the Button component spec in Figma to use the new border radius token"
+    expected_agent: design
+    min_confidence: 0.7
+
+  - query: "document keyboard navigation behavior and focus trap patterns for the dialog"
+    expected_agent: design
+    min_confidence: 0.6
+
+  - query: "create the Figma component for the empty state illustration"
+    expected_agent: design
+    min_confidence: 0.65
+
+  - query: "document the spacing scale for the updated design system token library"
+    expected_agent: design
+    min_confidence: 0.6
+
+  # --- qa (5) ---
+  - query: "write a Cypress end-to-end test for the project invitation flow"
+    expected_agent: qa
+    min_confidence: 0.7
+
+  - query: "add Cypress tests covering the MFA enrollment error states"
+    expected_agent: qa
+    min_confidence: 0.7
+
+  - query: "update the test plan to include coverage for the new webhook feature"
+    expected_agent: qa
+    min_confidence: 0.6
+
+  - query: "triage the regression failures from last night's nightly test run"
+    expected_agent: qa
+    min_confidence: 0.7
+
+  - query: "configure CI to block merges when test coverage drops below 80 percent"
+    expected_agent: infra
+    min_confidence: 0.6
+
+  # --- security (5) ---
+  - query: "conduct a security review of the new OAuth implementation"
+    expected_agent: security
+    min_confidence: 0.7
+
+  - query: "triage the critical CVE in the JWT parsing library we depend on"
+    expected_agent: security
+    min_confidence: 0.7
+
+  - query: "update the security policy after completing the annual pen test"
+    expected_agent: security
+    min_confidence: 0.7
+
+  - query: "perform a threat model review before the webhooks feature ships"
+    expected_agent: security
+    min_confidence: 0.45
+
+  - query: "audit the file upload feature for compliance with our security policy"
+    expected_agent: security
+    min_confidence: 0.65

@@ -11,11 +11,19 @@ import (
 
 // WorkspaceFixture is the YAML schema for a declarative workspace definition.
 type WorkspaceFixture struct {
-	Agents    []AgentFixture    `yaml:"agents"`
-	Specs     []FileFixture     `yaml:"specs"`
-	Decisions []DecisionFixture `yaml:"decisions"`
-	Contexts  []ContextFixture  `yaml:"contexts"`
-	Notes     []NoteFixture     `yaml:"notes"`
+	Agents          []AgentFixture          `yaml:"agents"`
+	Specs           []FileFixture           `yaml:"specs"`
+	Decisions       []DecisionFixture       `yaml:"decisions"`
+	Contexts        []ContextFixture        `yaml:"contexts"`
+	Notes           []NoteFixture           `yaml:"notes"`
+	SemanticOverlay *SemanticOverlayFixture `yaml:"semantic_overlay,omitempty"`
+}
+
+// SemanticOverlayFixture is the YAML schema for a pre-built semantic overlay.
+// It is a simplified representation: each concept is listed with its owning agent.
+// The fixture loader calls WithSemanticOverlay, which writes a full semantic.json.
+type SemanticOverlayFixture struct {
+	Concepts []OverlayConcept `yaml:"concepts"`
 }
 
 // AgentFixture is the YAML schema for a single agent definition.
@@ -115,6 +123,12 @@ func FromFixture(t *testing.T, path string) *Builder {
 
 	for _, n := range fix.Notes {
 		b.WithNote(n.File, n.Content)
+	}
+
+	if fix.SemanticOverlay != nil {
+		b.WithSemanticOverlay(SemanticOverlay{
+			Concepts: fix.SemanticOverlay.Concepts,
+		})
 	}
 
 	return b

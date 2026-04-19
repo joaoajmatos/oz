@@ -114,7 +114,15 @@ func checkOZMD(ws *workspace.Workspace, r *Result) {
 }
 
 // requiredAgentSections are the H2 headings every AGENT.md must contain.
-var requiredAgentSections = []string{"## Role", "## Read-chain", "## Responsibilities"}
+var requiredAgentSections = []string{
+	"## Role",
+	"## Read-chain",
+	"## Rules",
+	"## Skills",
+	"## Responsibilities",
+	"## Out of scope",
+	"## Context topics",
+}
 
 func checkAgents(ws *workspace.Workspace, r *Result) {
 	agentsDir := filepath.Join(ws.Root, "agents")

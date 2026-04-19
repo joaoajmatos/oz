@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/oz-tools/oz/internal/testws"
 	"github.com/oz-tools/oz/internal/validate"
 	"github.com/oz-tools/oz/internal/workspace"
 )
@@ -25,7 +26,7 @@ func validWorkspace(t *testing.T) string {
 
 	agentDir := filepath.Join(dir, "agents", "coding")
 	mkdir(t, agentDir)
-	write(t, filepath.Join(agentDir, "AGENT.md"), "# coding Agent\n\n## Role\n\n## Read-chain\n\n## Responsibilities\n")
+	write(t, filepath.Join(agentDir, "AGENT.md"), "# coding Agent\n\n## Role\n\n## Read-chain\n\n## Rules\n\n## Skills\n\n## Responsibilities\n\n## Out of scope\n\n## Context topics\n")
 
 	return dir
 }
@@ -109,10 +110,19 @@ func TestValidate_Agent_MissingAGENTmd(t *testing.T) {
 }
 
 func TestValidate_Agent_MissingRequiredSections(t *testing.T) {
-	for _, section := range []string{"## Role", "## Read-chain", "## Responsibilities"} {
+	allSections := []string{
+		"## Role",
+		"## Read-chain",
+		"## Rules",
+		"## Skills",
+		"## Responsibilities",
+		"## Out of scope",
+		"## Context topics",
+	}
+	full := "# coding Agent\n\n## Role\n\n## Read-chain\n\n## Rules\n\n## Skills\n\n## Responsibilities\n\n## Out of scope\n\n## Context topics\n"
+	for _, section := range allSections {
 		t.Run(section, func(t *testing.T) {
 			dir := validWorkspace(t)
-			full := "# coding Agent\n\n## Role\n\n## Read-chain\n\n## Responsibilities\n"
 			write(t, filepath.Join(dir, "agents", "coding", "AGENT.md"),
 				strings.ReplaceAll(full, section+"\n", ""))
 			requireError(t, runValidate(t, dir), section)
@@ -173,4 +183,36 @@ func mkdir(t *testing.T, path string) {
 	if err := os.MkdirAll(path, 0755); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// TestValidate_TestwsFixture_Valid verifies that a testws-built workspace
+// (which includes all 7 required AGENT.md sections) passes validation.
+func TestValidate_TestwsFixture_Valid(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("backend",
+			testws.Role("Builds REST endpoints"),
+			testws.Scope("code/api/**"),
+		).
+		Build()
+
+	result := runValidate(t, ws.Path())
+	if !result.Valid() {
+		t.Errorf("testws fixture should pass validation, got findings: %v", result.Findings)
+	}
+}
+
+// TestValidate_TestwsFixture_InvalidAgent confirms that an agent missing
+// required sections produces error findings.
+func TestValidate_TestwsFixture_InvalidAgent(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("backend", testws.Role("Builds REST endpoints")).
+		Build()
+
+	// Overwrite the generated AGENT.md with one missing Rules and Skills.
+	agentMD := filepath.Join(ws.Path(), "agents", "backend", "AGENT.md")
+	write(t, agentMD, "# backend Agent\n\n## Role\n\n## Read-chain\n\n## Responsibilities\n\n## Out of scope\n\n## Context topics\n")
+
+	result := runValidate(t, ws.Path())
+	requireError(t, result, "## Rules")
+	requireError(t, result, "## Skills")
 }

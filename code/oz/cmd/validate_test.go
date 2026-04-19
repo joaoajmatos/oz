@@ -28,7 +28,7 @@ func scaffoldValidWorkspace(t *testing.T) string {
 		t.Fatal(err)
 	}
 	writeFile(t, filepath.Join(agentDir, "AGENT.md"),
-		"# coding Agent\n\n## Role\n\n## Read-chain\n\n## Responsibilities\n")
+		"# coding Agent\n\n## Role\n\n## Read-chain\n\n## Rules\n\n## Skills\n\n## Responsibilities\n\n## Out of scope\n\n## Context topics\n")
 
 	return dir
 }

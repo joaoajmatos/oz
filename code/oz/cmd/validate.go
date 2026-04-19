@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	ozcontext "github.com/oz-tools/oz/internal/context"
 	"github.com/oz-tools/oz/internal/validate"
 	"github.com/oz-tools/oz/internal/workspace"
 )
@@ -14,6 +15,8 @@ import (
 // errValidationFailed is returned when a workspace fails validation.
 // main.go translates this to exit code 1.
 var errValidationFailed = errors.New("validation failed")
+
+var withContext bool
 
 var validateCmd = &cobra.Command{
 	Use:   "validate [path]",
@@ -29,6 +32,10 @@ Exit code 0 = valid. Exit code 1 = invalid. Suitable for CI.`,
 	RunE:          runValidate,
 	SilenceErrors: true,
 	SilenceUsage:  true,
+}
+
+func init() {
+	validateCmd.Flags().BoolVar(&withContext, "with-context", false, "run 'oz context build' after validation and report node/edge count")
 }
 
 func runValidate(cmd *cobra.Command, args []string) error {
@@ -55,9 +62,21 @@ func runValidate(cmd *cobra.Command, args []string) error {
 
 	if result.Valid() {
 		fmt.Printf("ok  %s\n", ws.Root)
-		return nil
+	} else {
+		fmt.Fprintf(os.Stderr, "FAIL %s\n", ws.Root)
 	}
 
-	fmt.Fprintf(os.Stderr, "FAIL %s\n", ws.Root)
-	return errValidationFailed
+	if withContext {
+		br, buildErr := ozcontext.Build(ws.Root)
+		if buildErr != nil {
+			fmt.Fprintf(os.Stderr, "  warning context build failed: %v\n", buildErr)
+		} else {
+			fmt.Printf("context/graph.json: %d nodes, %d edges\n", br.NodeCount, br.EdgeCount)
+		}
+	}
+
+	if !result.Valid() {
+		return errValidationFailed
+	}
+	return nil
 }
