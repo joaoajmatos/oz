@@ -18,4 +18,6 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(validateCmd)
+	rootCmd.AddCommand(contextCmd)
+	rootCmd.AddCommand(auditCmd)
 }
