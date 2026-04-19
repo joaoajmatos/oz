@@ -20,13 +20,29 @@ Read these files in order before starting any task:
 
 1. `AGENTS.md` — workspace entry point and agent routing
 2. `OZ.md` — workspace manifest, registered agents, standard version
-3. `rules/coding-guidelines.md` — hard constraints for all code
-4. `specs/oz-project-specification.md` — canonical oz workspace convention (full read)
-5. `docs/architecture.md` — system architecture overview
-6. `docs/open-items.md` — open questions and known issues
-7. `docs/test-plan.md` — test strategy (review for coverage gaps and staleness)
+3. `specs/oz-project-specification.md` — canonical oz workspace convention (full read)
+4. `docs/architecture.md` — system architecture overview
+5. `docs/open-items.md` — open questions and known issues
+6. `docs/test-plan.md` — test strategy (review for coverage gaps and staleness)
 
 For each agent directory that is relevant to your task, also read its `AGENT.md`.
+
+---
+
+## Rules
+
+These files govern your behavior. Read them and follow them without exception:
+
+- `rules/coding-guidelines.md` — hard constraints for all code in this workspace
+
+---
+
+## Skills
+
+You are authorized to invoke these skills:
+
+- `skills/oz-validate/` — run `oz validate` against the workspace and interpret the report
+- `skills/audit-agents/` — check all `agents/*/AGENT.md` files for missing required sections
 
 ---
 

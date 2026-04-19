@@ -59,6 +59,22 @@ Agents are not code. They are conventions.
 Agents share context via `context/` at the workspace root, organized by topic.
 Any agent can read any context topic.
 
+#### AGENT.md required sections
+
+Every `agents/<name>/AGENT.md` must contain these sections in order:
+
+| Section | Purpose |
+|---|---|
+| `## Role` | One-paragraph description of what this agent does and its operating constraints |
+| `## Read-chain` | Ordered list of files to load before starting any task (context only — not rules) |
+| `## Rules` | Rule files that govern this agent's behavior — hard constraints, not just reading material |
+| `## Skills` | Skills this agent is authorized to invoke (`skills/<name>/`) |
+| `## Responsibilities` | Bulleted list of what this agent owns and produces |
+| `## Out of scope` | Explicit disownment — what this agent must not do |
+| `## Context topics` | Which `context/` topics this agent reads when relevant |
+
+**Read-chain vs. Rules**: The read-chain loads context and understanding. Rules are behavioral constraints the agent must follow without exception. Keep them separate so the distinction is unambiguous — both to the LLM and to `oz validate`.
+
 ---
 
 ## Workspace Structure
@@ -130,8 +146,9 @@ Generates the full directory structure and all required files from templates.
 Lints a workspace against the oz convention. Reports:
 - Missing required files/directories
 - Missing recommended files/directories
-- Agent definitions missing required sections
+- Agent definitions missing required sections (Role, Read-chain, Rules, Skills, Responsibilities, Out of scope, Context topics)
 - OZ.md standard version
+- `context/semantic.json` present but containing unreviewed nodes (warning, not error)
 
 Exit code 0 = valid. Exit code 1 = invalid. Suitable for CI.
 

@@ -31,6 +31,23 @@ Check `specs/decisions/` for existing ADRs before making any significant change 
 
 ---
 
+## Rules
+
+These files govern your behavior. Read them and follow them without exception:
+
+- `rules/coding-guidelines.md` — hard constraints for all code in this workspace
+
+---
+
+## Skills
+
+You are authorized to invoke these skills:
+
+- `skills/write-adr/` — create a new ADR in `specs/decisions/` from a decision description
+- `skills/crystallize/` — promote content from `notes/` into the correct canonical layer
+
+---
+
 ## Responsibilities
 
 - Maintain and evolve `specs/oz-project-specification.md` as the canonical oz standard

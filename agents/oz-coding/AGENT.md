@@ -20,13 +20,29 @@ Read these files in order before starting any task:
 
 1. `AGENTS.md` — workspace entry point and agent routing
 2. `OZ.md` — workspace manifest, registered agents, standard version
-3. `rules/coding-guidelines.md` — hard constraints for all code
-4. `docs/architecture.md` — system architecture overview
-5. `docs/open-items.md` — open questions and known issues
-6. `docs/test-plan.md` — test strategy and per-package coverage requirements
+3. `docs/architecture.md` — system architecture overview
+4. `docs/open-items.md` — open questions and known issues
+5. `docs/test-plan.md` — test strategy and per-package coverage requirements
 6. `specs/oz-project-specification.md` — canonical project spec (full read)
 
 Check `specs/decisions/` for any ADRs relevant to the task at hand.
+
+---
+
+## Rules
+
+These files govern your behavior. Read them and follow them without exception:
+
+- `rules/coding-guidelines.md` — hard constraints for all code in this workspace
+
+---
+
+## Skills
+
+You are authorized to invoke these skills:
+
+- `skills/commit/` — structured commit workflow (stage, message, verify)
+- `skills/test-runner/` — run the Go test suite and interpret failures
 
 ---
 
