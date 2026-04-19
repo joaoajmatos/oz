@@ -1,3 +1,18 @@
+---
+name: create-workspace-artifact
+description: Guides the oz-maintainer through creating or tweaking an agent definition, skill, or rule in this oz workspace, following the oz convention exactly.
+triggers:
+  - create agent
+  - create skill
+  - create rule
+  - new agent
+  - new skill
+  - new rule
+  - tweak agent
+  - tweak skill
+  - tweak rule
+---
+
 # Skill: create-workspace-artifact
 
 > Guides the oz-maintainer through creating or tweaking an agent definition, skill, or rule

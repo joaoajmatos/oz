@@ -88,9 +88,28 @@ Each skill lives in `skills/<name>/` and has a fixed internal structure:
 
 `references/` and `assets/` are optional for trivial skills, but required for skills with branching logic or templated outputs.
 
+#### SKILL.md required frontmatter
+
+Every `skills/<name>/SKILL.md` must begin with a YAML frontmatter block:
+
+```yaml
+---
+name: <skill-name>
+description: <One sentence describing what the skill does and when it is useful.>
+triggers:
+  - <keyword or phrase that should invoke this skill>
+---
+```
+
+| Field | Purpose |
+|---|---|
+| `name` | The skill name. Must match the directory name (kebab-case). |
+| `description` | One sentence summary for discovery by `oz context`. |
+| `triggers` | Keywords/phrases used by `oz validate` and `oz context` for skill surfacing. |
+
 #### SKILL.md required sections
 
-Every `skills/<name>/SKILL.md` must contain these sections:
+Every `skills/<name>/SKILL.md` must contain these sections (after the frontmatter):
 
 | Section | Purpose |
 |---|---|
