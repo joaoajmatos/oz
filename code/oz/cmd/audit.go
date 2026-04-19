@@ -13,6 +13,9 @@ var auditCmd = &cobra.Command{
 	Short: "Audit workspace health using the context graph (stub)",
 	Long: `Load context/graph.json and print a summary of nodes and edges.
 
+The workspace root is found by walking up from the current directory until
+AGENTS.md and OZ.md exist, so this works from any subdirectory inside the workspace.
+
 Full audit logic (drift detection, orphan detection, coverage checks) ships
 in a later sprint. This stub validates the graph contract is sound.`,
 	RunE: runAudit,

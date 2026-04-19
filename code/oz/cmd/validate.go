@@ -20,6 +20,10 @@ var validateCmd = &cobra.Command{
 	Short: "Lint a workspace against the oz convention",
 	Long: `Validate checks a workspace for required files, directories, and structure.
 
+With no argument, the current directory is used; the nearest ancestor containing
+AGENTS.md and OZ.md is treated as the workspace root, so you can run this from
+any subdirectory inside the workspace.
+
 Exit code 0 = valid. Exit code 1 = invalid. Suitable for CI.`,
 	Args:          cobra.MaximumNArgs(1),
 	RunE:          runValidate,

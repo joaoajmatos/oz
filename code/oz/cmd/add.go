@@ -23,6 +23,10 @@ var addClaudeCmd = &cobra.Command{
 	Short: "Add CLAUDE.md for Claude Code native integration",
 	Long: `Generate a CLAUDE.md file in an existing oz workspace.
 
+With no argument, the current directory is used; the nearest ancestor containing
+AGENTS.md and OZ.md is treated as the workspace root, so you can run this from
+any subdirectory inside the workspace.
+
 CLAUDE.md is loaded automatically by Claude Code and imports the oz
 read-chain so every session starts with full workspace context.`,
 	Args: cobra.MaximumNArgs(1),

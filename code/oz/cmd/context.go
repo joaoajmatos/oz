@@ -13,6 +13,9 @@ import (
 var contextCmd = &cobra.Command{
 	Use:   "context",
 	Short: "Manage oz workspace context graph",
+	Long: `Context commands discover the workspace by walking up from the current
+directory until AGENTS.md and OZ.md are found, so they work from any subdirectory
+inside an oz workspace.`,
 }
 
 var contextBuildCmd = &cobra.Command{
@@ -92,7 +95,8 @@ func printJSON(cmd *cobra.Command, v interface{}) error {
 	return nil
 }
 
-// findWorkspaceRoot returns the workspace root from the working directory.
+// findWorkspaceRoot returns the workspace root by walking up from the
+// current working directory (same discovery rules as workspace.New with path ".").
 func findWorkspaceRoot() (string, error) {
 	ws, err := workspace.New(".")
 	if err != nil {

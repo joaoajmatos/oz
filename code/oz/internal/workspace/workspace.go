@@ -11,10 +11,20 @@ import (
 
 // Workspace represents a detected oz workspace on disk.
 type Workspace struct {
+	// Root is the resolved workspace root directory (absolute path).
 	Root string
 }
 
-// New loads a workspace from the given path.
+// New discovers the workspace root starting from path.
+//
+// It resolves path to an absolute directory, then walks upward parent by parent
+// until it finds a directory that contains every required root file (see
+// convention.RootFiles). That directory becomes the Root field. This lets CLI
+// commands run from any subdirectory inside an oz workspace when path is "." or
+// any path inside the tree.
+//
+// If no ancestor has the required files, Root is the absolute starting path and
+// Valid usually returns false.
 func New(path string) (*Workspace, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {

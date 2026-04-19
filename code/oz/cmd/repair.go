@@ -16,7 +16,11 @@ var repairCmd = &cobra.Command{
 	Use:   "repair [path]",
 	Short: "Restore missing default workspace files",
 	Long: `Repair checks an existing oz workspace for missing default files and recreates them.
-Existing files are never overwritten.`,
+Existing files are never overwritten.
+
+With no argument, the current directory is used; the nearest ancestor containing
+AGENTS.md and OZ.md is treated as the workspace root, so you can run this from
+any subdirectory inside the workspace.`,
 	Args:          cobra.MaximumNArgs(1),
 	RunE:          runRepair,
 	SilenceErrors: true,
