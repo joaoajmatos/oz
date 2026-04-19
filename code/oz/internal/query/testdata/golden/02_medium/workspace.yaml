@@ -1,0 +1,247 @@
+agents:
+  - name: backend
+    role: "Builds the REST API, business logic, and database layer."
+    scope:
+      - "code/api/**"
+      - "code/server/**"
+      - "code/db/**"
+      - "code/models/**"
+    responsibilities: "Implements API handlers, middleware, request validation, database migrations, background jobs."
+    out_of_scope: "UI work, design decisions, mobile clients, infrastructure provisioning."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+      - "specs/data-model.md"
+      - "docs/architecture.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+      - "skills/test-runner/"
+      - "skills/db-migrate/"
+
+  - name: frontend
+    role: "Builds the React web application and design system."
+    scope:
+      - "code/ui/**"
+      - "code/web/**"
+      - "code/components/**"
+    responsibilities: "Implements React components, pages, state management, API client integration."
+    out_of_scope: "Backend logic, database schema, mobile app, server-side rendering."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+      - "specs/design-system.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+      - "skills/test-runner/"
+
+  - name: mobile
+    role: "Builds iOS and Android mobile clients."
+    scope:
+      - "code/ios/**"
+      - "code/android/**"
+      - "code/mobile-shared/**"
+    responsibilities: "Implements native mobile UIs, push notifications, offline sync, app store releases."
+    out_of_scope: "Web frontend, backend API changes, design token definitions."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+      - "specs/mobile-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: infra
+    role: "Manages cloud infrastructure, CI/CD pipelines, and deployments."
+    scope:
+      - "infra/**"
+      - ".github/**"
+      - "deploy/**"
+      - "docker/**"
+    responsibilities: "Provisions cloud resources, manages Kubernetes clusters, maintains CI/CD, monitors uptime."
+    out_of_scope: "Application code, business logic, API design."
+    readchain:
+      - "AGENTS.md"
+      - "docs/architecture.md"
+      - "docs/runbooks.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/deploy/"
+      - "skills/rollback/"
+
+  - name: data
+    role: "Builds data pipelines, analytics, and reporting infrastructure."
+    scope:
+      - "code/pipelines/**"
+      - "code/analytics/**"
+      - "code/etl/**"
+      - "data/**"
+    responsibilities: "Implements ETL pipelines, data warehouse models, dashboards, A/B test analysis."
+    out_of_scope: "Operational database schema, real-time API, product UI."
+    readchain:
+      - "AGENTS.md"
+      - "specs/data-model.md"
+      - "specs/analytics-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+      - "skills/run-pipeline/"
+
+  - name: auth
+    role: "Owns authentication, authorization, and session management."
+    scope:
+      - "code/auth/**"
+      - "code/permissions/**"
+      - "code/sessions/**"
+    responsibilities: "Implements login flows, OAuth integrations, RBAC, token lifecycle, MFA."
+    out_of_scope: "General backend features, UI, infrastructure."
+    readchain:
+      - "AGENTS.md"
+      - "specs/auth-spec.md"
+      - "specs/security-policy.md"
+    rules:
+      - "rules/coding-guidelines.md"
+      - "rules/security-guidelines.md"
+    skills:
+      - "skills/commit/"
+      - "skills/security-scan/"
+
+  - name: docs
+    role: "Maintains product documentation, API reference, and user guides."
+    scope:
+      - "docs/**"
+      - "content/**"
+      - "website/docs/**"
+    responsibilities: "Writes and maintains user-facing docs, API reference, changelogs, onboarding guides."
+    out_of_scope: "Code implementation, infrastructure, test writing."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+      - "notes/**"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/crystallize/"
+
+  - name: design
+    role: "Owns the design system, UX patterns, and visual language."
+    scope:
+      - "design/**"
+      - "code/design-tokens/**"
+      - "figma/**"
+    responsibilities: "Maintains design system, component specs, accessibility standards, Figma libraries."
+    out_of_scope: "Implementation code, backend logic, data pipelines."
+    readchain:
+      - "AGENTS.md"
+      - "specs/design-system.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills: []
+
+  - name: qa
+    role: "Owns test automation strategy and quality assurance processes."
+    scope:
+      - "tests/**"
+      - "e2e/**"
+      - "cypress/**"
+      - "specs/test-plan.md"
+    responsibilities: "Writes end-to-end tests, defines test plans, manages regression suites, approves releases."
+    out_of_scope: "Feature implementation, infrastructure provisioning, API design."
+    readchain:
+      - "AGENTS.md"
+      - "specs/test-plan.md"
+      - "docs/architecture.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/test-runner/"
+      - "skills/e2e-runner/"
+
+  - name: security
+    role: "Owns security review, vulnerability management, and compliance."
+    scope:
+      - "security/**"
+      - "specs/security-policy.md"
+      - "audits/**"
+    responsibilities: "Conducts security reviews, manages CVE triage, maintains compliance posture, approves auth changes."
+    out_of_scope: "Feature implementation, routine ops, non-security docs."
+    readchain:
+      - "AGENTS.md"
+      - "specs/security-policy.md"
+      - "specs/auth-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+      - "rules/security-guidelines.md"
+    skills:
+      - "skills/security-scan/"
+
+specs:
+  - path: "specs/api-design.md"
+    sections:
+      - heading: "Overview"
+        content: "REST API following OpenAPI 3.0. Base URL /api/v1."
+      - heading: "Authentication"
+        content: "Bearer token auth. Tokens issued by auth service. 1h expiry."
+      - heading: "Endpoints"
+        content: "CRUD resources: users, projects, tasks, comments, notifications."
+      - heading: "Pagination"
+        content: "Cursor-based pagination. Default page size 20."
+
+  - path: "specs/auth-spec.md"
+    sections:
+      - heading: "Overview"
+        content: "Authentication uses JWT tokens with RS256 signing."
+      - heading: "OAuth"
+        content: "Supports Google, GitHub, and Okta OAuth 2.0 providers."
+      - heading: "RBAC"
+        content: "Role-based access control. Roles: owner, admin, member, viewer."
+      - heading: "MFA"
+        content: "TOTP-based MFA. Enforced for admin and owner roles."
+      - heading: "Sessions"
+        content: "Sessions stored in Redis. Sliding expiry 7 days."
+
+  - path: "specs/data-model.md"
+    sections:
+      - heading: "Overview"
+        content: "PostgreSQL primary database. Redis for caching and sessions."
+      - heading: "Core entities"
+        content: "Users, Organizations, Projects, Tasks, Comments, Notifications, AuditLog."
+
+  - path: "specs/design-system.md"
+    sections:
+      - heading: "Overview"
+        content: "Design system based on Radix UI primitives with custom tokens."
+      - heading: "Tokens"
+        content: "Color, typography, spacing, border-radius, shadow tokens in CSS variables."
+      - heading: "Components"
+        content: "Button, Input, Select, Modal, Table, Toast, Badge, Avatar."
+
+  - path: "specs/security-policy.md"
+    sections:
+      - heading: "Overview"
+        content: "Security policy for the platform. Last reviewed 2026-01."
+      - heading: "Vulnerability management"
+        content: "CVEs triaged within 24h. Critical CVEs patched within 48h."
+      - heading: "Pen testing"
+        content: "Annual penetration test. Results reviewed by security agent."
+
+  - path: "specs/test-plan.md"
+    sections:
+      - heading: "Strategy"
+        content: "Unit, integration, and end-to-end tests. Coverage gate 80%."
+      - heading: "E2E"
+        content: "Cypress for web. Detox for mobile. Critical user flows only."
+
+decisions:
+  - id: "0001-postgresql"
+    content: "PostgreSQL chosen as primary database for ACID compliance and JSON support."
+  - id: "0002-react"
+    content: "React chosen for frontend. Next.js for SSR."
+  - id: "0003-jwt-auth"
+    content: "JWT with RS256 chosen for stateless authentication."

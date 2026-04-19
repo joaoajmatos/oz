@@ -1,0 +1,194 @@
+min_accuracy: 0.95
+
+queries:
+  # --- backend ---
+  - query: "add a new REST endpoint for user preferences"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  - query: "write a database migration to add an index on tasks.created_at"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  - query: "implement cursor-based pagination for the comments endpoint"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  - query: "add a background job to send notification emails"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  - query: "fix the N+1 query in the projects list handler"
+    expected_agent: backend
+    min_confidence: 0.7
+
+  # --- frontend ---
+  - query: "add a loading skeleton to the task list component"
+    expected_agent: frontend
+    min_confidence: 0.7
+
+  - query: "implement the drag-and-drop reordering for the kanban board"
+    expected_agent: frontend
+    min_confidence: 0.7
+
+  - query: "fix the button hover state on the settings page"
+    expected_agent: frontend
+    min_confidence: 0.7
+
+  - query: "integrate the new notifications API endpoint in the React app"
+    expected_agent: frontend
+    min_confidence: 0.6
+
+  - query: "update the API client to handle 429 rate limit responses"
+    expected_agent: frontend
+    min_confidence: 0.5
+    expected_candidates: ["frontend", "backend"]
+
+  # --- mobile ---
+  - query: "implement push notification handling on iOS"
+    expected_agent: mobile
+    min_confidence: 0.7
+
+  - query: "add offline sync for task updates on Android"
+    expected_agent: mobile
+    min_confidence: 0.7
+
+  - query: "submit the new build to the App Store"
+    expected_agent: mobile
+    min_confidence: 0.7
+
+  # --- infra ---
+  - query: "add a new Kubernetes deployment for the background worker"
+    expected_agent: infra
+    min_confidence: 0.7
+
+  - query: "the CI pipeline is failing on the deploy step, fix it"
+    expected_agent: infra
+    min_confidence: 0.7
+
+  - query: "set up monitoring alerts for API latency above 500ms"
+    expected_agent: infra
+    min_confidence: 0.7
+
+  - query: "provision a new Redis instance for the session cache"
+    expected_agent: infra
+    min_confidence: 0.7
+
+  # --- data ---
+  - query: "build an ETL pipeline to sync user events to the data warehouse"
+    expected_agent: data
+    min_confidence: 0.7
+
+  - query: "create a dashboard for weekly active user metrics"
+    expected_agent: data
+    min_confidence: 0.7
+
+  - query: "run an A/B test analysis on the new onboarding flow"
+    expected_agent: data
+    min_confidence: 0.7
+
+  # --- auth ---
+  - query: "implement Google OAuth login flow"
+    expected_agent: auth
+    min_confidence: 0.7
+
+  - query: "add TOTP-based MFA to the account settings"
+    expected_agent: auth
+    min_confidence: 0.7
+
+  - query: "implement role-based access control for the admin panel"
+    expected_agent: auth
+    min_confidence: 0.7
+
+  - query: "rotate the JWT signing keys"
+    expected_agent: auth
+    min_confidence: 0.7
+
+  - query: "fix the session expiry bug in the Redis session store"
+    expected_agent: auth
+    min_confidence: 0.6
+
+  # --- docs ---
+  - query: "write API reference docs for the new notifications endpoint"
+    expected_agent: docs
+    min_confidence: 0.7
+
+  - query: "update the onboarding guide to reflect the new OAuth flow"
+    expected_agent: docs
+    min_confidence: 0.6
+
+  - query: "write the changelog entry for the v2.1.0 release"
+    expected_agent: docs
+    min_confidence: 0.6
+
+  # --- design ---
+  - query: "add a new color token for the error state in the design system"
+    expected_agent: design
+    min_confidence: 0.7
+
+  - query: "update the Button component spec in Figma to match the new border radius"
+    expected_agent: design
+    min_confidence: 0.7
+
+  - query: "define the accessibility requirements for modal focus trapping"
+    expected_agent: design
+    min_confidence: 0.7
+
+  # --- qa ---
+  - query: "write an end-to-end test for the checkout flow"
+    expected_agent: qa
+    min_confidence: 0.7
+
+  - query: "add Cypress tests for the login page error states"
+    expected_agent: qa
+    min_confidence: 0.7
+
+  - query: "update the test plan to cover the new MFA feature"
+    expected_agent: qa
+    min_confidence: 0.6
+
+  - query: "triage the regression failures on the nightly test suite"
+    expected_agent: qa
+    min_confidence: 0.7
+
+  # --- security ---
+  - query: "review the new OAuth implementation for security vulnerabilities"
+    expected_agent: security
+    min_confidence: 0.7
+
+  - query: "triage the critical CVE in the JWT library"
+    expected_agent: security
+    min_confidence: 0.7
+
+  - query: "update the security policy after the annual pen test"
+    expected_agent: security
+    min_confidence: 0.7
+
+  - query: "approve the MFA implementation before it ships"
+    expected_agent: security
+    min_confidence: 0.6
+
+  # --- ambiguous ---
+  - query: "the login page is broken after the auth refactor"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["auth", "frontend"]
+
+  - query: "document the new RBAC permissions model"
+    expected_agent: docs
+    min_confidence: 0.4
+    expected_candidates: ["docs", "auth"]
+
+  - query: "write tests for the authentication middleware"
+    expected_agent: backend
+    min_confidence: 0.4
+    expected_candidates: ["backend", "qa", "auth"]
+
+  # --- no clear owner ---
+  - query: "what is the capital of France"
+    expected_agent: ""
+    reason: "no_clear_owner"
+
+  - query: "buy milk"
+    expected_agent: ""
+    reason: "no_clear_owner"

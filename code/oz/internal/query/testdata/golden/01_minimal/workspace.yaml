@@ -1,0 +1,73 @@
+agents:
+  - name: coding
+    role: "Builds the Go implementation."
+    scope:
+      - "code/**"
+      - "cmd/**"
+      - "internal/**"
+    responsibilities: "Implements CLI subcommands and internal packages. Writes tests. Embeds templates."
+    out_of_scope: "Spec evolution. Workspace convention changes. Prose documentation."
+    readchain:
+      - "AGENTS.md"
+      - "specs/project-spec.md"
+      - "docs/architecture.md"
+      - "docs/open-items.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+      - "skills/test-runner/"
+
+  - name: maintainer
+    role: "Keeps the workspace healthy and convention-compliant."
+    scope:
+      - "agents/**"
+      - "AGENTS.md"
+      - "OZ.md"
+      - "rules/**"
+    responsibilities: "Audits workspace structure. Keeps agent definitions current. Flags drift."
+    out_of_scope: "Writing implementation code. Spec evolution."
+    readchain:
+      - "AGENTS.md"
+      - "OZ.md"
+      - "specs/project-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/oz-validate/"
+
+  - name: spec
+    role: "Evolves the project specification and design decisions."
+    scope:
+      - "specs/**"
+      - "docs/**"
+      - "notes/**"
+    responsibilities: "Maintains canonical spec. Writes ADRs. Crystallizes notes into spec language."
+    out_of_scope: "Writing implementation code. Workspace structure changes."
+    readchain:
+      - "AGENTS.md"
+      - "specs/project-spec.md"
+      - "docs/open-items.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/write-adr/"
+      - "skills/crystallize/"
+
+specs:
+  - path: "specs/project-spec.md"
+    sections:
+      - heading: "Overview"
+        content: "A Go CLI tool for managing developer workspaces with LLM-first conventions."
+      - heading: "CLI Commands"
+        content: "Subcommands: init, validate, audit, context, crystallize."
+      - heading: "Architecture"
+        content: "Single binary. Internal packages: convention, workspace, scaffold, validate, query."
+      - heading: "Testing"
+        content: "All non-trivial logic must have tests. Use testws for workspace fixtures."
+
+decisions:
+  - id: "0001-use-go"
+    content: "Go chosen for single-binary distribution without runtime dependencies."
+  - id: "0002-embed-templates"
+    content: "Templates embedded at compile time via Go embed package. No runtime file dependencies."
