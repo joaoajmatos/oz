@@ -11,65 +11,85 @@ type Options struct {
 	RawMode      bool
 }
 
-// RunWithOptions executes a query against the oz workspace at workspacePath
-// using the provided options. Loads or builds the structural graph, scores
-// agents with BM25F, applies softmax, and returns a routing packet.
-func RunWithOptions(workspacePath, queryText string, opts Options) Result {
-	// 1. Load context graph (build if missing).
+// routingState holds intermediate values from a query run (for --raw debug).
+type routingState struct {
+	G      *graph.Graph
+	Cfg    ScoringConfig
+	Terms  []string
+	Docs   []AgentDoc
+	Scores []Score
+	Conf   []float64
+	Route  RouteResult
+	Result Result
+}
+
+// runRouting executes load → tokenize → score → route → assemble Result.
+func runRouting(workspacePath, queryText string, opts Options) routingState {
+	var st routingState
+
 	g, err := ozcontext.LoadGraph(workspacePath)
 	if err != nil {
 		result, buildErr := ozcontext.Build(workspacePath)
 		if buildErr != nil {
-			return Result{Reason: "no_clear_owner"}
+			st.Result = Result{Reason: "no_clear_owner"}
+			return st
 		}
 		g = result.Graph
 	}
+	st.G = g
 
-	// 2. Load scoring config (falls back to defaults if scoring.toml absent).
-	cfg := LoadConfig(workspacePath)
-	cfg.IncludeNotes = opts.IncludeNotes
+	st.Cfg = LoadConfig(workspacePath)
+	st.Cfg.IncludeNotes = opts.IncludeNotes
 
-	// 3. Tokenize query.
-	terms := Tokenize(queryText)
-	if len(terms) == 0 {
-		return Result{Reason: "no_clear_owner"}
+	st.Terms = TokenizeQuery(queryText, st.Cfg.UseBigrams)
+	if len(st.Terms) == 0 {
+		st.Result = Result{Reason: "no_clear_owner"}
+		return st
 	}
 
-	// 4. Build agent documents from graph.
-	docs := BuildAgentDocs(g.Nodes)
-	if len(docs) == 0 {
-		return Result{Reason: "no_clear_owner"}
+	st.Docs = BuildAgentDocs(g.Nodes, st.Cfg)
+	if len(st.Docs) == 0 {
+		st.Result = Result{Reason: "no_clear_owner"}
+		return st
 	}
 
-	// 5. Score agents.
-	scores := ComputeBM25F(terms, docs, cfg)
-
-	// 6. Route.
-	route := Route(scores, cfg)
-	if route.NoClearOwner {
-		return Result{Reason: "no_clear_owner"}
+	st.Scores = ComputeBM25F(st.Terms, st.Docs, st.Cfg)
+	if len(st.Scores) > 0 {
+		st.Conf = Softmax(st.Scores, st.Cfg.Temperature)
 	}
 
-	// 7. Build context blocks and scope for the winning agent.
-	blocks, excluded := BuildContextBlocks(g, route.Agent, cfg)
-	scope := BuildScopeForAgent(g, route.Agent)
+	st.Route = Route(st.Scores, st.Cfg)
+	if st.Route.NoClearOwner {
+		st.Result = Result{Reason: "no_clear_owner"}
+		return st
+	}
 
-	// 8. Assemble routing packet.
-	result := Result{
-		Agent:         route.Agent,
-		Confidence:    route.Confidence,
+	blocks, excluded := BuildContextBlocks(g, st.Route.Agent, st.Cfg)
+	scope := BuildScopeForAgent(g, st.Route.Agent)
+	st.Result = Result{
+		Agent:         st.Route.Agent,
+		Confidence:    st.Route.Confidence,
 		Scope:         scope,
 		ContextBlocks: blocks,
 		Excluded:      excluded,
 	}
-	if len(route.Candidates) > 0 {
-		result.CandidateAgents = route.Candidates
+	if len(st.Route.Candidates) > 0 {
+		st.Result.CandidateAgents = st.Route.Candidates
 	}
+	st.Result.RelevantConcepts = loadRelevantConcepts(workspacePath, st.Route.Agent, g)
+	return st
+}
 
-	// 9. Enrich with semantic overlay concepts if present.
-	result.RelevantConcepts = loadRelevantConcepts(workspacePath, route.Agent, g)
+// RunWithOptions executes a query against the oz workspace at workspacePath
+// using the provided options. Loads or builds the structural graph, scores
+// agents with BM25F, applies softmax, and returns a routing packet.
+func RunWithOptions(workspacePath, queryText string, opts Options) Result {
+	return runRouting(workspacePath, queryText, opts).Result
+}
 
-	return result
+// Run executes a query against the oz workspace at workspacePath.
+func Run(workspacePath, queryText string) Result {
+	return RunWithOptions(workspacePath, queryText, Options{})
 }
 
 // loadRelevantConcepts reads context/semantic.json (if present) and returns

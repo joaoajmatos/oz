@@ -140,7 +140,10 @@ func Route(scores []Score, cfg ScoringConfig) RouteResult {
 
 	// Populate candidates when confidence is below threshold.
 	if conf[topIdx] < cfg.ConfidenceThreshold {
-		const minCandidateConf = 0.15
+		minCandidateConf := cfg.MinCandidateConfidence
+		if minCandidateConf <= 0 {
+			minCandidateConf = 0.2
+		}
 		for i, s := range scores {
 			if conf[i] >= minCandidateConf {
 				result.Candidates = append(result.Candidates, CandidateAgent{

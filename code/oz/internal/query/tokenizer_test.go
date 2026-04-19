@@ -39,10 +39,33 @@ func TestTokenizePaths_ExtractsComponents(t *testing.T) {
 }
 
 func TestTokenizeMulti_AllowsDuplicates(t *testing.T) {
-	tokens := TokenizeMulti("test testing tested")
+	tokens := TokenizeMulti("test testing tested", false)
 	if len(tokens) < 2 {
 		t.Errorf("expected multiple tokens (duplicates allowed), got %v", tokens)
 	}
+}
+
+func TestTokenizeQuery_BigramsOptional(t *testing.T) {
+	without := TokenizeQuery("implement rest api", false)
+	for _, tok := range without {
+		if tok == "rest_api" {
+			t.Errorf("did not expect bigram token in unigram-only mode, got %v", without)
+		}
+	}
+	with := TokenizeQuery("implement rest api", true)
+	checkContains(t, with, "implement")
+	checkContains(t, with, "rest")
+	checkContains(t, with, "api")
+	checkContains(t, with, "rest_api")
+}
+
+func TestTokenizeMulti_WithBigrams(t *testing.T) {
+	tokens := TokenizeMulti("rest api server", true)
+	checkContains(t, tokens, "rest")
+	checkContains(t, tokens, "api")
+	checkContains(t, tokens, "server")
+	checkContains(t, tokens, "rest_api")
+	checkContains(t, tokens, "api_server")
 }
 
 func checkContains(t *testing.T, tokens []string, want string) {

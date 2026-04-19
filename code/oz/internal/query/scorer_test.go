@@ -9,15 +9,15 @@ func TestComputeBM25F_ReturnsScorePerAgent(t *testing.T) {
 	docs := []AgentDoc{
 		{
 			Name:             "backend",
-			Scope:            TokenizePathsMulti([]string{"code/api/**"}),
-			Role:             TokenizeMulti("Builds REST API endpoints and handlers"),
-			Responsibilities: TokenizeMulti("Implements HTTP handlers, request validation, middleware"),
+			Scope:            TokenizePathsMulti([]string{"code/api/**"}, false),
+			Role:             TokenizeMulti("Builds REST API endpoints and handlers", false),
+			Responsibilities: TokenizeMulti("Implements HTTP handlers, request validation, middleware", false),
 		},
 		{
 			Name:             "frontend",
-			Scope:            TokenizePathsMulti([]string{"code/ui/**"}),
-			Role:             TokenizeMulti("Builds React web application"),
-			Responsibilities: TokenizeMulti("Implements React components and pages"),
+			Scope:            TokenizePathsMulti([]string{"code/ui/**"}, false),
+			Role:             TokenizeMulti("Builds React web application", false),
+			Responsibilities: TokenizeMulti("Implements React components and pages", false),
 		},
 	}
 
@@ -36,20 +36,59 @@ func TestComputeBM25F_ReturnsScorePerAgent(t *testing.T) {
 	}
 }
 
+func TestComputeBM25F_BigramInQueryMatchesDoc(t *testing.T) {
+	docs := []AgentDoc{
+		{
+			Name:             "api",
+			Scope:            TokenizePathsMulti([]string{"code/rest_api/**"}, true),
+			Role:             TokenizeMulti("REST handlers", false),
+			Responsibilities: TokenizeMulti("implements HTTP", false),
+			ReadChain:        nil,
+			OutOfScope:       nil,
+		},
+		{
+			Name:             "ui",
+			Scope:            TokenizePathsMulti([]string{"code/ui/**"}, false),
+			Role:             TokenizeMulti("React UI", false),
+			Responsibilities: TokenizeMulti("components", false),
+			ReadChain:        nil,
+			OutOfScope:       nil,
+		},
+	}
+	cfg := DefaultScoringConfig()
+	terms := TokenizeQuery("rest api migration", true)
+	scores := ComputeBM25F(terms, docs, cfg)
+	if len(scores) != 2 {
+		t.Fatalf("expected 2 scores, got %d", len(scores))
+	}
+	var apiScore, uiScore float64
+	for _, s := range scores {
+		switch s.Agent {
+		case "api":
+			apiScore = s.Value
+		case "ui":
+			uiScore = s.Value
+		}
+	}
+	if apiScore <= uiScore {
+		t.Errorf("expected api agent to outrank ui on rest_api field match, api=%.4f ui=%.4f", apiScore, uiScore)
+	}
+}
+
 func TestComputeBM25F_OutOfScopePenalty(t *testing.T) {
 	docs := []AgentDoc{
 		{
 			Name:             "frontend",
-			Scope:            TokenizePathsMulti([]string{"code/ui/**"}),
-			Role:             TokenizeMulti("Builds web UI"),
-			Responsibilities: TokenizeMulti("Implements React components"),
-			OutOfScope:       TokenizeMulti("database schema backend API implementation"),
+			Scope:            TokenizePathsMulti([]string{"code/ui/**"}, false),
+			Role:             TokenizeMulti("Builds web UI", false),
+			Responsibilities: TokenizeMulti("Implements React components", false),
+			OutOfScope:       TokenizeMulti("database schema backend API implementation", false),
 		},
 		{
 			Name:             "backend",
-			Scope:            TokenizePathsMulti([]string{"code/api/**"}),
-			Role:             TokenizeMulti("Builds backend API"),
-			Responsibilities: TokenizeMulti("Implements database schema and API"),
+			Scope:            TokenizePathsMulti([]string{"code/api/**"}, false),
+			Role:             TokenizeMulti("Builds backend API", false),
+			Responsibilities: TokenizeMulti("Implements database schema and API", false),
 		},
 	}
 

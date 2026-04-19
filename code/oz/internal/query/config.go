@@ -30,9 +30,14 @@ type ScoringConfig struct {
 	ConfidenceThreshold float64 // below this, populate candidate_agents
 	MinScore            float64 // below this, return no_clear_owner
 	Temperature         float64 // softmax temperature (lower = more decisive)
+	// MinCandidateConfidence: minimum softmax confidence to include an agent in
+	// candidate_agents when the winner is below ConfidenceThreshold (PRD: 0.2).
+	MinCandidateConfidence float64
 
 	// When true, note nodes are included in context blocks.
 	IncludeNotes bool
+	// When true, tokenization emits adjacent stem bigrams as "a_b" after unigrams.
+	UseBigrams bool
 }
 
 // DefaultScoringConfig returns the default parameters.
@@ -49,7 +54,9 @@ func DefaultScoringConfig() ScoringConfig {
 		ConfidenceThreshold:    0.7,
 		MinScore:               0.01, // low threshold: prefer routing to best guess
 		Temperature:            0.2,  // decisive routing
+		MinCandidateConfidence: 0.2,
 		IncludeNotes:           false,
+		UseBigrams:             false,
 	}
 }
 
@@ -120,6 +127,10 @@ func applyConfigKey(cfg *ScoringConfig, section, key, val string) {
 		cfg.Temperature = f
 	case "routing.include_notes":
 		cfg.IncludeNotes = b
+	case "routing.min_candidate_confidence":
+		cfg.MinCandidateConfidence = f
+	case "tokenize.use_bigrams":
+		cfg.UseBigrams = b
 	}
 }
 

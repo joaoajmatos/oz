@@ -40,7 +40,7 @@ var contextQueryCmd = &cobra.Command{
 func init() {
 	contextCmd.AddCommand(contextBuildCmd)
 	contextCmd.AddCommand(contextQueryCmd)
-	contextQueryCmd.Flags().BoolVar(&queryRaw, "raw", false, "output full subgraph JSON instead of routing packet")
+	contextQueryCmd.Flags().BoolVar(&queryRaw, "raw", false, "output routing debug JSON (scores + query-relevant subgraph) instead of routing packet")
 	contextQueryCmd.Flags().BoolVar(&queryIncludeNotes, "include-notes", false, "include notes/ in context blocks")
 }
 
@@ -76,23 +76,11 @@ func runContextQuery(cmd *cobra.Command, args []string) error {
 		RawMode:      queryRaw,
 	}
 
-	result := query.RunWithOptions(root, queryText, opts)
-
 	if queryRaw {
-		// Raw mode: emit full graph for debugging.
-		g, loadErr := ozcontext.LoadGraph(root)
-		if loadErr != nil {
-			return fmt.Errorf("load graph for raw output: %w", loadErr)
-		}
-		raw := struct {
-			Query  string       `json:"query"`
-			Result query.Result `json:"result"`
-			Graph  interface{}  `json:"graph"`
-		}{queryText, result, g}
-		return printJSON(cmd, raw)
+		debug := query.BuildRawQueryDebug(root, queryText, opts)
+		return printJSON(cmd, debug)
 	}
-
-	return printJSON(cmd, result)
+	return printJSON(cmd, query.RunWithOptions(root, queryText, opts))
 }
 
 func printJSON(cmd *cobra.Command, v interface{}) error {

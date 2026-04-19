@@ -15,25 +15,25 @@ type AgentDoc struct {
 }
 
 // BuildAgentDocs creates one AgentDoc per agent node in the graph.
-func BuildAgentDocs(nodes []graph.Node) []AgentDoc {
+func BuildAgentDocs(nodes []graph.Node, cfg ScoringConfig) []AgentDoc {
 	var docs []AgentDoc
 	for _, n := range nodes {
 		if n.Type != graph.NodeTypeAgent {
 			continue
 		}
-		docs = append(docs, agentDocFromNode(n))
+		docs = append(docs, agentDocFromNode(n, cfg.UseBigrams))
 	}
 	return docs
 }
 
-func agentDocFromNode(n graph.Node) AgentDoc {
+func agentDocFromNode(n graph.Node, useBigrams bool) AgentDoc {
 	return AgentDoc{
 		Name:             n.Name,
-		Scope:            TokenizePathsMulti(n.Scope),
-		Role:             TokenizeMulti(n.Role),
-		Responsibilities: TokenizeMulti(n.Responsibilities),
-		ReadChain:        TokenizePathsMulti(n.ReadChain),
-		OutOfScope:       TokenizeMulti(n.OutOfScope),
+		Scope:            TokenizePathsMulti(n.Scope, useBigrams),
+		Role:             TokenizeMulti(n.Role, useBigrams),
+		Responsibilities: TokenizeMulti(n.Responsibilities, useBigrams),
+		ReadChain:        TokenizePathsMulti(n.ReadChain, useBigrams),
+		OutOfScope:       TokenizeMulti(n.OutOfScope, useBigrams),
 	}
 }
 

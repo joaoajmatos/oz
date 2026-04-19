@@ -1,0 +1,27 @@
+# Default BM25F and routing parameters for `oz context query`.
+# Same values as internal/query.DefaultScoringConfig(); edit to tune routing.
+
+[bm25]
+k1 = 1.2
+
+[fields]
+b_text = 0.75
+b_path = 0.5
+
+[weights]
+scope = 4.0
+role = 2.5
+responsibilities = 2.5
+readchain = 0.0
+out_of_scope_penalty = 2.5
+
+[routing]
+confidence_threshold = 0.7
+min_score = 0.01
+temperature = 0.2
+min_candidate_confidence = 0.2
+include_notes = false
+
+[tokenize]
+# Adjacent stem bigrams (e.g. rest_api); can over-index — off by default per sprint risk.
+use_bigrams = false

@@ -48,8 +48,3 @@ type CandidateAgent struct {
 	Name       string  `json:"name"`
 	Confidence float64 `json:"confidence"`
 }
-
-// Run executes a query against the oz workspace at workspacePath.
-func Run(workspacePath, queryText string) Result {
-	return RunWithOptions(workspacePath, queryText, Options{})
-}
