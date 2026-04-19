@@ -3,10 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	ozcontext "github.com/oz-tools/oz/internal/context"
 	"github.com/oz-tools/oz/internal/query"
+	"github.com/oz-tools/oz/internal/workspace"
 	"github.com/spf13/cobra"
 )
 
@@ -106,9 +106,12 @@ func printJSON(cmd *cobra.Command, v interface{}) error {
 
 // findWorkspaceRoot returns the workspace root from the working directory.
 func findWorkspaceRoot() (string, error) {
-	root, err := os.Getwd()
+	ws, err := workspace.New(".")
 	if err != nil {
-		return "", fmt.Errorf("get working directory: %w", err)
+		return "", fmt.Errorf("loading workspace: %w", err)
 	}
-	return root, nil
+	if !ws.Valid() {
+		return "", fmt.Errorf("%s is not an oz workspace (missing AGENTS.md or OZ.md)", ws.Root)
+	}
+	return ws.Root, nil
 }
