@@ -1,7 +1,8 @@
 ---
-name: create-workspace-artifact
-description: Guides the oz-maintainer through creating or tweaking an agent definition, skill, or rule in this oz workspace, following the oz convention exactly.
+name: workspace-management
+description: Workspace management for the oz-maintainer — create or tweak an agent definition, skill, or rule in this oz workspace, following the oz convention exactly.
 triggers:
+  - workspace management
   - create agent
   - create skill
   - create rule
@@ -13,9 +14,9 @@ triggers:
   - tweak rule
 ---
 
-# Skill: create-workspace-artifact
+# Skill: workspace-management
 
-> Guides the oz-maintainer through creating or tweaking an agent definition, skill, or rule
+> Guides the oz-maintainer through workspace management — creating or tweaking an agent definition, skill, or rule
 > in this oz workspace, following the oz convention exactly.
 
 ## When to invoke
@@ -25,7 +26,7 @@ Invoke this skill when asked to:
 - Create a new agent (`agents/<name>/AGENT.md`)
 - Create or modify a skill (`skills/<name>/`)
 - Create or modify a rule file (`rules/<name>.md`)
-- Tweak any existing workspace artifact of the above types
+- Tweak any existing agent, skill, or rule of the above types
 
 Do not invoke this skill for changes to specs, docs, code, or context — those belong to
 oz-spec, oz-coding, and the relevant docs/context owners respectively.

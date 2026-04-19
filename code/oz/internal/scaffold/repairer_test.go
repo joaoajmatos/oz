@@ -52,7 +52,7 @@ func TestRepair_MissingSkillFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	missing := filepath.Join(dir, "skills", "create-workspace-artifact", "assets", "AGENT.md.tmpl")
+	missing := filepath.Join(dir, "skills", "workspace-management", "assets", "AGENT.md.tmpl")
 	if err := os.Remove(missing); err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestRepair_MissingSkillFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "skills/create-workspace-artifact/assets/AGENT.md.tmpl"
+	want := "skills/workspace-management/assets/AGENT.md.tmpl"
 	if !containsPath(result.Created, want) {
 		t.Fatalf("expected %q in Created, got %v", want, result.Created)
 	}

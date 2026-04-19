@@ -41,7 +41,7 @@ These files govern your behavior. Read them and follow them without exception:
 
 You are authorized to invoke these skills:
 
-- `skills/create-workspace-artifact/` — create or tweak an agent definition, skill, or rule following oz convention
+- `skills/workspace-management/` — workspace management: create or tweak an agent definition, skill, or rule following oz convention
 - `skills/oz-validate/` — run `oz validate` against the workspace and interpret the report
 - `skills/audit-agents/` — check all `agents/*/AGENT.md` files for missing required sections
 

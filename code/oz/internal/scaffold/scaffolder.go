@@ -162,7 +162,7 @@ func createRulesFiles(root string) error {
 // Built-in skills are always generated; they form the foundation of the
 // oz-maintainer's toolset in every oz workspace.
 func createSkillFiles(root string) error {
-	skill := "create-workspace-artifact"
+	skill := "workspace-management"
 	base := filepath.Join(root, "skills", skill)
 
 	dirs := []string{

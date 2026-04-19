@@ -178,7 +178,7 @@ func TestScaffold_SkillFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	skill := "create-workspace-artifact"
+	skill := "workspace-management"
 	for _, f := range []string{
 		filepath.Join("skills", skill, "SKILL.md"),
 		filepath.Join("skills", skill, "references", "create-agent.md"),
@@ -200,7 +200,7 @@ func TestScaffold_SkillMD_HasRequiredSections(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	content := readFile(t, filepath.Join(dir, "skills", "create-workspace-artifact", "SKILL.md"))
+	content := readFile(t, filepath.Join(dir, "skills", "workspace-management", "SKILL.md"))
 	for _, section := range []string{"## When to invoke", "## Steps"} {
 		if !strings.Contains(content, section) {
 			t.Errorf("SKILL.md: missing required section %q", section)

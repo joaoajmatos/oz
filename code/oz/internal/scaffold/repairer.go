@@ -37,8 +37,8 @@ func relPath(root, dest string) (string, error) {
 	return filepath.ToSlash(rel), nil
 }
 
-func ensureCreateWorkspaceArtifactDirs(root string) error {
-	skill := "create-workspace-artifact"
+func ensureWorkspaceManagementSkillDirs(root string) error {
+	skill := "workspace-management"
 	base := filepath.Join(root, "skills", skill)
 	for _, d := range []string{
 		base,
@@ -90,7 +90,7 @@ func Repair(root string, cfg Config) (RepairResult, error) {
 	if err := createDirectories(abs); err != nil {
 		return RepairResult{}, err
 	}
-	if err := ensureCreateWorkspaceArtifactDirs(abs); err != nil {
+	if err := ensureWorkspaceManagementSkillDirs(abs); err != nil {
 		return RepairResult{}, err
 	}
 
@@ -149,7 +149,7 @@ func Repair(root string, cfg Config) (RepairResult, error) {
 		return RepairResult{}, err
 	}
 
-	skill := "create-workspace-artifact"
+	skill := "workspace-management"
 	tmplBase := "templates/skills/" + skill
 	base := filepath.Join(abs, "skills", skill)
 	skillFiles := []struct {

@@ -48,7 +48,7 @@ Additional sections (`## References`, `## Notes`) are allowed but not required.
 
 ### Creating a new skill
 
-1. Decide the skill name. Use lowercase kebab-case describing the task (e.g. `create-workspace-artifact`).
+1. Decide the skill name. Use lowercase kebab-case describing the task (e.g. `workspace-management`).
 2. Create the directory: `skills/<name>/`.
 3. Copy `assets/SKILL.md.tmpl` to `skills/<name>/SKILL.md`.
 4. Fill in the frontmatter: set `name`, `description`, and `triggers`. Do not leave placeholder text.
