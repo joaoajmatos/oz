@@ -170,11 +170,11 @@ Additional sections (e.g. `## References`, `## Notes`) are allowed but not requi
 oz ships as a **single Go binary** with subcommands:
 
 ```
-oz init       # scaffold a new oz-compliant workspace interactively
-oz validate   # lint a workspace against the oz convention (coming soon)
-oz audit      # detect drift between specs and code (coming soon)
-oz context    # build and query the workspace knowledge graph (coming soon)
-oz crystallize # promote notes into canonical workspace truth (coming soon)
+oz init        # scaffold a new oz-compliant workspace interactively
+oz validate    # lint a workspace against the oz convention
+oz audit       # detect drift between specs and code (graph integration complete; full drift checks pending)
+oz context     # build and query the workspace knowledge graph
+oz crystallize # promote notes into canonical workspace truth (planned)
 ```
 
 ### oz init (priority — build this first)
@@ -198,25 +198,49 @@ Lints a workspace against the oz convention. Reports:
 
 Exit code 0 = valid. Exit code 1 = invalid. Suitable for CI.
 
-### oz audit (build third)
+### oz audit (partial)
 
-Detects drift between specs and code. On-demand only (not automatic).
-Uses tree-sitter to parse code structure and compares against specs.
+Detects drift between specs and code. On-demand only (not automatic). Currently: loads
+`context/graph.json` and prints a summary, proving the downstream contract. Full tree-sitter
+AST-level drift checks are planned but not yet implemented.
 
-### oz context (build later)
+### oz context (V1 complete)
 
-The knowledge graph engine. Indexes the workspace:
-- Markdown files respecting the source of truth hierarchy
-- Code via tree-sitter (AST-level, not just text)
-- Builds a knowledge graph with hierarchy encoded as node metadata
-- Serves relevant subgraphs to LLMs for a given task
+The knowledge graph engine. Shipped as V1 with the following subcommands:
 
-This is the most complex tool. Build init and validate first.
+**`oz context build`** — walks the workspace, parses all oz-convention files, extracts
+cross-references, and writes a deterministic `context/graph.json`. Byte-identical output on
+repeated runs with no changes (SHA-256 content hash embedded).
 
-### oz crystallize (build later)
+**`oz context query <text>`** — loads `graph.json`, scores agents using multi-field BM25F
+with Porter stemming and temperature-scaled softmax, and returns a JSON routing packet:
+agent, confidence, scope paths, context blocks (sorted by trust tier), and relevant concepts
+from the semantic overlay when present. Supports `--raw` for debug output and `--include-notes`.
 
-Promotes content from `notes/` up the hierarchy into the correct canonical
-location based on convention. Notes become specs, docs, or context entries.
+**`oz context enrich`** — sends the structural graph to an LLM via OpenRouter and writes
+`context/semantic.json` with extracted concept nodes and typed relationships. Requires
+`OPENROUTER_API_KEY`. Default model: `anthropic/claude-haiku-4`. Supports `--model`.
+
+**`oz context review`** — presents unreviewed concepts and edges from `semantic.json` in a
+human-readable table, then prompts accept or reject for each item. Supports `--accept-all`
+for CI pipelines.
+
+**`oz context serve`** — starts an MCP stdio server (protocol version `2024-11-05`) exposing
+four tools: `query_graph`, `get_node`, `get_neighbors`, `agent_for_task`. Wire into Claude
+Code or Cursor with `{"mcpServers":{"oz":{"command":"oz","args":["context","serve"]}}}`.
+
+Staleness detection: on `oz context query` and `oz context serve` startup, `graph_hash` in
+`semantic.json` is compared against the current `graph.json` hash. A warning is printed if
+they diverge.
+
+Performance: `oz context build` completes in < 500ms on a 50-file workspace (benchmark:
+`go test -bench=BenchmarkBuild_50Files ./internal/context/`). Query output averages ≤ 10%
+of full workspace token size on the 10-agent test fixture.
+
+### oz crystallize (planned)
+
+Promotes content from `notes/` up the hierarchy into the correct canonical location based
+on convention. Notes become specs, docs, or context entries. Not yet implemented.
 
 ---
 
@@ -351,27 +375,12 @@ oz validate [path]  # defaults to current directory
 
 ---
 
-## Current Status
+## Current Status (V1 complete — April 2026)
 
-- Ruby prototype exists (oz-init, oz-core) — being ported to Go
-- Decision: Go chosen over Ruby for single binary distribution
-- oz-init is the first priority
-- oz-validate is second
-- oz-context (knowledge graph) is the most complex, built last
+- **oz init**: complete — scaffolds a full oz-compliant workspace from embedded templates.
+- **oz validate**: complete — enforces all 7 required AGENT.md sections, checks required files/directories, warns on unreviewed semantic nodes.
+- **oz audit**: graph integration complete — loads `context/graph.json` and prints a summary. Full drift checks (tree-sitter AST comparison) are a fast-follow.
+- **oz context**: V1 complete — `build`, `query`, `enrich`, `review`, and `serve` all ship. MCP server validated. BM25F scoring with Porter stemming and softmax routing.
+- **oz crystallize**: planned — not yet implemented.
 
-## What to build next
-
-Start here:
-
-```
-code/oz/go.mod
-code/oz/main.go
-code/oz/internal/convention/convention.go
-code/oz/internal/workspace/workspace.go
-code/oz/internal/scaffold/templates_embed.go
-code/oz/internal/scaffold/templates/
-code/oz/internal/scaffold/scaffolder.go
-code/oz/cmd/init.go
-```
-
-Get `oz init` working end-to-end first. Then oz-validate.
+See `docs/architecture.md` for the full system design and `context/implementation/summary.md` for the V1 implementation snapshot.
