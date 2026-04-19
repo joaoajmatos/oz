@@ -183,7 +183,7 @@ Interactively scaffolds a new oz workspace. Asks:
 - Project name
 - Description
 - Code directory mode: `inline` or `submodule`
-- Agents: use defaults (coding, maintainer, onboarding) or define custom
+- Agents: use default (`maintainer` only) or define custom agents
 
 Generates the full directory structure and all required files from templates.
 

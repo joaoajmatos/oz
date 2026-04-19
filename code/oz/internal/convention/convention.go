@@ -63,4 +63,4 @@ var RootFiles = map[string]string{
 }
 
 // DefaultAgents are the agent names created when using the default set.
-var DefaultAgents = []string{"coding", "maintainer", "onboarding"}
+var DefaultAgents = []string{"maintainer"}
