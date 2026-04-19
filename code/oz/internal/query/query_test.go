@@ -7,15 +7,9 @@ import (
 	"github.com/oz-tools/oz/internal/testws"
 )
 
-// TestRoutingAccuracy runs every golden suite and measures routing accuracy.
-// Each suite declares a minimum accuracy threshold; the test fails if any
-// suite falls below its threshold.
-//
-// Sprint 1: the query engine is a stub returning empty results, so accuracy
-// will be 0%. The test infrastructure is exercised — workspace build, fixture
-// loading, and harness wiring are all validated here.
-//
-// Sprint 3: Run() is fully implemented. Accuracy targets become hard gates.
+// TestRoutingAccuracy runs every golden suite under testdata/golden, measures
+// routing accuracy with query.Run, and fails if any suite is below its
+// min_accuracy.
 func TestRoutingAccuracy(t *testing.T) {
 	suites, err := testws.LoadGoldenSuites(t, "testdata/golden")
 	if err != nil {
@@ -47,13 +41,6 @@ func TestRoutingAccuracy(t *testing.T) {
 			t.Logf("%s: %d/%d (%.1f%%) — minimum: %.1f%%",
 				suite.Name, hits, total, accuracy*100, suite.MinAccuracy*100)
 
-			// Accuracy gate is enforced only when the engine is implemented.
-			// During Sprint 1 the stub returns empty results so we skip the gate.
-			if isStubEngine() {
-				t.Logf("skipping accuracy gate: query engine is stub (Sprint 1)")
-				return
-			}
-
 			if accuracy < suite.MinAccuracy {
 				t.Errorf("accuracy %.1f%% below minimum %.1f%% for suite %q",
 					accuracy*100, suite.MinAccuracy*100, suite.Name)
@@ -61,9 +48,6 @@ func TestRoutingAccuracy(t *testing.T) {
 		})
 	}
 }
-
-// isStubEngine always returns false — the real BM25F engine ships in Sprint 3.
-func isStubEngine() bool { return false }
 
 // TestBuilder_BasicWorkspace validates the testws builder produces a
 // convention-compliant workspace that oz validate would accept.

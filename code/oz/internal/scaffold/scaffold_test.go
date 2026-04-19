@@ -172,6 +172,42 @@ func TestWriteCLAUDEMD(t *testing.T) {
 	}
 }
 
+func TestScaffold_SkillFiles(t *testing.T) {
+	dir := t.TempDir()
+	if err := scaffold.Scaffold(dir, defaultCfg); err != nil {
+		t.Fatal(err)
+	}
+
+	skill := "create-workspace-artifact"
+	for _, f := range []string{
+		filepath.Join("skills", skill, "SKILL.md"),
+		filepath.Join("skills", skill, "references", "create-agent.md"),
+		filepath.Join("skills", skill, "references", "create-skill.md"),
+		filepath.Join("skills", skill, "references", "create-rule.md"),
+		filepath.Join("skills", skill, "assets", "AGENT.md.tmpl"),
+		filepath.Join("skills", skill, "assets", "SKILL.md.tmpl"),
+		filepath.Join("skills", skill, "assets", "rule.md.tmpl"),
+	} {
+		if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
+			t.Errorf("expected skill file %q to exist: %v", f, err)
+		}
+	}
+}
+
+func TestScaffold_SkillMD_HasRequiredSections(t *testing.T) {
+	dir := t.TempDir()
+	if err := scaffold.Scaffold(dir, defaultCfg); err != nil {
+		t.Fatal(err)
+	}
+
+	content := readFile(t, filepath.Join(dir, "skills", "create-workspace-artifact", "SKILL.md"))
+	for _, section := range []string{"## When to invoke", "## Steps"} {
+		if !strings.Contains(content, section) {
+			t.Errorf("SKILL.md: missing required section %q", section)
+		}
+	}
+}
+
 // helpers
 
 func readFile(t *testing.T, path string) string {

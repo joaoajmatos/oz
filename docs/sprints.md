@@ -45,7 +45,7 @@ Already completed this session:
 
 ### Definition of done
 - `go test ./internal/testws/...` passes
-- `TestRoutingAccuracy` runs (skips query evaluation since the engine doesn't exist yet — scaffolding only)
+- `TestRoutingAccuracy` (`code/oz/internal/query/query_test.go`) loads every suite under `code/oz/internal/query/testdata/golden/`, runs `query.Run` per case, and fails if any suite is below its `min_accuracy` (query engine is real — no skip)
 - Fixtures are committed and human-readable
 
 ---
@@ -64,7 +64,7 @@ Already completed this session:
 | S2-05 | Cross-reference extractor | Finds file path references across documents. Produces `reads`, `supports`, `references` edges between nodes. |
 | S2-06 | Deterministic serializer | Sorts all node and edge lists by stable key before writing. SHA256 of content (not timestamps) embedded in output. Running twice with no changes produces byte-identical output. |
 | S2-07 | `oz context build` subcommand | Wires walker → parsers → extractor → serializer. Writes `context/graph.json`. Prints node/edge count summary. |
-| S2-08 | Tests: build against `testws` fixtures | Build runs against `01_minimal` and `02_medium` fixtures. Output matches expected node/edge counts. Determinism test: run twice, diff output — must be empty. |
+| S2-08 | Tests: build against `testws` fixtures | Build runs against `01_minimal` and `02_medium` fixtures. Tests assert minimum node/edge counts by type (not exact totals). Determinism test: run twice, serialized `graph.json` bytes must match. |
 | S2-09 | `oz audit` integration point | `oz audit` reads `context/graph.json` directly. Write a stub `oz audit` that loads the graph and prints a summary — proves the contract works before audit logic is built. |
 
 ### Sprint risks
@@ -74,6 +74,8 @@ Already completed this session:
 - C-01 accepted: `graph.json` produced, byte-identical on re-run
 - C-05 accepted: `oz audit` stub consumes graph without error
 - All S2 tests passing
+
+**Implementation note:** `crystallized_from` is a defined edge type in the schema; edges of this type are not produced until a crystallize workflow exists (see `docs/architecture.md`).
 
 ---
 
@@ -85,14 +87,14 @@ Already completed this session:
 | # | Story | AC |
 |---|-------|-----|
 | S3-01 | Porter stemmer — vendored Go implementation | Deterministic, no external package. Unit tested with 20 known word/stem pairs. |
-| S3-02 | Tokenizer | Lowercase → strip punctuation → split → filter stopwords → stem → bigrams. Deterministic. Unit tested. Stopword list committed to source. |
+| S3-02 | Tokenizer | Lowercase → strip punctuation → split → filter stopwords → stem → optional bigrams (`stem_i_stem_j`). Bigrams gated by `use_bigrams` in `context/scoring.toml` (default `false`, per sprint risk). Deterministic. Unit tested. Stopword list committed to source. |
 | S3-03 | Per-agent document builder | Builds the 5 BM25F fields per agent from graph.json nodes. Field lengths computed and stored for normalization. |
 | S3-04 | BM25F scorer | Implements multi-field BM25F with configurable `k1`, `b`, and per-field weights. Returns raw scores per agent. Unit tested against known inputs. |
 | S3-05 | Softmax confidence + routing decision | Converts raw scores to confidence via temperature-scaled softmax. Applies MIN_SCORE floor. Returns top agent + `candidate_agents` array when confidence < CONFIDENCE_THRESHOLD. |
 | S3-06 | `scoring.toml` config loader | Reads `context/scoring.toml` if present; falls back to defaults. All BM25F parameters and thresholds configurable. |
 | S3-07 | Context block builder | Given the winning agent, selects relevant spec/doc/context nodes from graph. Sorts by trust tier (specs > docs > context > notes). Excludes notes by default. Respects `--include-notes` flag. |
 | S3-08 | Routing packet assembler | Combines agent, confidence, scope paths, context blocks, excluded paths into the JSON packet defined in PRD §6. |
-| S3-09 | `oz context query` subcommand | Wires graph load → tokenize → score → route → output. Supports `--raw` flag (C-09) for full subgraph debug output. |
+| S3-09 | `oz context query` subcommand | Wires graph load → tokenize → score → route → output. Supports `--raw` (C-09): JSON with `query`, routing `result`, per-agent raw scores + softmax confidences, and a query-relevant `subgraph` (agents + context-block nodes and edges with both ends in that set — not the full graph). |
 | S3-10 | Golden suite `03_large` — 25-agent stress fixture | `workspace.yaml` with 25 agents, overlapping scopes. 125 queries. Minimum accuracy: 90%. |
 | S3-11 | Golden suite `04_adversarial` — ambiguity fixture | 20 deliberately ambiguous queries. Minimum accuracy: 65%. Tests graceful degradation. |
 | S3-12 | Weight tuning pass | Run `TestRoutingAccuracy` across all suites with default weights. If accuracy targets not met, sweep key weights (`w_scope`, `w_concept`, `T`) and document chosen defaults in `context/scoring.toml`. |

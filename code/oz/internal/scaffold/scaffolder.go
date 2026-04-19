@@ -58,6 +58,7 @@ func Scaffold(path string, cfg Config) error {
 		func() error { return createDocFiles(abs, data) },
 		func() error { return createSpecFiles(abs) },
 		func() error { return createRulesFiles(abs) },
+		func() error { return createSkillFiles(abs) },
 		func() error { return createCodeDir(abs, cfg.CodeMode, data) },
 		func() error { return createOZDir(abs) },
 	}
@@ -155,6 +156,47 @@ func createRulesFiles(root string) error {
 		"templates/rules/coding-guidelines.md.tmpl",
 		nil,
 	)
+}
+
+// createSkillFiles generates built-in skills into skills/ at workspace root.
+// Built-in skills are always generated; they form the foundation of the
+// oz-maintainer's toolset in every oz workspace.
+func createSkillFiles(root string) error {
+	skill := "create-workspace-artifact"
+	base := filepath.Join(root, "skills", skill)
+
+	dirs := []string{
+		base,
+		filepath.Join(base, "references"),
+		filepath.Join(base, "assets"),
+	}
+	for _, d := range dirs {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			return fmt.Errorf("creating skill directory %s: %w", d, err)
+		}
+	}
+
+	type skillFile struct {
+		dest string
+		tmpl string
+	}
+	tmplBase := "templates/skills/" + skill
+	files := []skillFile{
+		{filepath.Join(base, "SKILL.md"), tmplBase + "/SKILL.md.tmpl"},
+		{filepath.Join(base, "references", "create-agent.md"), tmplBase + "/references/create-agent.md.tmpl"},
+		{filepath.Join(base, "references", "create-skill.md"), tmplBase + "/references/create-skill.md.tmpl"},
+		{filepath.Join(base, "references", "create-rule.md"), tmplBase + "/references/create-rule.md.tmpl"},
+		// asset files are LLM templates; written with .tmpl extension preserved
+		{filepath.Join(base, "assets", "AGENT.md.tmpl"), tmplBase + "/assets/AGENT.md.tmpl"},
+		{filepath.Join(base, "assets", "SKILL.md.tmpl"), tmplBase + "/assets/SKILL.md.tmpl"},
+		{filepath.Join(base, "assets", "rule.md.tmpl"), tmplBase + "/assets/rule.md.tmpl"},
+	}
+	for _, f := range files {
+		if err := writeTemplate(f.dest, f.tmpl, nil); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // WriteCLAUDEMD writes a CLAUDE.md file to root for an existing oz workspace.

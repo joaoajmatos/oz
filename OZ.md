@@ -43,6 +43,11 @@ oz/
 │   ├── architecture.md          # High-level architecture
 │   └── open-items.md            # Open questions, known issues, pending decisions
 ├── context/                     # Shared agent context snapshots (organized by topic)
+├── skills/
+│   └── <name>/
+│       ├── SKILL.md             # Entry point: when to invoke and steps to follow
+│       ├── references/          # Sub-instructions and routing for branching skills
+│       └── assets/              # Templates, examples, and support files
 ├── rules/
 │   └── coding-guidelines.md     # Hard constraints for all code
 ├── notes/                       # Raw thinking — lowest trust

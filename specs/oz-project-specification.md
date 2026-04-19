@@ -75,6 +75,30 @@ Every `agents/<name>/AGENT.md` must contain these sections in order:
 
 **Read-chain vs. Rules**: The read-chain loads context and understanding. Rules are behavioral constraints the agent must follow without exception. Keep them separate so the distinction is unambiguous — both to the LLM and to `oz validate`.
 
+### Skills
+
+Skills are reusable task playbooks that agents invoke to complete well-defined procedural tasks.
+Each skill lives in `skills/<name>/` and has a fixed internal structure:
+
+| Path | Purpose |
+|---|---|
+| `SKILL.md` | Entry point. Describes when to invoke the skill and the steps to follow. |
+| `references/` | Sub-instructions and routing for skills with multiple execution paths. Each file covers one path. |
+| `assets/` | Templates, examples, and support files the skill uses during execution. |
+
+`references/` and `assets/` are optional for trivial skills, but required for skills with branching logic or templated outputs.
+
+#### SKILL.md required sections
+
+Every `skills/<name>/SKILL.md` must contain these sections:
+
+| Section | Purpose |
+|---|---|
+| `## When to invoke` | The conditions or signals that should trigger this skill |
+| `## Steps` | Ordered, actionable instructions for executing the skill |
+
+Additional sections (e.g. `## References`, `## Notes`) are allowed but not required.
+
 ---
 
 ## Workspace Structure
@@ -99,6 +123,9 @@ Every `agents/<name>/AGENT.md` must contain these sections in order:
 │                                # Any agent can read any topic. Not agent-specific.
 ├── skills/                      # Reusable LLM skill definitions.
 │   └── <name>/
+│       ├── SKILL.md             # Entry point: when to invoke and steps to follow.
+│       ├── references/          # Sub-instructions and routing for branching skills.
+│       └── assets/              # Templates, examples, and support files.
 ├── rules/
 │   └── coding-guidelines.md     # Hard constraints for all code in this workspace.
 ├── notes/                       # Raw thinking. Lowest trust. Crystallized via oz crystallize.

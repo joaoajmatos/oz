@@ -90,7 +90,7 @@ Developers who run `oz context build` and `oz context enrich`, review the semant
 | C-06 | As a developer, I can run `oz context enrich` to trigger an LLM pass that extracts concepts and relationships and writes them to `context/semantic.json` | `semantic.json` is written. It contains extracted concepts, relationship edges tagged `EXTRACTED` or `INFERRED`, confidence scores on INFERRED edges, and source attribution (file + line). |
 | C-07 | As a developer, I can review `context/semantic.json` in a standard git diff, edit it to remove incorrect inferences, and commit it as accepted workspace knowledge | File is human-readable JSON. Each node and edge has a `reviewed: bool` field. Committing the file is the acceptance mechanism. |
 | C-08 | As an LLM, routing packets from `oz context query` are enriched with semantic concepts when `context/semantic.json` exists | If semantic overlay is present, `relevant_concepts` field is populated in the routing packet. If absent, field is omitted — no error. |
-| C-09 | As a developer, I can run `oz context query` with a `--raw` flag to receive the full subgraph JSON instead of the routing packet, for debugging | Raw subgraph includes all nodes, edges, tags, and confidence scores reachable from the query. |
+| C-09 | As a developer, I can run `oz context query` with a `--raw` flag to receive debug JSON instead of the routing packet, for debugging | Payload includes `query`, the routing `result`, per-agent raw BM25F scores and softmax confidences, and a bounded `subgraph`: all agent nodes, nodes matching `context_blocks` from the result, and edges with both endpoints in that set (not the entire workspace graph). |
 
 ### P2 — Nice to Have / Future
 
@@ -167,7 +167,7 @@ LLM calls are made via **OpenRouter** (`OPENROUTER_API_KEY`). Model is selectabl
 | `readchain` | Text of files in the agent's read-chain | 0.3 | Weak signal — reading ≠ owning |
 | `concept` | Labels of concept nodes with `agent_owns_concept` edge (semantic overlay only) | 2.5 | Second-strongest when overlay exists; 0 when absent |
 
-**Step 2 — Tokenize deterministically.** Lowercase → strip punctuation → split on whitespace → filter stopwords (hardcoded English list) → Porter stemmer → emit unigrams and bigrams. Porter stemming is deterministic and vendored as Go source; no runtime dependency.
+**Step 2 — Tokenize deterministically.** Lowercase → strip punctuation → split on whitespace → filter stopwords (hardcoded English list) → Porter stemmer → emit unigrams; adjacent stem **bigrams** (`stem_i_stem_j`) when `use_bigrams = true` in `context/scoring.toml` (default `false` so compound phrases do not over-index). Porter stemming is deterministic and implemented in-tree as Go source; no external stemmer dependency.
 
 **Step 3 — Score with BM25F.** For each candidate agent:
 
