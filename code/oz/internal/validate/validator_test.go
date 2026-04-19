@@ -201,6 +201,72 @@ func TestValidate_TestwsFixture_Valid(t *testing.T) {
 	}
 }
 
+// TestValidate_SemanticOverlay_UnreviewedItems verifies that semantic.json with
+// unreviewed items produces a warning (S6-04).
+func TestValidate_SemanticOverlay_UnreviewedItems(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("backend", testws.Role("Builds REST endpoints")).
+		WithSemanticOverlay(testws.SemanticOverlay{
+			Concepts: []testws.OverlayConcept{
+				{Name: "REST API", OwnedBy: "backend"},
+			},
+		}).
+		Build()
+
+	result := runValidate(t, ws.Path())
+	// Workspace must still be valid (warning does not affect exit code).
+	if !result.Valid() {
+		t.Errorf("unreviewed semantic items should not fail validation, got: %v", result.Findings)
+	}
+	requireWarning(t, result, "unreviewed")
+}
+
+// TestValidate_SemanticOverlay_AllReviewed verifies that semantic.json with all
+// items already reviewed does NOT produce a warning (S6-04).
+func TestValidate_SemanticOverlay_AllReviewed(t *testing.T) {
+	dir := t.TempDir()
+
+	for _, d := range []string{"agents", "specs/decisions", "docs", "context", "skills", "rules", "notes"} {
+		mkdir(t, filepath.Join(dir, d))
+	}
+	write(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS.md\n")
+	write(t, filepath.Join(dir, "OZ.md"), "oz standard: v0.1\nproject: test\ndescription: test\n")
+	write(t, filepath.Join(dir, "README.md"), "# test\n")
+	agentDir := filepath.Join(dir, "agents", "coding")
+	mkdir(t, agentDir)
+	write(t, filepath.Join(agentDir, "AGENT.md"),
+		"# coding Agent\n\n## Role\n\n## Read-chain\n\n## Rules\n\n## Skills\n\n## Responsibilities\n\n## Out of scope\n\n## Context topics\n")
+
+	// Write a semantic.json where every item is reviewed.
+	semJSON := `{
+		"schema_version": "1",
+		"graph_hash": "abc",
+		"concepts": [{"id":"concept:foo","name":"Foo","tag":"EXTRACTED","confidence":1,"reviewed":true}],
+		"edges": []
+	}`
+	write(t, filepath.Join(dir, "context", "semantic.json"), semJSON)
+
+	result := runValidate(t, dir)
+	for _, f := range result.Findings {
+		if strings.Contains(f.Message, "unreviewed") {
+			t.Errorf("unexpected unreviewed warning when all items are reviewed: %s", f.Message)
+		}
+	}
+}
+
+// TestValidate_SemanticOverlay_MissingFile passes cleanly when semantic.json is absent.
+func TestValidate_SemanticOverlay_MissingFile(t *testing.T) {
+	result := runValidate(t, validWorkspace(t))
+	if !result.Valid() {
+		t.Errorf("expected valid workspace with no semantic.json, got: %v", result.Findings)
+	}
+	for _, f := range result.Findings {
+		if strings.Contains(f.Message, "unreviewed") {
+			t.Errorf("unexpected unreviewed warning when semantic.json is absent: %s", f.Message)
+		}
+	}
+}
+
 // TestValidate_TestwsFixture_InvalidAgent confirms that an agent missing
 // required sections produces error findings.
 func TestValidate_TestwsFixture_InvalidAgent(t *testing.T) {

@@ -364,3 +364,186 @@ func TestMCPProtocol_UnknownMethod(t *testing.T) {
 		t.Errorf("error code = %d, want -32601 (method not found)", rpcErr.Code)
 	}
 }
+
+// --- Edge cases --------------------------------------------------------------
+
+// TestMCPTool_GetNode_NotFound verifies that get_node returns an internal error
+// (not a panic) when the requested node does not exist.
+func TestMCPTool_GetNode_NotFound(t *testing.T) {
+	s := newSession(t)
+	s.send("initialize", map[string]interface{}{"protocolVersion": "2024-11-05", "capabilities": nil})
+	s.notify("notifications/initialized", nil)
+	callID := s.send("tools/call", map[string]interface{}{
+		"name":      "get_node",
+		"arguments": map[string]interface{}{"id": "agent:does-not-exist"},
+	})
+
+	responses := s.run(t)
+	resp := responses[callID]
+	if resp.Error == nil {
+		t.Fatal("expected error for missing node, got none")
+	}
+	var rpcErr struct{ Code int `json:"code"` }
+	if err := json.Unmarshal(resp.Error, &rpcErr); err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+	if rpcErr.Code != -32603 {
+		t.Errorf("error code = %d, want -32603 (internal error)", rpcErr.Code)
+	}
+}
+
+// TestMCPTool_UnknownTool verifies that tools/call with an unknown tool name
+// returns method-not-found (-32601).
+func TestMCPTool_UnknownTool(t *testing.T) {
+	s := newSession(t)
+	s.send("initialize", map[string]interface{}{"protocolVersion": "2024-11-05", "capabilities": nil})
+	s.notify("notifications/initialized", nil)
+	callID := s.send("tools/call", map[string]interface{}{
+		"name":      "no_such_tool",
+		"arguments": map[string]interface{}{},
+	})
+
+	responses := s.run(t)
+	resp := responses[callID]
+	if resp.Error == nil {
+		t.Fatal("expected error for unknown tool, got none")
+	}
+	var rpcErr struct{ Code int `json:"code"` }
+	json.Unmarshal(resp.Error, &rpcErr) //nolint
+	if rpcErr.Code != -32601 {
+		t.Errorf("error code = %d, want -32601 (method not found)", rpcErr.Code)
+	}
+}
+
+// TestMCPTool_MissingRequiredArgument verifies that tools/call without a
+// required argument returns invalid-params (-32602).
+func TestMCPTool_MissingRequiredArgument(t *testing.T) {
+	s := newSession(t)
+	s.send("initialize", map[string]interface{}{"protocolVersion": "2024-11-05", "capabilities": nil})
+	s.notify("notifications/initialized", nil)
+	// query_graph requires "task" — omit it.
+	callID := s.send("tools/call", map[string]interface{}{
+		"name":      "query_graph",
+		"arguments": map[string]interface{}{},
+	})
+
+	responses := s.run(t)
+	resp := responses[callID]
+	if resp.Error == nil {
+		t.Fatal("expected error for missing argument, got none")
+	}
+	var rpcErr struct{ Code int `json:"code"` }
+	json.Unmarshal(resp.Error, &rpcErr) //nolint
+	if rpcErr.Code != -32603 {
+		t.Errorf("error code = %d, want -32603 (internal wrapping missing-arg)", rpcErr.Code)
+	}
+}
+
+// TestMCPTool_GetNeighbors_EdgeTypeFilter verifies that the optional edge_type
+// filter narrows results to only edges of that type.
+func TestMCPTool_GetNeighbors_EdgeTypeFilter(t *testing.T) {
+	s := newSession(t)
+	s.send("initialize", map[string]interface{}{"protocolVersion": "2024-11-05", "capabilities": nil})
+	s.notify("notifications/initialized", nil)
+
+	// With a non-existent edge type there should be zero neighbours.
+	callID := s.send("tools/call", map[string]interface{}{
+		"name": "get_neighbors",
+		"arguments": map[string]interface{}{
+			"id":        "agent:backend",
+			"edge_type": "crystallized_from", // no such edges in the test fixture
+		},
+	})
+
+	responses := s.run(t)
+	resp := responses[callID]
+	if resp.Error != nil {
+		t.Fatalf("get_neighbors with edge_type filter returned error: %s", resp.Error)
+	}
+
+	var result struct {
+		Content []struct{ Text string `json:"text"` } `json:"content"`
+	}
+	json.Unmarshal(resp.Result, &result) //nolint
+	var neighbors []interface{}
+	if err := json.Unmarshal([]byte(result.Content[0].Text), &neighbors); err != nil {
+		t.Fatalf("result is not a JSON array: %v", err)
+	}
+	if len(neighbors) != 0 {
+		t.Errorf("expected 0 neighbours for unused edge type, got %d", len(neighbors))
+	}
+}
+
+// TestMCPProtocol_MalformedJSON verifies that the server returns a parse error
+// (-32700) without crashing when given invalid JSON.
+func TestMCPProtocol_MalformedJSON(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("backend", testws.Scope("code/api/**"), testws.Role("Builds REST endpoints")).
+		Build()
+
+	var out bytes.Buffer
+	srv := mcp.New(ws.Path())
+	srv.SetOutput(&out)
+
+	if err := srv.Serve(strings.NewReader("{this is not valid json}\n")); err != nil {
+		t.Fatalf("Serve returned unexpected error: %v", err)
+	}
+
+	// Scan the raw output — the response has a null id so it won't appear in
+	// the keyed responses map; we scan the buffer directly instead.
+	outStr := out.String()
+	var found bool
+	sc := bufio.NewScanner(strings.NewReader(outStr))
+	for sc.Scan() {
+		var msg rpcMsg
+		if err := json.Unmarshal(sc.Bytes(), &msg); err != nil {
+			continue
+		}
+		if msg.Error != nil {
+			var e struct{ Code int `json:"code"` }
+			json.Unmarshal(msg.Error, &e) //nolint
+			if e.Code == -32700 {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Errorf("expected parse-error (-32700) response, got output: %q", outStr)
+	}
+}
+
+// TestMCPTool_AgentForTask_NoOwner verifies that agent_for_task returns a
+// reason field when no agent clearly owns the task.
+func TestMCPTool_AgentForTask_NoOwner(t *testing.T) {
+	s := newSession(t)
+	s.send("initialize", map[string]interface{}{"protocolVersion": "2024-11-05", "capabilities": nil})
+	s.notify("notifications/initialized", nil)
+	// A completely unrelated query that won't match either agent.
+	callID := s.send("tools/call", map[string]interface{}{
+		"name":      "agent_for_task",
+		"arguments": map[string]interface{}{"task": "the"},
+	})
+
+	responses := s.run(t)
+	resp := responses[callID]
+	if resp.Error != nil {
+		t.Fatalf("agent_for_task error: %s", resp.Error)
+	}
+	var result struct {
+		Content []struct{ Text string `json:"text"` } `json:"content"`
+	}
+	json.Unmarshal(resp.Result, &result) //nolint
+
+	// Must return valid JSON regardless of routing outcome.
+	var out struct {
+		Agent      string  `json:"agent"`
+		Confidence float64 `json:"confidence"`
+		Reason     string  `json:"reason"`
+	}
+	if err := json.Unmarshal([]byte(result.Content[0].Text), &out); err != nil {
+		t.Fatalf("agent_for_task response is not valid JSON: %v", err)
+	}
+	if out.Confidence < 0 || out.Confidence > 1 {
+		t.Errorf("confidence %f out of [0,1]", out.Confidence)
+	}
+}
