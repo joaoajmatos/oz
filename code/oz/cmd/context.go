@@ -3,10 +3,14 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	ozcontext "github.com/oz-tools/oz/internal/context"
 	"github.com/oz-tools/oz/internal/enrich"
+	"github.com/oz-tools/oz/internal/mcp"
 	"github.com/oz-tools/oz/internal/query"
+	"github.com/oz-tools/oz/internal/review"
+	"github.com/oz-tools/oz/internal/semantic"
 	"github.com/oz-tools/oz/internal/workspace"
 	"github.com/spf13/cobra"
 )
@@ -33,6 +37,7 @@ var (
 	queryRaw          bool
 	queryIncludeNotes bool
 	enrichModel       string
+	reviewAcceptAll   bool
 )
 
 var contextQueryCmd = &cobra.Command{
@@ -55,13 +60,43 @@ Run 'oz context review' to review and accept extracted concepts.`,
 	RunE: runContextEnrich,
 }
 
+var contextReviewCmd = &cobra.Command{
+	Use:   "review",
+	Short: "Review unreviewed concepts and edges in context/semantic.json",
+	Long: `Present new and changed concepts and edges from context/semantic.json in a
+human-readable table, then prompt to accept or reject each item.
+
+Accepted items are marked reviewed: true. Rejected items are removed.
+Use --accept-all to skip interactive prompts (suitable for CI).`,
+	RunE: runContextReview,
+}
+
+var contextServeCmd = &cobra.Command{
+	Use:   "serve",
+	Short: "Start an MCP stdio server exposing oz context tools",
+	Long: `Start a Model Context Protocol (MCP) server on stdin/stdout.
+
+The server exposes four tools:
+  query_graph    — route a task to the best-matching agent (full routing packet)
+  get_node       — retrieve a structural graph node by ID
+  get_neighbors  — list nodes adjacent to a given node
+  agent_for_task — shorthand routing: task → agent + confidence only
+
+Wire it into Claude Code or Cursor with:
+  {"mcpServers":{"oz":{"command":"oz","args":["context","serve"]}}}`,
+	RunE: runContextServe,
+}
+
 func init() {
 	contextCmd.AddCommand(contextBuildCmd)
 	contextCmd.AddCommand(contextQueryCmd)
 	contextCmd.AddCommand(contextEnrichCmd)
+	contextCmd.AddCommand(contextReviewCmd)
+	contextCmd.AddCommand(contextServeCmd)
 	contextQueryCmd.Flags().BoolVar(&queryRaw, "raw", false, "output routing debug JSON (scores + query-relevant subgraph) instead of routing packet")
 	contextQueryCmd.Flags().BoolVar(&queryIncludeNotes, "include-notes", false, "include notes/ in context blocks")
 	contextEnrichCmd.Flags().StringVar(&enrichModel, "model", "", "OpenRouter model ID (default: anthropic/claude-haiku-4)")
+	contextReviewCmd.Flags().BoolVar(&reviewAcceptAll, "accept-all", false, "mark all unreviewed items as reviewed without prompting")
 }
 
 func runContextBuild(cmd *cobra.Command, _ []string) error {
@@ -88,6 +123,13 @@ func runContextQuery(cmd *cobra.Command, args []string) error {
 	root, err := findWorkspaceRoot()
 	if err != nil {
 		return err
+	}
+
+	// S6-01: warn if semantic overlay is stale.
+	if g, loadErr := ozcontext.LoadGraph(root); loadErr == nil {
+		if o, semErr := semantic.Load(root); semErr == nil && semantic.IsStale(o, g.ContentHash) {
+			fmt.Fprintln(os.Stderr, "warning: semantic overlay may be stale — run 'oz context enrich' to update")
+		}
 	}
 
 	queryText := args[0]
@@ -141,6 +183,24 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 		}
 	}
 	return nil
+}
+
+func runContextReview(_ *cobra.Command, _ []string) error {
+	root, err := findWorkspaceRoot()
+	if err != nil {
+		return err
+	}
+	_, err = review.Run(root, review.Options{AcceptAll: reviewAcceptAll})
+	return err
+}
+
+func runContextServe(_ *cobra.Command, _ []string) error {
+	root, err := findWorkspaceRoot()
+	if err != nil {
+		return err
+	}
+	srv := mcp.New(root)
+	return srv.Serve(os.Stdin)
 }
 
 func printJSON(cmd *cobra.Command, v interface{}) error {

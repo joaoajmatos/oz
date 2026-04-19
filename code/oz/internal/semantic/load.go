@@ -9,6 +9,13 @@ import (
 	"sort"
 )
 
+// IsStale reports whether the overlay was built from a different graph than
+// the one identified by currentGraphHash.
+// Returns false when the overlay is nil or has no recorded hash.
+func IsStale(o *Overlay, currentGraphHash string) bool {
+	return o != nil && o.GraphHash != "" && o.GraphHash != currentGraphHash
+}
+
 // Load reads context/semantic.json from the workspace root.
 // Returns nil, nil if the file does not exist (no overlay present).
 func Load(workspacePath string) (*Overlay, error) {

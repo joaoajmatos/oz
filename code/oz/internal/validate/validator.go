@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/oz-tools/oz/internal/convention"
+	"github.com/oz-tools/oz/internal/semantic"
 	"github.com/oz-tools/oz/internal/workspace"
 )
 
@@ -51,7 +52,31 @@ func Validate(ws *workspace.Workspace) *Result {
 	checkDirectories(ws, r)
 	checkOZMD(ws, r)
 	checkAgents(ws, r)
+	checkSemanticOverlay(ws, r)
 	return r
+}
+
+// checkSemanticOverlay warns when context/semantic.json contains unreviewed items.
+// Missing overlay is not an error — it simply means 'oz context enrich' hasn't run yet.
+func checkSemanticOverlay(ws *workspace.Workspace, r *Result) {
+	o, err := semantic.Load(ws.Root)
+	if err != nil || o == nil {
+		return
+	}
+	unreviewed := 0
+	for _, c := range o.Concepts {
+		if !c.Reviewed {
+			unreviewed++
+		}
+	}
+	for _, e := range o.Edges {
+		if !e.Reviewed {
+			unreviewed++
+		}
+	}
+	if unreviewed > 0 {
+		r.add(Warning, "context/semantic.json has %d unreviewed item(s) — run 'oz context review'", unreviewed)
+	}
 }
 
 func checkRootFiles(ws *workspace.Workspace, r *Result) {
