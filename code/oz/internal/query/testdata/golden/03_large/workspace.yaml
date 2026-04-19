@@ -1,0 +1,453 @@
+agents:
+  - name: api-server
+    role: "Builds and maintains the REST API server."
+    scope:
+      - "code/api/**"
+      - "code/server/**"
+      - "code/routes/**"
+    responsibilities: "Implements REST endpoints, request routing, middleware, response serialization, OpenAPI spec."
+    out_of_scope: "Frontend UI, mobile apps, ML models, data pipelines, infrastructure provisioning."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+      - "specs/data-model.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: grpc-server
+    role: "Owns gRPC service definitions and server implementations."
+    scope:
+      - "code/grpc/**"
+      - "proto/**"
+    responsibilities: "Writes protobuf schemas, implements gRPC handlers, manages service versioning."
+    out_of_scope: "REST endpoints, UI, databases, infrastructure."
+    readchain:
+      - "AGENTS.md"
+      - "specs/grpc-design.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: graphql
+    role: "Maintains the GraphQL schema and resolvers."
+    scope:
+      - "code/graphql/**"
+      - "schema/**"
+    responsibilities: "Defines GraphQL types, queries, mutations, subscriptions, and resolver logic."
+    out_of_scope: "REST API, gRPC, UI components, infrastructure."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: auth
+    role: "Owns authentication, authorization, and identity management."
+    scope:
+      - "code/auth/**"
+      - "code/permissions/**"
+      - "code/sessions/**"
+    responsibilities: "Implements login flows, OAuth integrations, JWT tokens, RBAC, MFA, session management."
+    out_of_scope: "Payment processing, UI components, data pipelines, infrastructure."
+    readchain:
+      - "AGENTS.md"
+      - "specs/auth-spec.md"
+      - "specs/security-policy.md"
+    rules:
+      - "rules/coding-guidelines.md"
+      - "rules/security-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: billing
+    role: "Owns payment processing, subscriptions, and invoicing."
+    scope:
+      - "code/billing/**"
+      - "code/payments/**"
+      - "code/subscriptions/**"
+    responsibilities: "Integrates Stripe, manages subscription lifecycle, generates invoices, handles payment webhooks."
+    out_of_scope: "Authentication, UI, infrastructure, data analytics."
+    readchain:
+      - "AGENTS.md"
+      - "specs/billing-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: notifications
+    role: "Manages email, SMS, and push notification delivery."
+    scope:
+      - "code/notifications/**"
+      - "code/email/**"
+      - "code/push/**"
+    responsibilities: "Sends transactional emails, SMS alerts, push notifications, manages templates, delivery tracking."
+    out_of_scope: "Auth, billing, UI, infrastructure configuration."
+    readchain:
+      - "AGENTS.md"
+      - "specs/notifications-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: search
+    role: "Owns full-text search indexing and query execution."
+    scope:
+      - "code/search/**"
+      - "code/indexing/**"
+    responsibilities: "Manages Elasticsearch indices, implements search queries, relevance tuning, faceting."
+    out_of_scope: "Database schema, UI, auth, infrastructure."
+    readchain:
+      - "AGENTS.md"
+      - "specs/search-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: storage
+    role: "Manages file storage, CDN, and media processing."
+    scope:
+      - "code/storage/**"
+      - "code/cdn/**"
+      - "code/media/**"
+    responsibilities: "Handles file uploads, S3 integration, CDN invalidation, image resizing, video transcoding."
+    out_of_scope: "Auth, billing, search, UI."
+    readchain:
+      - "AGENTS.md"
+      - "specs/storage-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: cache
+    role: "Owns caching strategy and Redis infrastructure."
+    scope:
+      - "code/cache/**"
+      - "code/redis/**"
+    responsibilities: "Designs cache invalidation strategies, implements Redis clients, manages TTLs, monitors hit rates."
+    out_of_scope: "Auth, database schema, UI, cloud provisioning."
+    readchain:
+      - "AGENTS.md"
+      - "specs/caching-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: queue
+    role: "Manages message queues and async job processing."
+    scope:
+      - "code/queue/**"
+      - "code/workers/**"
+      - "code/jobs/**"
+    responsibilities: "Implements job producers and consumers, manages dead-letter queues, retries, Kafka topics."
+    out_of_scope: "Auth, UI, database schema, search."
+    readchain:
+      - "AGENTS.md"
+      - "specs/queue-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: database
+    role: "Owns database schemas, migrations, and query optimization."
+    scope:
+      - "migrations/**"
+      - "code/db/**"
+      - "code/models/**"
+    responsibilities: "Writes SQL migrations, defines ORM models, optimizes slow queries, manages database connections."
+    out_of_scope: "UI, auth flows, infrastructure provisioning, search."
+    readchain:
+      - "AGENTS.md"
+      - "specs/data-model.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/db-migrate/"
+
+  - name: frontend-app
+    role: "Builds the React web application."
+    scope:
+      - "code/ui/**"
+      - "code/web/**"
+      - "code/components/**"
+    responsibilities: "Implements React components, pages, state management, API client integration, web performance."
+    out_of_scope: "Backend logic, database schema, mobile app, server infrastructure."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+      - "specs/design-system.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: mobile-ios
+    role: "Builds the iOS native application."
+    scope:
+      - "code/ios/**"
+      - "code/apple/**"
+    responsibilities: "Implements Swift/UIKit views, integrates APIs, handles push notifications, manages App Store releases."
+    out_of_scope: "Android, web frontend, backend API, infrastructure."
+    readchain:
+      - "AGENTS.md"
+      - "specs/mobile-spec.md"
+      - "specs/api-design.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: mobile-android
+    role: "Builds the Android native application."
+    scope:
+      - "code/android/**"
+      - "code/google/**"
+    responsibilities: "Implements Kotlin/Jetpack views, integrates APIs, handles push notifications, manages Play Store releases."
+    out_of_scope: "iOS, web frontend, backend API, infrastructure."
+    readchain:
+      - "AGENTS.md"
+      - "specs/mobile-spec.md"
+      - "specs/api-design.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: data-pipeline
+    role: "Builds ETL pipelines and data warehouse integrations."
+    scope:
+      - "code/pipelines/**"
+      - "code/etl/**"
+      - "data/**"
+    responsibilities: "Implements Airflow DAGs, Spark jobs, data transformations, warehouse schema migrations."
+    out_of_scope: "Operational database, UI, auth, search."
+    readchain:
+      - "AGENTS.md"
+      - "specs/data-model.md"
+      - "specs/analytics-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/run-pipeline/"
+
+  - name: analytics
+    role: "Owns analytics dashboards, metrics, and A/B testing."
+    scope:
+      - "code/analytics/**"
+      - "code/experiments/**"
+      - "dashboards/**"
+    responsibilities: "Builds Looker dashboards, defines KPI metrics, runs A/B tests, tracks user behaviour."
+    out_of_scope: "Data pipelines, ETL, UI components, auth."
+    readchain:
+      - "AGENTS.md"
+      - "specs/analytics-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: ml
+    role: "Owns machine learning models and ML infrastructure."
+    scope:
+      - "code/ml/**"
+      - "models/**"
+      - "notebooks/**"
+    responsibilities: "Trains and deploys ML models, manages feature stores, runs experiments, monitors model drift."
+    out_of_scope: "Production API, UI, billing, auth."
+    readchain:
+      - "AGENTS.md"
+      - "specs/ml-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/run-pipeline/"
+
+  - name: infra
+    role: "Manages cloud infrastructure, Kubernetes, and networking."
+    scope:
+      - "infra/**"
+      - "terraform/**"
+      - "k8s/**"
+    responsibilities: "Provisions AWS/GCP resources via Terraform, manages Kubernetes clusters, configures networking and DNS."
+    out_of_scope: "Application code, business logic, API design, UI."
+    readchain:
+      - "AGENTS.md"
+      - "docs/architecture.md"
+      - "docs/runbooks.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/deploy/"
+
+  - name: ci-cd
+    role: "Owns CI/CD pipelines and release automation."
+    scope:
+      - ".github/**"
+      - "ci/**"
+      - "scripts/deploy/**"
+    responsibilities: "Maintains GitHub Actions workflows, manages release pipelines, automates deployments, enforces branch policies."
+    out_of_scope: "Application code, infrastructure provisioning, business logic."
+    readchain:
+      - "AGENTS.md"
+      - "docs/runbooks.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/deploy/"
+
+  - name: monitoring
+    role: "Owns observability, alerting, and incident response tooling."
+    scope:
+      - "monitoring/**"
+      - "alerts/**"
+      - "dashboards/ops/**"
+    responsibilities: "Configures Datadog and Prometheus, writes alerting rules, manages on-call rotations, builds SLO dashboards."
+    out_of_scope: "Application code, feature development, infrastructure provisioning."
+    readchain:
+      - "AGENTS.md"
+      - "docs/runbooks.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/rollback/"
+
+  - name: security
+    role: "Owns security reviews, vulnerability management, and compliance."
+    scope:
+      - "security/**"
+      - "audits/**"
+      - "specs/security-policy.md"
+    responsibilities: "Conducts security reviews, triages CVEs, manages penetration tests, maintains compliance posture, approves auth changes."
+    out_of_scope: "Feature implementation, routine ops, non-security documentation."
+    readchain:
+      - "AGENTS.md"
+      - "specs/security-policy.md"
+      - "specs/auth-spec.md"
+    rules:
+      - "rules/security-guidelines.md"
+    skills:
+      - "skills/security-scan/"
+
+  - name: qa
+    role: "Owns test automation strategy and quality assurance."
+    scope:
+      - "tests/**"
+      - "e2e/**"
+      - "cypress/**"
+    responsibilities: "Writes end-to-end tests, defines test plans, manages regression suites, gates releases."
+    out_of_scope: "Feature implementation, infrastructure provisioning, API design, UI design."
+    readchain:
+      - "AGENTS.md"
+      - "specs/test-plan.md"
+      - "docs/architecture.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/test-runner/"
+
+  - name: design
+    role: "Owns the design system, UX patterns, and visual language."
+    scope:
+      - "design/**"
+      - "code/design-tokens/**"
+      - "figma/**"
+    responsibilities: "Maintains design system, component specs, accessibility standards, Figma libraries, style guide."
+    out_of_scope: "Code implementation, backend logic, infrastructure, data pipelines."
+    readchain:
+      - "AGENTS.md"
+      - "specs/design-system.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills: []
+
+  - name: docs
+    role: "Maintains product documentation, API reference, and user guides."
+    scope:
+      - "docs/**"
+      - "content/**"
+      - "website/docs/**"
+    responsibilities: "Writes user-facing docs, API reference, changelogs, onboarding guides, release notes."
+    out_of_scope: "Code implementation, infrastructure, test writing."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/crystallize/"
+
+  - name: devops
+    role: "Automates deployment workflows and manages release cadence."
+    scope:
+      - "scripts/**"
+      - "deploy/**"
+      - "docker/**"
+    responsibilities: "Writes deployment scripts, manages Docker images, coordinates blue-green deployments, maintains runbooks."
+    out_of_scope: "Application code, UI, database schema, security audits."
+    readchain:
+      - "AGENTS.md"
+      - "docs/runbooks.md"
+      - "docs/architecture.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/deploy/"
+      - "skills/rollback/"
+
+specs:
+  - path: "specs/api-design.md"
+    sections:
+      - heading: "Overview"
+        content: "REST API following OpenAPI 3.0. Base URL /api/v1. JSON request and response bodies."
+      - heading: "Authentication"
+        content: "Bearer token auth. Tokens issued by auth service. JWT RS256. 1 hour expiry."
+      - heading: "Versioning"
+        content: "API versioned via URL prefix. Breaking changes require major version bump."
+
+  - path: "specs/auth-spec.md"
+    sections:
+      - heading: "Overview"
+        content: "Authentication uses JWT tokens with RS256 signing. OAuth 2.0 for third-party providers."
+      - heading: "OAuth"
+        content: "Supports Google, GitHub, and Okta OAuth 2.0 providers."
+      - heading: "RBAC"
+        content: "Role-based access control. Roles: owner, admin, member, viewer."
+      - heading: "MFA"
+        content: "TOTP-based MFA. Enforced for admin roles."
+
+  - path: "specs/data-model.md"
+    sections:
+      - heading: "Overview"
+        content: "PostgreSQL primary database. Redis caching. Core entities: Users, Organizations, Projects, Tasks."
+
+  - path: "specs/design-system.md"
+    sections:
+      - heading: "Overview"
+        content: "Design system built on Radix UI primitives with custom design tokens."
+      - heading: "Tokens"
+        content: "Color, typography, spacing tokens in CSS variables."
+
+  - path: "specs/security-policy.md"
+    sections:
+      - heading: "Overview"
+        content: "Security policy for all platform services."
+      - heading: "Vulnerability management"
+        content: "CVEs triaged within 24h. Critical CVEs patched within 48h."
+
+decisions:
+  - id: "0001-postgresql"
+    content: "PostgreSQL chosen as primary database for ACID compliance."
+  - id: "0002-kubernetes"
+    content: "Kubernetes on AWS EKS for container orchestration."
+  - id: "0003-kafka"
+    content: "Kafka chosen for async messaging for durability and replay."

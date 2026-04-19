@@ -1,0 +1,105 @@
+min_accuracy: 0.65
+
+queries:
+  # Genuinely ambiguous queries — multiple agents are plausible owners.
+  # The expected_agent is the most likely owner; expected_candidates lists other plausible ones.
+
+  - query: "the login page is broken after the auth refactor"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["auth", "backend"]
+
+  - query: "write tests for the authentication middleware"
+    expected_agent: qa
+    min_confidence: 0.4
+    expected_candidates: ["backend", "qa", "auth"]
+
+  - query: "document the new RBAC permissions model"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["docs", "auth"]
+
+  - query: "review the JWT token implementation"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["security", "auth"]
+
+  - query: "fix the bug in the session management code"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["auth", "backend"]
+
+  - query: "add integration tests for the login API endpoint"
+    expected_agent: qa
+    min_confidence: 0.4
+    expected_candidates: ["qa", "backend", "auth"]
+
+  - query: "update the API docs to include the new auth endpoints"
+    expected_agent: docs
+    min_confidence: 0.4
+    expected_candidates: ["docs", "auth"]
+
+  - query: "the new permission check is causing 403 errors in production"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["auth", "backend", "security"]
+
+  - query: "conduct a security review of the session token storage"
+    expected_agent: security
+    min_confidence: 0.4
+    expected_candidates: ["security", "auth"]
+
+  - query: "write a test plan for the upcoming OAuth refactor"
+    expected_agent: qa
+    min_confidence: 0.4
+    expected_candidates: ["qa", "auth"]
+
+  - query: "the database query for user permissions is too slow"
+    expected_agent: backend
+    min_confidence: 0.4
+    expected_candidates: ["backend", "auth"]
+
+  - query: "add a CVE scan to the CI pipeline"
+    expected_agent: security
+    min_confidence: 0.4
+    expected_candidates: ["security", "qa"]
+
+  - query: "document the security audit findings from last quarter"
+    expected_agent: security
+    min_confidence: 0.4
+    expected_candidates: ["docs", "security"]
+
+  - query: "implement a test for the RBAC middleware"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["qa", "auth", "backend"]
+
+  - query: "improve the error messages when login fails"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["auth", "backend"]
+
+  - query: "validate that the API returns correct status codes for auth errors"
+    expected_agent: backend
+    min_confidence: 0.4
+    expected_candidates: ["qa", "backend", "auth"]
+
+  - query: "update the compliance documentation after the security audit"
+    expected_agent: security
+    min_confidence: 0.4
+    expected_candidates: ["docs", "security"]
+
+  - query: "the OAuth callback URL is returning a 500 error"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["auth", "backend"]
+
+  - query: "write the API reference for the login and logout endpoints"
+    expected_agent: docs
+    min_confidence: 0.4
+    expected_candidates: ["docs", "auth"]
+
+  - query: "approve the new password hashing implementation"
+    expected_agent: auth
+    min_confidence: 0.4
+    expected_candidates: ["security", "auth"]

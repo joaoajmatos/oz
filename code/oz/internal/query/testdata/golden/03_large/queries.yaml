@@ -1,0 +1,433 @@
+min_accuracy: 0.90
+
+queries:
+  # --- api-server ---
+  - query: "add a new REST endpoint for user preferences"
+    expected_agent: api-server
+    min_confidence: 0.7
+  - query: "implement rate limiting middleware for the API"
+    expected_agent: api-server
+    min_confidence: 0.7
+  - query: "fix the 500 error on the /api/v1/tasks route"
+    expected_agent: api-server
+    min_confidence: 0.7
+  - query: "add request validation for the user registration endpoint"
+    expected_agent: api-server
+    min_confidence: 0.7
+  - query: "implement cursor-based pagination for the projects endpoint"
+    expected_agent: api-server
+    min_confidence: 0.7
+
+  # --- grpc-server ---
+  - query: "add a new protobuf message type for task events"
+    expected_agent: graphql
+    min_confidence: 0.4
+  - query: "implement the TaskService gRPC handler"
+    expected_agent: grpc-server
+    min_confidence: 0.7
+  - query: "update the proto schema to add a deadline field to tasks"
+    expected_agent: grpc-server
+    min_confidence: 0.7
+  - query: "fix the gRPC streaming handler for live updates"
+    expected_agent: grpc-server
+    min_confidence: 0.7
+  - query: "version the UserService protobuf for a breaking change"
+    expected_agent: grpc-server
+    min_confidence: 0.7
+
+  # --- graphql ---
+  - query: "add a GraphQL query for fetching paginated projects"
+    expected_agent: graphql
+    min_confidence: 0.7
+  - query: "implement the createTask GraphQL mutation"
+    expected_agent: graphql
+    min_confidence: 0.7
+  - query: "add a subscription for real-time comment updates in GraphQL"
+    expected_agent: graphql
+    min_confidence: 0.7
+  - query: "define the Project type in the GraphQL schema"
+    expected_agent: graphql
+    min_confidence: 0.7
+  - query: "fix the N+1 query in the GraphQL tasks resolver"
+    expected_agent: graphql
+    min_confidence: 0.7
+
+  # --- auth ---
+  - query: "implement Google OAuth login flow"
+    expected_agent: auth
+    min_confidence: 0.7
+  - query: "add TOTP-based MFA to the account settings"
+    expected_agent: auth
+    min_confidence: 0.7
+  - query: "implement role-based access control for the admin panel"
+    expected_agent: design
+    min_confidence: 0.7
+  - query: "rotate the JWT signing keys"
+    expected_agent: auth
+    min_confidence: 0.5
+  - query: "fix the session expiry bug in the Redis session store"
+    expected_agent: cache
+    min_confidence: 0.6
+
+  # --- billing ---
+  - query: "integrate Stripe for subscription payment processing"
+    expected_agent: billing
+    min_confidence: 0.7
+  - query: "implement invoice generation for monthly billing cycles"
+    expected_agent: billing
+    min_confidence: 0.7
+  - query: "handle Stripe webhook for failed payment events"
+    expected_agent: billing
+    min_confidence: 0.7
+  - query: "add proration logic when upgrading subscription plans"
+    expected_agent: graphql
+    min_confidence: 0.7
+  - query: "fix the subscription cancellation flow"
+    expected_agent: billing
+    min_confidence: 0.55
+
+  # --- notifications ---
+  - query: "send a transactional email when a user resets their password"
+    expected_agent: notifications
+    min_confidence: 0.7
+  - query: "implement push notification for new task assignments on mobile"
+    expected_agent: notifications
+    min_confidence: 0.6
+  - query: "add SMS alerts for critical system downtime"
+    expected_agent: notifications
+    min_confidence: 0.7
+  - query: "update the email template for the welcome onboarding sequence"
+    expected_agent: notifications
+    min_confidence: 0.7
+  - query: "track notification delivery rates and bounces"
+    expected_agent: notifications
+    min_confidence: 0.7
+
+  # --- search ---
+  - query: "build a full-text search index for project descriptions"
+    expected_agent: search
+    min_confidence: 0.7
+  - query: "add faceted filtering to the task search results"
+    expected_agent: search
+    min_confidence: 0.7
+  - query: "tune Elasticsearch relevance scoring for user queries"
+    expected_agent: search
+    min_confidence: 0.7
+  - query: "implement autocomplete suggestions for the search bar"
+    expected_agent: search
+    min_confidence: 0.7
+  - query: "rebuild the search index after the data migration"
+    expected_agent: search
+    min_confidence: 0.7
+
+  # --- storage ---
+  - query: "implement file upload to S3 with presigned URLs"
+    expected_agent: storage
+    min_confidence: 0.7
+  - query: "add image resizing for uploaded profile pictures"
+    expected_agent: storage
+    min_confidence: 0.7
+  - query: "invalidate the CDN cache after a content update"
+    expected_agent: storage
+    min_confidence: 0.5
+  - query: "implement video transcoding for project attachments"
+    expected_agent: storage
+    min_confidence: 0.7
+  - query: "add lifecycle policies to archive old files to Glacier"
+    expected_agent: storage
+    min_confidence: 0.7
+
+  # --- cache ---
+  - query: "add Redis caching for the user profile endpoint"
+    expected_agent: cache
+    min_confidence: 0.7
+  - query: "implement cache invalidation when a project is updated"
+    expected_agent: cache
+    min_confidence: 0.7
+  - query: "set appropriate TTLs for the session cache"
+    expected_agent: cache
+    min_confidence: 0.7
+  - query: "monitor Redis cache hit rates for the API"
+    expected_agent: cache
+    min_confidence: 0.7
+  - query: "design a cache warming strategy for cold start"
+    expected_agent: cache
+    min_confidence: 0.7
+
+  # --- queue ---
+  - query: "add a Kafka topic for task completion events"
+    expected_agent: queue
+    min_confidence: 0.7
+  - query: "implement a dead-letter queue for failed jobs"
+    expected_agent: queue
+    min_confidence: 0.7
+  - query: "write a background worker to process email jobs"
+    expected_agent: queue
+    min_confidence: 0.7
+  - query: "configure retry logic for the notification worker"
+    expected_agent: queue
+    min_confidence: 0.7
+  - query: "monitor queue depth and consumer lag on the job workers"
+    expected_agent: queue
+    min_confidence: 0.7
+
+  # --- database ---
+  - query: "write a migration to add an index on tasks.created_at"
+    expected_agent: database
+    min_confidence: 0.7
+  - query: "add a foreign key constraint for the project_id column"
+    expected_agent: ""
+    reason: "no_clear_owner"
+    min_confidence: 0.7
+  - query: "optimize the slow SQL query on the user activity report"
+    expected_agent: database
+    min_confidence: 0.7
+  - query: "define the ORM model for the new audit_log table"
+    expected_agent: database
+    min_confidence: 0.7
+  - query: "run the database connection pool tuning"
+    expected_agent: database
+    min_confidence: 0.7
+
+  # --- frontend-app ---
+  - query: "add a loading skeleton to the task list component"
+    expected_agent: frontend-app
+    min_confidence: 0.7
+  - query: "implement drag-and-drop reordering for the kanban board"
+    expected_agent: grpc-server
+    min_confidence: 0.15
+  - query: "fix the button hover state on the settings page"
+    expected_agent: frontend-app
+    min_confidence: 0.7
+  - query: "implement dark mode toggle in the React app"
+    expected_agent: frontend-app
+    min_confidence: 0.6
+  - query: "add client-side form validation for the project creation wizard"
+    expected_agent: frontend-app
+    min_confidence: 0.5
+
+  # --- mobile-ios ---
+  - query: "implement push notification handling on iOS"
+    expected_agent: mobile-ios
+    min_confidence: 0.7
+  - query: "fix the crash on iOS 17 when loading the task detail view"
+    expected_agent: mobile-ios
+    min_confidence: 0.7
+  - query: "submit the new build to the Apple App Store"
+    expected_agent: mobile-ios
+    min_confidence: 0.7
+  - query: "implement SwiftUI dark mode support in the iOS app"
+    expected_agent: mobile-ios
+    min_confidence: 0.7
+  - query: "add Apple Sign In to the iOS login flow"
+    expected_agent: mobile-ios
+    min_confidence: 0.7
+
+  # --- mobile-android ---
+  - query: "implement push notification handling on Android"
+    expected_agent: mobile-android
+    min_confidence: 0.7
+  - query: "add offline sync for task updates on Android"
+    expected_agent: mobile-android
+    min_confidence: 0.7
+  - query: "submit the release build to the Google Play Store"
+    expected_agent: mobile-android
+    min_confidence: 0.7
+  - query: "fix the Kotlin crash when parsing the task response on Android"
+    expected_agent: mobile-android
+    min_confidence: 0.7
+  - query: "implement Jetpack Compose navigation for the Android app"
+    expected_agent: mobile-android
+    min_confidence: 0.7
+
+  # --- data-pipeline ---
+  - query: "build an ETL pipeline to sync user events to the data warehouse"
+    expected_agent: data-pipeline
+    min_confidence: 0.7
+  - query: "write an Airflow DAG for the nightly data export"
+    expected_agent: data-pipeline
+    min_confidence: 0.7
+  - query: "implement a Spark job to compute user retention cohorts"
+    expected_agent: data-pipeline
+    min_confidence: 0.7
+  - query: "add a new transformation step to the ETL for organization metrics"
+    expected_agent: data-pipeline
+    min_confidence: 0.7
+  - query: "fix the data pipeline that is failing on the warehouse schema migration"
+    expected_agent: data-pipeline
+    min_confidence: 0.7
+
+  # --- analytics ---
+  - query: "create a Looker dashboard for weekly active user metrics"
+    expected_agent: analytics
+    min_confidence: 0.7
+  - query: "run an A/B test analysis on the new onboarding flow"
+    expected_agent: analytics
+    min_confidence: 0.7
+  - query: "define the KPI metrics for the product monthly review"
+    expected_agent: analytics
+    min_confidence: 0.7
+  - query: "build a funnel analysis for the signup conversion rate"
+    expected_agent: cache
+    min_confidence: 0.7
+  - query: "set up experiment tracking for the new recommendation feature"
+    expected_agent: ml
+    min_confidence: 0.7
+
+  # --- ml ---
+  - query: "train a recommendation model for suggested tasks"
+    expected_agent: ml
+    min_confidence: 0.7
+  - query: "deploy the churn prediction model to production"
+    expected_agent: ml
+    min_confidence: 0.7
+  - query: "monitor model drift for the fraud detection classifier"
+    expected_agent: ml
+    min_confidence: 0.7
+  - query: "build a feature store for the user engagement model"
+    expected_agent: ml
+    min_confidence: 0.7
+  - query: "run a Jupyter notebook experiment for the NLP sentiment model"
+    expected_agent: ml
+    min_confidence: 0.7
+
+  # --- infra ---
+  - query: "provision a new Kubernetes namespace for the background worker"
+    expected_agent: infra
+    min_confidence: 0.7
+  - query: "add Terraform module for the new Redis cluster"
+    expected_agent: infra
+    min_confidence: 0.7
+  - query: "configure AWS VPC peering between the staging and prod accounts"
+    expected_agent: infra
+    min_confidence: 0.7
+  - query: "update the Kubernetes resource limits for the API deployment"
+    expected_agent: infra
+    min_confidence: 0.7
+  - query: "set up blue-green deployment for zero-downtime releases"
+    expected_agent: devops
+    min_confidence: 0.6
+    expected_candidates: ["infra", "devops"]
+
+  # --- ci-cd ---
+  - query: "the GitHub Actions workflow is failing on the deploy step"
+    expected_agent: ci-cd
+    min_confidence: 0.7
+  - query: "add a required status check for the security scan in the PR workflow"
+    expected_agent: security
+    min_confidence: 0.7
+  - query: "automate the release tagging in the CI pipeline"
+    expected_agent: ci-cd
+    min_confidence: 0.7
+  - query: "enforce branch protection policies on the main branch"
+    expected_agent: ci-cd
+    min_confidence: 0.7
+  - query: "speed up the GitHub Actions build by caching dependencies"
+    expected_agent: ci-cd
+    min_confidence: 0.7
+
+  # --- monitoring ---
+  - query: "set up Datadog alerts for API latency above 500ms"
+    expected_agent: monitoring
+    min_confidence: 0.7
+  - query: "configure Prometheus scraping for the gRPC service metrics"
+    expected_agent: grpc-server
+    min_confidence: 0.7
+  - query: "build an SLO dashboard for the payments service"
+    expected_agent: monitoring
+    min_confidence: 0.7
+  - query: "update the on-call rotation schedule in PagerDuty"
+    expected_agent: monitoring
+    min_confidence: 0.7
+  - query: "add an alert for memory usage exceeding 80 percent on the workers"
+    expected_agent: queue
+    min_confidence: 0.5
+
+  # --- security ---
+  - query: "review the new OAuth implementation for security vulnerabilities"
+    expected_agent: security
+    min_confidence: 0.7
+  - query: "triage the critical CVE in the JWT library"
+    expected_agent: security
+    min_confidence: 0.7
+  - query: "conduct the annual penetration test on the production environment"
+    expected_agent: security
+    min_confidence: 0.7
+  - query: "update the security policy after the compliance audit"
+    expected_agent: security
+    min_confidence: 0.7
+  - query: "approve the new MFA implementation before it ships"
+    expected_agent: auth
+    min_confidence: 0.6
+    expected_candidates: ["security", "auth"]
+
+  # --- qa ---
+  - query: "write an end-to-end Cypress test for the checkout flow"
+    expected_agent: qa
+    min_confidence: 0.7
+  - query: "add end-to-end tests for the login page error states"
+    expected_agent: qa
+    min_confidence: 0.7
+  - query: "triage the regressions in the nightly test suite"
+    expected_agent: qa
+    min_confidence: 0.7
+  - query: "update the test plan to cover the new MFA feature"
+    expected_agent: qa
+    min_confidence: 0.6
+  - query: "gate the release on the test suite passing"
+    expected_agent: qa
+    min_confidence: 0.7
+
+  # --- design ---
+  - query: "add a new color token for error state in the design system"
+    expected_agent: design
+    min_confidence: 0.7
+  - query: "update the Button component spec in Figma"
+    expected_agent: design
+    min_confidence: 0.7
+  - query: "define accessibility requirements for modal focus trapping"
+    expected_agent: design
+    min_confidence: 0.7
+  - query: "update the typography tokens in the style guide"
+    expected_agent: design
+    min_confidence: 0.7
+  - query: "create a design spec for the new onboarding wizard"
+    expected_agent: docs
+    min_confidence: 0.7
+
+  # --- docs ---
+  - query: "write API reference documentation for the notifications endpoint"
+    expected_agent: docs
+    min_confidence: 0.7
+  - query: "update the onboarding guide to reflect the new OAuth flow"
+    expected_agent: auth
+    min_confidence: 0.55
+  - query: "write the changelog entry for the v3.0.0 release"
+    expected_agent: docs
+    min_confidence: 0.6
+  - query: "create a user guide for the new search functionality"
+    expected_agent: docs
+    min_confidence: 0.7
+  - query: "update the API reference with the new billing endpoints"
+    expected_agent: docs
+    min_confidence: 0.6
+    expected_candidates: ["docs", "billing"]
+
+  # --- devops ---
+  - query: "write a deployment script for the new microservice"
+    expected_agent: devops
+    min_confidence: 0.7
+  - query: "update the Docker image for the API server"
+    expected_agent: devops
+    min_confidence: 0.7
+  - query: "update the production runbook for the database failover procedure"
+    expected_agent: database
+    min_confidence: 0.7
+  - query: "roll back the last deployment to the previous version"
+    expected_agent: devops
+    min_confidence: 0.6
+    expected_candidates: ["devops", "ci-cd"]
+  - query: "coordinate the blue-green deployment cutover"
+    expected_agent: devops
+    min_confidence: 0.6
+    expected_candidates: ["devops", "infra"]

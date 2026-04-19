@@ -50,7 +50,6 @@ type CandidateAgent struct {
 }
 
 // Run executes a query against the oz workspace at workspacePath.
-// Stub — full BM25F implementation in Sprint 3.
 func Run(workspacePath, queryText string) Result {
-	return Result{}
+	return RunWithOptions(workspacePath, queryText, Options{})
 }

@@ -1,0 +1,111 @@
+agents:
+  - name: backend
+    role: "Builds backend API services, business logic, and database layer."
+    scope:
+      - "code/api/**"
+      - "code/server/**"
+      - "code/db/**"
+      - "code/models/**"
+    responsibilities: "Implements REST endpoints, request handlers, business logic, database queries, migrations."
+    out_of_scope: "Frontend UI components, mobile apps, security audits, test automation strategy."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+      - "specs/data-model.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: auth
+    role: "Owns authentication, authorization, and identity management."
+    scope:
+      - "code/auth/**"
+      - "code/permissions/**"
+      - "code/sessions/**"
+    responsibilities: "Implements login, OAuth, JWT tokens, RBAC, session management, MFA."
+    out_of_scope: "Payment processing, UI components, data analytics, test automation."
+    readchain:
+      - "AGENTS.md"
+      - "specs/auth-spec.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/commit/"
+
+  - name: security
+    role: "Owns security review, vulnerability management, and compliance."
+    scope:
+      - "security/**"
+      - "specs/security-policy.md"
+      - "audits/**"
+    responsibilities: "Conducts security reviews, triages CVEs, manages penetration tests, approves auth changes, ensures compliance."
+    out_of_scope: "Feature implementation, routine operations, UI design."
+    readchain:
+      - "AGENTS.md"
+      - "specs/security-policy.md"
+      - "specs/auth-spec.md"
+    rules:
+      - "rules/security-guidelines.md"
+    skills:
+      - "skills/security-scan/"
+
+  - name: qa
+    role: "Owns test automation strategy and quality assurance."
+    scope:
+      - "tests/**"
+      - "e2e/**"
+      - "specs/test-plan.md"
+    responsibilities: "Writes unit tests, integration tests, end-to-end tests, manages test plans, gates releases."
+    out_of_scope: "Feature implementation, API design, security audits, infrastructure."
+    readchain:
+      - "AGENTS.md"
+      - "specs/test-plan.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/test-runner/"
+
+  - name: docs
+    role: "Maintains product documentation, API reference, and user guides."
+    scope:
+      - "docs/**"
+      - "content/**"
+    responsibilities: "Writes and maintains user-facing docs, API reference, onboarding guides, changelogs."
+    out_of_scope: "Code implementation, infrastructure, security audits, test writing."
+    readchain:
+      - "AGENTS.md"
+      - "specs/api-design.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/crystallize/"
+
+specs:
+  - path: "specs/api-design.md"
+    sections:
+      - heading: "Overview"
+        content: "REST API following OpenAPI 3.0. Authentication via Bearer tokens."
+      - heading: "Authentication"
+        content: "Bearer token auth. JWT RS256. Tokens issued by auth service."
+
+  - path: "specs/auth-spec.md"
+    sections:
+      - heading: "Overview"
+        content: "JWT-based authentication with OAuth 2.0 support."
+      - heading: "RBAC"
+        content: "Role-based access control for all API endpoints."
+
+  - path: "specs/security-policy.md"
+    sections:
+      - heading: "Overview"
+        content: "Security policy and vulnerability management process."
+
+  - path: "specs/test-plan.md"
+    sections:
+      - heading: "Strategy"
+        content: "Unit, integration, and end-to-end test coverage requirements."
+
+decisions:
+  - id: "0001-jwt"
+    content: "JWT with RS256 chosen for stateless authentication."

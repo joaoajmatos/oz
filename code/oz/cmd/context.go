@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
-	"github.com/oz-tools/oz/internal/context"
+	ozcontext "github.com/oz-tools/oz/internal/context"
+	"github.com/oz-tools/oz/internal/query"
 	"github.com/spf13/cobra"
 )
 
@@ -23,9 +25,14 @@ Running 'oz context build' twice with no changes produces byte-identical output.
 	RunE: runContextBuild,
 }
 
+var (
+	queryRaw          bool
+	queryIncludeNotes bool
+)
+
 var contextQueryCmd = &cobra.Command{
 	Use:   "query <text>",
-	Short: "Query the context graph (stub — full engine in Sprint 3)",
+	Short: "Query the context graph for agent routing",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runContextQuery,
 }
@@ -33,6 +40,8 @@ var contextQueryCmd = &cobra.Command{
 func init() {
 	contextCmd.AddCommand(contextBuildCmd)
 	contextCmd.AddCommand(contextQueryCmd)
+	contextQueryCmd.Flags().BoolVar(&queryRaw, "raw", false, "output full subgraph JSON instead of routing packet")
+	contextQueryCmd.Flags().BoolVar(&queryIncludeNotes, "include-notes", false, "include notes/ in context blocks")
 }
 
 func runContextBuild(cmd *cobra.Command, _ []string) error {
@@ -41,12 +50,12 @@ func runContextBuild(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	result, err := context.Build(root)
+	result, err := ozcontext.Build(root)
 	if err != nil {
 		return fmt.Errorf("build context graph: %w", err)
 	}
 
-	if err := context.Serialize(root, result.Graph); err != nil {
+	if err := ozcontext.Serialize(root, result.Graph); err != nil {
 		return fmt.Errorf("write graph: %w", err)
 	}
 
@@ -61,17 +70,41 @@ func runContextQuery(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Verify graph exists.
-	if _, err := context.LoadGraph(root); err != nil {
-		return fmt.Errorf("context graph not found — run 'oz context build' first: %w", err)
+	queryText := args[0]
+	opts := query.Options{
+		IncludeNotes: queryIncludeNotes,
+		RawMode:      queryRaw,
 	}
 
-	cmd.Printf("oz context query: full engine ships in Sprint 3 (query: %q)\n", args[0])
+	result := query.RunWithOptions(root, queryText, opts)
+
+	if queryRaw {
+		// Raw mode: emit full graph for debugging.
+		g, loadErr := ozcontext.LoadGraph(root)
+		if loadErr != nil {
+			return fmt.Errorf("load graph for raw output: %w", loadErr)
+		}
+		raw := struct {
+			Query  string       `json:"query"`
+			Result query.Result `json:"result"`
+			Graph  interface{}  `json:"graph"`
+		}{queryText, result, g}
+		return printJSON(cmd, raw)
+	}
+
+	return printJSON(cmd, result)
+}
+
+func printJSON(cmd *cobra.Command, v interface{}) error {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	cmd.Println(string(data))
 	return nil
 }
 
-// findWorkspaceRoot returns the workspace root. Currently uses the working
-// directory; later sprints will add upward-search logic.
+// findWorkspaceRoot returns the workspace root from the working directory.
 func findWorkspaceRoot() (string, error) {
 	root, err := os.Getwd()
 	if err != nil {

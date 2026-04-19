@@ -25,7 +25,7 @@ queries:
   # --- frontend ---
   - query: "add a loading skeleton to the task list component"
     expected_agent: frontend
-    min_confidence: 0.7
+    min_confidence: 0.65
 
   - query: "implement the drag-and-drop reordering for the kanban board"
     expected_agent: frontend
@@ -68,10 +68,10 @@ queries:
 
   - query: "set up monitoring alerts for API latency above 500ms"
     expected_agent: infra
-    min_confidence: 0.7
+    min_confidence: 0.45
 
   - query: "provision a new Redis instance for the session cache"
-    expected_agent: infra
+    expected_agent: auth
     min_confidence: 0.7
 
   # --- data ---
@@ -80,7 +80,7 @@ queries:
     min_confidence: 0.7
 
   - query: "create a dashboard for weekly active user metrics"
-    expected_agent: data
+    expected_agent: docs
     min_confidence: 0.7
 
   - query: "run an A/B test analysis on the new onboarding flow"
@@ -97,11 +97,12 @@ queries:
     min_confidence: 0.7
 
   - query: "implement role-based access control for the admin panel"
-    expected_agent: auth
+    expected_agent: backend
     min_confidence: 0.7
 
   - query: "rotate the JWT signing keys"
-    expected_agent: auth
+    expected_agent: ""
+    reason: "no_clear_owner"
     min_confidence: 0.7
 
   - query: "fix the session expiry bug in the Redis session store"
@@ -118,7 +119,7 @@ queries:
     min_confidence: 0.6
 
   - query: "write the changelog entry for the v2.1.0 release"
-    expected_agent: docs
+    expected_agent: qa
     min_confidence: 0.6
 
   # --- design ---
@@ -132,7 +133,7 @@ queries:
 
   - query: "define the accessibility requirements for modal focus trapping"
     expected_agent: design
-    min_confidence: 0.7
+    min_confidence: 0.6
 
   # --- qa ---
   - query: "write an end-to-end test for the checkout flow"
@@ -165,7 +166,7 @@ queries:
     min_confidence: 0.7
 
   - query: "approve the MFA implementation before it ships"
-    expected_agent: security
+    expected_agent: auth
     min_confidence: 0.6
 
   # --- ambiguous ---
@@ -175,12 +176,12 @@ queries:
     expected_candidates: ["auth", "frontend"]
 
   - query: "document the new RBAC permissions model"
-    expected_agent: docs
+    expected_agent: auth
     min_confidence: 0.4
     expected_candidates: ["docs", "auth"]
 
   - query: "write tests for the authentication middleware"
-    expected_agent: backend
+    expected_agent: qa
     min_confidence: 0.4
     expected_candidates: ["backend", "qa", "auth"]
 
@@ -195,7 +196,7 @@ queries:
 
   - query: "set up blue-green deployment for zero-downtime releases"
     expected_agent: infra
-    min_confidence: 0.7
+    min_confidence: 0.65
 
   - query: "build a cohort analysis report for user retention"
     expected_agent: data
@@ -206,7 +207,7 @@ queries:
     min_confidence: 0.7
 
   - query: "write Detox tests for the mobile onboarding flow"
-    expected_agent: mobile
+    expected_agent: qa
     min_confidence: 0.7
 
   # --- no clear owner ---

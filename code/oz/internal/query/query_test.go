@@ -62,12 +62,8 @@ func TestRoutingAccuracy(t *testing.T) {
 	}
 }
 
-// isStubEngine returns true when Run() is the Sprint 1 stub.
-// Removed in Sprint 3 when the real engine ships.
-func isStubEngine() bool {
-	result := query.Run(".", "test query")
-	return result.Agent == "" && result.Confidence == 0
-}
+// isStubEngine always returns false — the real BM25F engine ships in Sprint 3.
+func isStubEngine() bool { return false }
 
 // TestBuilder_BasicWorkspace validates the testws builder produces a
 // convention-compliant workspace that oz validate would accept.

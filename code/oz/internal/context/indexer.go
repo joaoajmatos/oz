@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/oz-tools/oz/internal/convention"
 	"github.com/oz-tools/oz/internal/graph"
 )
 
@@ -14,11 +15,11 @@ import (
 func IndexMarkdownFile(f DiscoveredFile) ([]graph.Node, error) {
 	switch f.Kind {
 	case KindSpec:
-		return indexSections(f, graph.NodeTypeSpecSection, graph.TierSpecs)
+		return indexSections(f, graph.NodeTypeSpecSection, convention.TierSpecs)
 	case KindDecision:
 		return indexDecision(f)
 	case KindDoc:
-		return indexSections(f, graph.NodeTypeDoc, graph.TierDocs)
+		return indexSections(f, graph.NodeTypeDoc, convention.TierDocs)
 	case KindContextSnapshot:
 		return indexContextSnapshot(f)
 	case KindNote:
@@ -29,7 +30,7 @@ func IndexMarkdownFile(f DiscoveredFile) ([]graph.Node, error) {
 }
 
 // indexSections creates one node per H2 heading in the markdown file.
-func indexSections(f DiscoveredFile, nodeType string, tier graph.Tier) ([]graph.Node, error) {
+func indexSections(f DiscoveredFile, nodeType string, tier convention.Tier) ([]graph.Node, error) {
 	sections, err := ParseMarkdownSections(f.AbsPath)
 	if err != nil {
 		return nil, err
@@ -81,7 +82,7 @@ func indexDecision(f DiscoveredFile) ([]graph.Node, error) {
 		Type: graph.NodeTypeDecision,
 		File: f.Path,
 		Name: name,
-		Tier: graph.TierSpecs,
+		Tier: convention.TierSpecs,
 	}}, nil
 }
 
@@ -93,7 +94,7 @@ func indexContextSnapshot(f DiscoveredFile) ([]graph.Node, error) {
 		Type: graph.NodeTypeContextSnapshot,
 		File: f.Path,
 		Name: filepath.Base(f.Path),
-		Tier: graph.TierContext,
+		Tier: convention.TierContext,
 	}}, nil
 }
 
@@ -105,6 +106,6 @@ func indexNote(f DiscoveredFile) ([]graph.Node, error) {
 		Type: graph.NodeTypeNote,
 		File: f.Path,
 		Name: filepath.Base(f.Path),
-		Tier: graph.TierNotes,
+		Tier: convention.TierNotes,
 	}}, nil
 }

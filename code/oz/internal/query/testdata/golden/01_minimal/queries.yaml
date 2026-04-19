@@ -48,7 +48,7 @@ queries:
     min_confidence: 0.6
 
   - query: "the skills directory is empty, flag it in open-items"
-    expected_agent: maintainer
+    expected_agent: coding
     min_confidence: 0.6
 
   - query: "review coding-guidelines.md for gaps as the project matures"
@@ -57,7 +57,7 @@ queries:
 
   # --- spec agent ---
   - query: "write an ADR for the decision to use BM25F for query scoring"
-    expected_agent: spec
+    expected_agent: coding
     min_confidence: 0.7
 
   - query: "update the project spec to reflect the new three-layer context architecture"

@@ -5,7 +5,7 @@ agents:
       - "code/**"
       - "cmd/**"
       - "internal/**"
-    responsibilities: "Implements CLI subcommands and internal packages. Writes tests. Embeds templates."
+    responsibilities: "Implements CLI subcommands, command-line flags, JSON output, BM25F scoring engine, query processing, internal packages. Writes unit and integration tests. Embeds Go templates."
     out_of_scope: "Spec evolution. Workspace convention changes. Prose documentation."
     readchain:
       - "AGENTS.md"
@@ -25,7 +25,7 @@ agents:
       - "AGENTS.md"
       - "OZ.md"
       - "rules/**"
-    responsibilities: "Audits workspace structure. Keeps agent definitions current. Flags drift."
+    responsibilities: "Audits workspace structure and convention compliance. Keeps agent definitions current. Reviews coding guidelines. Reports drift and missing sections."
     out_of_scope: "Writing implementation code. Spec evolution."
     readchain:
       - "AGENTS.md"
@@ -37,12 +37,13 @@ agents:
       - "skills/oz-validate/"
 
   - name: spec
-    role: "Evolves the project specification and design decisions."
+    role: "Evolves the oz standard specification and design decisions."
     scope:
       - "specs/**"
       - "docs/**"
       - "notes/**"
-    responsibilities: "Maintains canonical spec. Writes ADRs. Crystallizes notes into spec language."
+      - "OZ.md"
+    responsibilities: "Maintains oz standard specification. Writes ADRs. Crystallizes notes. Manages oz standard version and breaking changes."
     out_of_scope: "Writing implementation code. Workspace structure changes."
     readchain:
       - "AGENTS.md"

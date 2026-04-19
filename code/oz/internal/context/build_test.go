@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/oz-tools/oz/internal/convention"
 	ozcontext "github.com/oz-tools/oz/internal/context"
 	"github.com/oz-tools/oz/internal/graph"
 	"github.com/oz-tools/oz/internal/testws"
@@ -170,8 +171,8 @@ func TestBuild_SectionNodes(t *testing.T) {
 	for _, n := range result.Graph.Nodes {
 		if n.Type == graph.NodeTypeSpecSection && n.File == "specs/api.md" {
 			found[n.Section] = true
-			if n.Tier != graph.TierSpecs {
-				t.Errorf("node %q: tier %q, want %q", n.ID, n.Tier, graph.TierSpecs)
+			if n.Tier != convention.TierSpecs {
+				t.Errorf("node %q: tier %q, want %q", n.ID, n.Tier, convention.TierSpecs)
 			}
 		}
 	}
@@ -227,8 +228,8 @@ func TestBuild_DecisionNodes(t *testing.T) {
 	for _, n := range result.Graph.Nodes {
 		if n.Type == graph.NodeTypeDecision && n.Name == "0001-use-go" {
 			found = true
-			if n.Tier != graph.TierSpecs {
-				t.Errorf("decision tier: got %q, want %q", n.Tier, graph.TierSpecs)
+			if n.Tier != convention.TierSpecs {
+				t.Errorf("decision tier: got %q, want %q", n.Tier, convention.TierSpecs)
 			}
 		}
 	}

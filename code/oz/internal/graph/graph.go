@@ -19,6 +19,8 @@
 //   - crystallized_from — a spec section was crystallized from a note
 package graph
 
+import "github.com/oz-tools/oz/internal/convention"
+
 // SchemaVersion is the current graph.json schema version.
 // Increment when the schema changes in a backwards-incompatible way.
 const SchemaVersion = "1"
@@ -42,46 +44,6 @@ const (
 	EdgeTypeCrystallizedFrom = "crystallized_from"
 )
 
-// Tier is a source-of-truth band for non-agent nodes. Wire values match
-// graph.json and AGENTS.md (specs > docs > context > notes).
-type Tier string
-
-const (
-	TierSpecs   Tier = "specs"
-	TierDocs    Tier = "docs"
-	TierContext Tier = "context"
-	TierNotes   Tier = "notes"
-)
-
-// TrustTierOrder lists tiers from highest trust (index 0) to lowest, aligned
-// with the workspace source-of-truth hierarchy. Use for iteration, validation,
-// and sort keys (see Tier.TrustRank, LessTrustTier).
-var TrustTierOrder = []Tier{TierSpecs, TierDocs, TierContext, TierNotes}
-
-// TrustRank returns 0 for the highest-trust tier (specs), then 1, 2, 3.
-// Unknown or empty tiers sort after all known tiers (return len(TrustTierOrder)).
-func (t Tier) TrustRank() int {
-	if t == "" {
-		return len(TrustTierOrder)
-	}
-	for i, x := range TrustTierOrder {
-		if t == x {
-			return i
-		}
-	}
-	return len(TrustTierOrder)
-}
-
-// LessTrustTier reports whether tier a should sort before tier b when ordering
-// by descending trust (more trusted material first).
-func LessTrustTier(a, b Tier) bool {
-	ra, rb := a.TrustRank(), b.TrustRank()
-	if ra != rb {
-		return ra < rb
-	}
-	return string(a) < string(b)
-}
-
 // Node is a vertex in the structural graph.
 type Node struct {
 	// ID is the stable, unique node key. Format: "<type>:<discriminator>".
@@ -101,7 +63,7 @@ type Node struct {
 	Name string `json:"name"`
 
 	// Tier is the source-of-truth trust band. Omitted for agent nodes.
-	Tier Tier `json:"tier,omitempty"`
+	Tier convention.Tier `json:"tier,omitempty"`
 
 	// Section is the markdown heading for section nodes (spec_section, doc).
 	Section string `json:"section,omitempty"`

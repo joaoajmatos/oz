@@ -96,12 +96,12 @@ type Layer struct {
 
 // HierarchyLayers returns all hierarchy layers with their existence status.
 func (w *Workspace) HierarchyLayers() []Layer {
-	layers := make([]Layer, 0, len(convention.Hierarchy))
-	for _, name := range convention.Hierarchy {
-		path := filepath.Join(w.Root, name)
+	layers := make([]Layer, 0, len(convention.SourceOfTruthOrder))
+	for _, name := range convention.SourceOfTruthOrder {
+		path := filepath.Join(w.Root, string(name))
 		_, err := os.Stat(path)
 		layers = append(layers, Layer{
-			Name:   name,
+			Name:   string(name),
 			Path:   path,
 			Exists: err == nil,
 		})

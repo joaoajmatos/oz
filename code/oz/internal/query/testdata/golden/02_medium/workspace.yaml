@@ -6,7 +6,7 @@ agents:
       - "code/server/**"
       - "code/db/**"
       - "code/models/**"
-    responsibilities: "Implements API handlers, middleware, request validation, database migrations, background jobs."
+    responsibilities: "Implements REST API endpoints, request handlers, middleware, cursor-based pagination, request validation, database migrations, background jobs."
     out_of_scope: "UI work, design decisions, mobile clients, infrastructure provisioning."
     readchain:
       - "AGENTS.md"
@@ -26,7 +26,7 @@ agents:
       - "code/ui/**"
       - "code/web/**"
       - "code/components/**"
-    responsibilities: "Implements React components, pages, state management, API client integration."
+    responsibilities: "Implements React components, pages, state management, kanban board, drag-and-drop interactions, dark mode toggle, API client integration."
     out_of_scope: "Backend logic, database schema, mobile app, server-side rendering."
     readchain:
       - "AGENTS.md"

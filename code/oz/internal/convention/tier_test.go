@@ -1,4 +1,4 @@
-package graph
+package convention
 
 import (
 	"sort"
@@ -14,8 +14,8 @@ func TestTier_TrustRank(t *testing.T) {
 		{TierDocs, 1},
 		{TierContext, 2},
 		{TierNotes, 3},
-		{"", len(TrustTierOrder)},
-		{Tier("unknown"), len(TrustTierOrder)},
+		{"", len(SourceOfTruthOrder)},
+		{Tier("unknown"), len(SourceOfTruthOrder)},
 	}
 	for _, tc := range cases {
 		if g := tc.tier.TrustRank(); g != tc.want {
