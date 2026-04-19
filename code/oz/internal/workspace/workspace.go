@@ -20,7 +20,33 @@ func New(path string) (*Workspace, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Workspace{Root: abs}, nil
+	return &Workspace{Root: detectWorkspaceRoot(abs)}, nil
+}
+
+func detectWorkspaceRoot(path string) string {
+	current := path
+	for {
+		if hasRequiredRootFiles(current) {
+			return current
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return path
+		}
+		current = parent
+	}
+}
+
+func hasRequiredRootFiles(path string) bool {
+	for file, status := range convention.RootFiles {
+		if status != "required" {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(path, file)); err != nil {
+			return false
+		}
+	}
+	return true
 }
 
 // Valid reports whether the workspace has all required root files.

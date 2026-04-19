@@ -18,6 +18,22 @@ func TestNew_ResolvesRelativePath(t *testing.T) {
 	}
 }
 
+func TestNew_DetectsWorkspaceRootFromNestedPath(t *testing.T) {
+	root := t.TempDir()
+	write(t, filepath.Join(root, "AGENTS.md"), "")
+	write(t, filepath.Join(root, "OZ.md"), "oz standard: v0.1\n")
+	nested := filepath.Join(root, "code", "oz")
+	mkdir(t, nested)
+
+	ws, err := workspace.New(nested)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ws.Root != root {
+		t.Fatalf("expected root %q, got %q", root, ws.Root)
+	}
+}
+
 func TestValid(t *testing.T) {
 	dir := t.TempDir()
 

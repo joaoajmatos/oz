@@ -71,6 +71,19 @@ func TestValidateCmd_WarningOnly_ReturnsNil(t *testing.T) {
 	}
 }
 
+func TestValidateCmd_NestedPath_UsesWorkspaceRoot(t *testing.T) {
+	dir := scaffoldValidWorkspace(t)
+	nested := filepath.Join(dir, "code", "oz")
+	if err := os.MkdirAll(nested, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runValidate(validateCmd, []string{nested})
+	if err != nil {
+		t.Errorf("expected nil error for nested workspace path, got: %v", err)
+	}
+}
+
 // captureStderr redirects os.Stderr for the duration of fn and returns what was written.
 func captureStderr(t *testing.T, fn func()) []byte {
 	t.Helper()
