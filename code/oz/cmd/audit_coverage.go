@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/oz-tools/oz/internal/audit"
 	"github.com/oz-tools/oz/internal/audit/coverage"
 	"github.com/spf13/cobra"
 )
@@ -9,7 +10,7 @@ var auditCoverageCmd = &cobra.Command{
 	Use:   "coverage",
 	Short: "Check for unowned code directories and dangling scope paths",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		return runSingleCheck(cmd, &coverage.Check{})
+		return runSingleCheck(cmd, &coverage.Check{}, audit.Options{})
 	},
 }
 

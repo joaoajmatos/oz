@@ -88,7 +88,8 @@ func runAuditAll(cmd *cobra.Command, _ []string) error {
 }
 
 // runSingleCheck is a shared helper for subcommands that run a single check.
-func runSingleCheck(cmd *cobra.Command, c audit.Check) error {
+// opts controls optional workspace content inclusion; pass audit.Options{} for defaults.
+func runSingleCheck(cmd *cobra.Command, c audit.Check, opts audit.Options) error {
 	if err := validateExitOn(auditExitOn); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		return errAuditFailed
@@ -99,7 +100,7 @@ func runSingleCheck(cmd *cobra.Command, c audit.Check) error {
 		return err
 	}
 
-	r, err := audit.RunAll(root, []audit.Check{c}, audit.Options{})
+	r, err := audit.RunAll(root, []audit.Check{c}, opts)
 	if err != nil {
 		return err
 	}

@@ -2,25 +2,28 @@ package cmd
 
 import (
 	"github.com/oz-tools/oz/internal/audit"
+	"github.com/oz-tools/oz/internal/audit/drift"
 	"github.com/spf13/cobra"
 )
 
-type driftCheck struct{}
-
-func (c *driftCheck) Name() string { return "drift" }
-func (c *driftCheck) Codes() []string {
-	return []string{"DRIFT001", "DRIFT002", "DRIFT003"}
-}
-func (c *driftCheck) Run(_ string, _ audit.Options) ([]audit.Finding, error) { return nil, nil }
+var (
+	driftIncludeTests bool
+	driftIncludeDocs  bool
+)
 
 var auditDriftCmd = &cobra.Command{
 	Use:   "drift",
-	Short: "Check for code/spec drift in agent scope declarations (stub)",
+	Short: "Check for spec-code drift: missing paths, renamed symbols, undocumented exports",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		return runSingleCheck(cmd, &driftCheck{})
+		return runSingleCheck(cmd, &drift.Check{}, audit.Options{
+			IncludeTests: driftIncludeTests,
+			IncludeDocs:  driftIncludeDocs,
+		})
 	},
 }
 
 func init() {
-	registerCheck(&driftCheck{})
+	auditDriftCmd.Flags().BoolVar(&driftIncludeTests, "include-tests", false, "include _test.go symbols in drift extraction")
+	auditDriftCmd.Flags().BoolVar(&driftIncludeDocs, "include-docs", false, "also scan docs/ for code references")
+	registerCheck(&drift.Check{})
 }

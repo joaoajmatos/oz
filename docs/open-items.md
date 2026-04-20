@@ -9,6 +9,19 @@
 
 ## Known Issues
 
+### oz audit drift — accepted noise (Sprint A5 self-validation, 2026-04-20)
+
+Running `oz audit drift` against this repo after a fresh `oz context build` produces 0 errors and 222 DRIFT003 warnings.
+
+**DRIFT002 errors: 0.** One false positive (`OPENROUTER_API_KEY` — an env var name) was eliminated by narrowing the spec scanner regex to exclude underscores from identifier patterns (AT-01 mitigation). The canonical narrowing is documented in `internal/audit/drift/specscan/scan.go` (the `goIdentRe` comment).
+
+**DRIFT003 warnings: 222.** All exported symbols in the codebase (`cmd`, `internal/*`) are technically "unmentioned" in specs because the specs describe behaviour and architecture, not every public API symbol. This is expected for a codebase-in-development. DRIFT003 is `warn` severity and does not trigger CI failure under the default `--exit-on=error` policy. Accepted as known noise.
+
+| Code | Disposition |
+|---|---|
+| DRIFT002 (0 errors) | Clean. AT-01 resolved: narrowing applied, no false positives. |
+| DRIFT003 (222 warns) | Accepted noise. Codebase is growing faster than spec coverage. Revisit at A6. |
+
 ### oz audit staleness — accepted noise (Sprint A3 self-validation, 2026-04-20)
 
 Running `oz audit --only=orphans,coverage,staleness` after a fresh `oz context build` produces 1 warning and 1 info finding and 0 errors.

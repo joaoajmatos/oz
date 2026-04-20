@@ -1,10 +1,13 @@
 // Package specscan extracts code references from oz workspace markdown files.
 //
 // It finds two kinds of candidates:
-//   - Go-identifier-shaped tokens inside backticks (e.g. `MyFunc`, `pkg.MyType`)
+//   - Identifier-shaped tokens inside backticks (default: exported Go shape)
 //   - backtick strings or markdown link targets starting with "code/" (path refs)
 //
 // Results carry file path and 1-based line number for use in drift findings.
+//
+// Identifier detection is pluggable via Options.IdentPatterns for future
+// multi-language indexers (PRD A-14); when unset, DefaultGoExportedIdentPattern applies.
 package specscan
 
 import (
@@ -30,19 +33,49 @@ type Candidate struct {
 	Kind string
 }
 
-// Options controls which directories the scanner walks.
+// DefaultGoExportedIdentPattern matches exported Go identifiers in two forms:
+//   - Unqualified:  `RunAll`       — starts uppercase, camelCase only
+//   - Qualified:    `audit.RunAll` — package (any case) dot exported symbol (uppercase)
+//
+// Underscores are intentionally excluded: Go exported names are camelCase,
+// so ALL_CAPS_UNDERSCORE patterns (e.g. env var names like OPENROUTER_API_KEY)
+// are false positives and must be filtered out (AT-01 narrowing, Sprint A5-05).
+//
+// Callers may append compiled regexps built from this pattern to IdentPatterns
+// alongside language-specific patterns.
+const DefaultGoExportedIdentPattern = `^(?:[A-Z][A-Za-z0-9]*|[A-Za-z][A-Za-z0-9]*\.[A-Z][A-Za-z0-9]*)$`
+
+// defaultGoExportedIdentRe is compiled from DefaultGoExportedIdentPattern.
+var defaultGoExportedIdentRe = regexp.MustCompile(DefaultGoExportedIdentPattern)
+
+// Options controls which directories the scanner walks and how identifiers are detected.
 type Options struct {
 	// IncludeDocs, when true, also scans files under docs/ in addition to specs/.
 	IncludeDocs bool
+
+	// IdentPatterns, when non-empty, defines which backtick tokens count as identifier
+	// candidates: a token matches if any pattern's MatchString returns true (patterns
+	// should be anchored with ^...$ for whole-token matching).
+	//
+	// When nil or empty, DefaultGoExportedIdentPattern is used alone. For V2
+	// multi-language drift, append patterns for TypeScript, Rust, etc., or replace
+	// the default by including a copy compiled from DefaultGoExportedIdentPattern.
+	IdentPatterns []*regexp.Regexp
 }
 
-// goIdentRe matches exported Go identifiers in two forms:
-//   - Unqualified:  `RunAll`       — starts uppercase
-//   - Qualified:    `audit.RunAll` — package (any case) dot exported symbol (uppercase)
-//
-// The qualified form uses lowercase-permissive package names to match real Go
-// conventions (e.g. `graph.Node`, `audit.RunAll`).
-var goIdentRe = regexp.MustCompile(`^(?:[A-Z][A-Za-z0-9_]*|[A-Za-z][A-Za-z0-9_]*\.[A-Z][A-Za-z0-9_]*)$`)
+// isIdentifierToken reports whether tok should be recorded as an identifier candidate.
+func (o Options) isIdentifierToken(tok string) bool {
+	patterns := o.IdentPatterns
+	if len(patterns) == 0 {
+		return defaultGoExportedIdentRe.MatchString(tok)
+	}
+	for _, re := range patterns {
+		if re != nil && re.MatchString(tok) {
+			return true
+		}
+	}
+	return false
+}
 
 // Scan walks specs/ (and optionally docs/) under root and returns all candidates.
 func Scan(root string, opts Options) ([]Candidate, error) {
@@ -70,7 +103,7 @@ func Scan(root string, opts Options) ([]Candidate, error) {
 			if relErr != nil {
 				return relErr
 			}
-			found, scanErr := scanFile(filepath.ToSlash(rel), path)
+			found, scanErr := scanFile(filepath.ToSlash(rel), path, opts)
 			if scanErr != nil {
 				return scanErr
 			}
@@ -85,7 +118,7 @@ func Scan(root string, opts Options) ([]Candidate, error) {
 }
 
 // scanFile extracts candidates from a single markdown file.
-func scanFile(relPath, absPath string) ([]Candidate, error) {
+func scanFile(relPath, absPath string, opts Options) ([]Candidate, error) {
 	f, err := os.Open(absPath)
 	if err != nil {
 		return nil, err
@@ -98,7 +131,7 @@ func scanFile(relPath, absPath string) ([]Candidate, error) {
 	for scanner.Scan() {
 		lineNum++
 		line := scanner.Text()
-		candidates = append(candidates, extractFromLine(relPath, lineNum, line)...)
+		candidates = append(candidates, extractFromLine(relPath, lineNum, line, opts)...)
 	}
 	return candidates, scanner.Err()
 }
@@ -109,7 +142,7 @@ var backtickRe = regexp.MustCompile("`([^`]+)`")
 // mdLinkRe matches the URL part of a markdown link: [text](url).
 var mdLinkRe = regexp.MustCompile(`\]\(([^)]+)\)`)
 
-func extractFromLine(file string, line int, text string) []Candidate {
+func extractFromLine(file string, line int, text string, opts Options) []Candidate {
 	var out []Candidate
 
 	// Extract inline backtick content.
@@ -117,7 +150,7 @@ func extractFromLine(file string, line int, text string) []Candidate {
 		tok := strings.TrimSpace(m[1])
 		if strings.HasPrefix(tok, "code/") {
 			out = append(out, Candidate{File: file, Line: line, Text: tok, Kind: "path"})
-		} else if goIdentRe.MatchString(tok) {
+		} else if opts.isIdentifierToken(tok) {
 			out = append(out, Candidate{File: file, Line: line, Text: tok, Kind: "identifier"})
 		}
 	}

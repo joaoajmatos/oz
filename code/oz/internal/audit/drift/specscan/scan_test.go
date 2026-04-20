@@ -3,6 +3,7 @@ package specscan_test
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/oz-tools/oz/internal/audit/drift/specscan"
@@ -142,6 +143,43 @@ func TestScan_NoSpecsDir(t *testing.T) {
 	}
 	if len(candidates) != 0 {
 		t.Fatalf("expected 0 candidates, got %d", len(candidates))
+	}
+}
+
+func TestScan_IdentPatterns_CustomOnly(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "specs", "api.md"), "See `OnlyThis` and `RunAll`.\n")
+
+	only := regexp.MustCompile(`^OnlyThis$`)
+	candidates, err := specscan.Scan(root, specscan.Options{
+		IdentPatterns: []*regexp.Regexp{only},
+	})
+	if err != nil {
+		t.Fatalf("Scan: %v", err)
+	}
+	if len(candidates) != 1 {
+		t.Fatalf("expected 1 candidate with custom pattern, got %d: %+v", len(candidates), candidates)
+	}
+	if candidates[0].Text != "OnlyThis" || candidates[0].Kind != "identifier" {
+		t.Fatalf("got %+v", candidates[0])
+	}
+}
+
+func TestScan_IdentPatterns_AppendAlongsideGoDefault(t *testing.T) {
+	root := t.TempDir()
+	// Not matched by Go default (lowercase); matched by extra pattern.
+	writeFile(t, filepath.Join(root, "specs", "api.md"), "Use `ts` for TypeScript.\n")
+
+	goRe := regexp.MustCompile(specscan.DefaultGoExportedIdentPattern)
+	tsRe := regexp.MustCompile(`^ts$`)
+	candidates, err := specscan.Scan(root, specscan.Options{
+		IdentPatterns: []*regexp.Regexp{goRe, tsRe},
+	})
+	if err != nil {
+		t.Fatalf("Scan: %v", err)
+	}
+	if len(candidates) != 1 || candidates[0].Text != "ts" {
+		t.Fatalf("expected single identifier ts, got %+v", candidates)
 	}
 }
 
