@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/oz-tools/oz/internal/codeindex"
+	"github.com/oz-tools/oz/internal/codeindex/goindexer"
 	"github.com/oz-tools/oz/internal/graph"
 )
 
@@ -51,8 +53,29 @@ func Build(root string) (*BuildResult, error) {
 		nodes = append(nodes, fileNodes...)
 	}
 
-	// 4. Extract edges.
-	edges := extractEdges(nodes, files)
+	var edges []graph.Edge
+
+	// 4. Index code files and symbols under code/.
+	goIdx := goindexer.New()
+	codeFiles, err := codeindex.WalkCode(root, []codeindex.Indexer{goIdx})
+	if err != nil {
+		return nil, fmt.Errorf("walk code files: %w", err)
+	}
+	for _, cf := range codeFiles {
+		if cf.Lang != goIdx.Language() {
+			continue
+		}
+		res, indexErr := goIdx.IndexFile(cf)
+		if indexErr != nil {
+			return nil, fmt.Errorf("index code file %s: %w", cf.Path, indexErr)
+		}
+		nodes = append(nodes, res.FileNode)
+		nodes = append(nodes, res.Symbols...)
+		edges = append(edges, res.Edges...)
+	}
+
+	// 5. Extract cross-reference and ownership edges now that code_file nodes exist.
+	edges = append(edges, extractEdges(nodes, files)...)
 
 	g := &graph.Graph{
 		SchemaVersion: graph.SchemaVersion,

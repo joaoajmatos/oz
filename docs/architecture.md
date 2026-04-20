@@ -89,6 +89,10 @@ workspace root
   └─ Parsers
        ParseAgentMD  → agent nodes (role, scope, read-chain, rules, skills)
        IndexMarkdownFile → spec_section, decision, doc, context_snapshot, note nodes
+  └─ Code indexers (internal/codeindex/)
+       — walks code/ for supported languages
+       — v1: Go indexer extracts exported symbols
+       — emits code_file, code_symbol, contains edges
   └─ Cross-reference extractor (internal/context/extractor.go)
        — reads, owns, references, supports edges
   └─ Deterministic serializer (internal/context/serializer.go)
@@ -154,7 +158,7 @@ stdout (newline-delimited JSON-RPC 2.0 responses)
 
 ## Structural context graph (`context/graph.json`)
 
-`oz context build` walks the workspace (respecting `.ozignore`), parses convention files, extracts cross-references, and writes a deterministic JSON graph. The on-disk artefact is `context/graph.json`. The Go types and constants live in `code/oz/internal/graph`; the schema version is `graph.SchemaVersion` (currently `"1"`).
+`oz context build` walks the workspace (respecting `.ozignore`), parses convention files, indexes source files under `code/`, extracts cross-references, and writes a deterministic JSON graph. The on-disk artefact is `context/graph.json`. The Go types and constants live in `code/oz/internal/graph`; the schema version is `graph.SchemaVersion` (currently `"2"`).
 
 Each graph object includes `schema_version`, `content_hash` (SHA-256 hex of the canonical `nodes` + `edges` JSON, excluding `content_hash`), `nodes`, and `edges`. Nodes and edges are sorted before write so repeated builds with unchanged inputs are byte-identical.
 
@@ -168,6 +172,8 @@ Each graph object includes `schema_version`, `content_hash` (SHA-256 hex of the 
 | `doc` | An H2 section in a file under `docs/` |
 | `context_snapshot` | A markdown file under `context/` |
 | `note` | A markdown file under `notes/` |
+| `code_file` | A source file under `code/` with language/package metadata |
+| `code_symbol` | An exported source symbol with language, kind, package, and line metadata |
 
 Agent nodes carry optional fields parsed from AGENT.md (`role`, `scope`, `read_chain`, `rules`, `skills`, and related prose). Other nodes include `tier` (`specs`, `docs`, `context`, or `notes`) where applicable.
 
@@ -180,6 +186,7 @@ Agent nodes carry optional fields parsed from AGENT.md (`role`, `scope`, `read_c
 | `references` | A document cites another file path (backticks or markdown links) |
 | `supports` | A doc-tier node references a spec or decision |
 | `crystallized_from` | Reserved for future crystallize integration |
+| `contains` | A `code_file` node declares a `code_symbol` node |
 
 `oz audit` loads this file (stub today) to prove downstream tools can consume the contract before full drift checks exist.
 

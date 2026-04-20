@@ -3,10 +3,12 @@ package context_test
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/convention"
 	ozcontext "github.com/oz-tools/oz/internal/context"
+	"github.com/oz-tools/oz/internal/convention"
 	"github.com/oz-tools/oz/internal/graph"
 	"github.com/oz-tools/oz/internal/testws"
 )
@@ -101,6 +103,61 @@ func TestBuild_Determinism(t *testing.T) {
 		t.Error("determinism violation: two runs produced different graph.json output")
 		t.Logf("first  hash: %s", result1.Graph.ContentHash)
 		t.Logf("second hash: %s", result2.Graph.ContentHash)
+	}
+}
+
+func TestBuild_CodeNodesAndContainsEdges(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("coder",
+			testws.Role("Writes code"),
+			testws.ReadChain("specs/api.md"),
+		).
+		WithSpec("specs/api.md", testws.Section("Overview", "See `code/oz/pkg/run.go`.")).
+		Build()
+
+	writeCodeFile(t, filepath.Join(ws.Path(), "code", "oz", "go.mod"), "module github.com/oz-tools/oz\n\ngo 1.21\n")
+	writeCodeFile(t, filepath.Join(ws.Path(), "code", "oz", "pkg", "run.go"), `package pkg
+
+type Runner struct{}
+func Run() {}
+`)
+
+	result, err := ozcontext.Build(ws.Path())
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+
+	var codeFileID string
+	var codeFileCount, symbolCount, containsCount, referencesToCode int
+	for _, n := range result.Graph.Nodes {
+		if n.Type == graph.NodeTypeCodeFile {
+			codeFileCount++
+			codeFileID = n.ID
+		}
+		if n.Type == graph.NodeTypeCodeSymbol {
+			symbolCount++
+		}
+	}
+	for _, e := range result.Graph.Edges {
+		if e.Type == graph.EdgeTypeContains {
+			containsCount++
+		}
+		if e.Type == graph.EdgeTypeReferences && e.To == codeFileID {
+			referencesToCode++
+		}
+	}
+
+	if codeFileCount == 0 {
+		t.Fatal("expected at least one code_file node")
+	}
+	if symbolCount == 0 {
+		t.Fatal("expected at least one code_symbol node")
+	}
+	if containsCount == 0 {
+		t.Fatal("expected at least one contains edge")
+	}
+	if referencesToCode == 0 {
+		t.Fatal("expected docs/spec references to resolve to code_file nodes")
 	}
 }
 
@@ -293,4 +350,14 @@ func countByEdgeType(edges []graph.Edge, edgeType string) int {
 		}
 	}
 	return n
+}
+
+func writeCodeFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
 }

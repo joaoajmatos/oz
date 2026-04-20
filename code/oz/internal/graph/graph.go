@@ -9,6 +9,8 @@
 //   - doc             — a heading from a file under docs/
 //   - context_snapshot — a file under context/
 //   - note            — a file under notes/
+//   - code_file       — a source file under code/
+//   - code_symbol     — an exported symbol declared in source code
 //
 // # Edge types
 //
@@ -17,13 +19,14 @@
 //   - references       — a document contains a file-path reference to another node
 //   - supports         — a doc references a spec/decision (doc supports the spec)
 //   - crystallized_from — a spec section was crystallized from a note
+//   - contains         — code_file contains code_symbol
 package graph
 
 import "github.com/oz-tools/oz/internal/convention"
 
 // SchemaVersion is the current graph.json schema version.
 // Increment when the schema changes in a backwards-incompatible way.
-const SchemaVersion = "1"
+const SchemaVersion = "2"
 
 // Node types.
 const (
@@ -33,6 +36,8 @@ const (
 	NodeTypeDoc             = "doc"
 	NodeTypeContextSnapshot = "context_snapshot"
 	NodeTypeNote            = "note"
+	NodeTypeCodeFile        = "code_file"
+	NodeTypeCodeSymbol      = "code_symbol"
 )
 
 // Edge types.
@@ -42,6 +47,7 @@ const (
 	EdgeTypeReferences       = "references"
 	EdgeTypeSupports         = "supports"
 	EdgeTypeCrystallizedFrom = "crystallized_from"
+	EdgeTypeContains         = "contains"
 )
 
 // Node is a vertex in the structural graph.
@@ -67,6 +73,12 @@ type Node struct {
 
 	// Section is the markdown heading for section nodes (spec_section, doc).
 	Section string `json:"section,omitempty"`
+
+	// Code-specific fields (Type == NodeTypeCodeFile / NodeTypeCodeSymbol).
+	Language   string `json:"language,omitempty"`
+	SymbolKind string `json:"symbol_kind,omitempty"`
+	Package    string `json:"package,omitempty"`
+	Line       int    `json:"line,omitempty"`
 
 	// Agent-specific fields (Type == NodeTypeAgent).
 	Role             string   `json:"role,omitempty"`
