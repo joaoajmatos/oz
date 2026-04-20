@@ -103,33 +103,34 @@ Already produced this session:
 
 ---
 
-## Sprint A4 — drift extractor (Go AST)
-**Goal**: `internal/audit/drift/govet` extracts every exported Go symbol from `code/`. No findings yet — just the extraction primitive.
+## Sprint A4 — drift foundation (graph-sourced symbols + spec scanner)
+**Goal**: `internal/audit/drift` provides a `Symbol` type loaded from `graph.json` and a spec scanner that extracts code references from markdown. No findings yet — just the two primitives that Sprint A5 wires together.
 
-> STATUS: PAUSED — Sprint A4 is blocked pending the code indexing sprint
-> (`docs/oz-codeindex-v1-sprints.md`). Once `oz context build` indexes code into
-> the graph, the standalone Go AST extractor (`A4-01`–`A4-06`) is no longer needed.
-> Sprint A4 will be re-scoped to drift orchestration using graph queries directly.
+> RE-SCOPED (2026-04-20) — The standalone Go AST extractor (original A4-01–A4-06) is
+> superseded by the code-indexing sprint (CI-1). `oz context build` now indexes all
+> exported Go symbols into `graph.json` as `code_symbol` nodes. Sprint A4 now loads
+> symbols from the graph instead of re-parsing source files, and moves the spec scanner
+> here from A5-01.
 
 ### Stories
 
 | # | Story | AC |
 |---|---|---|
-| A4-01 | `internal/audit/drift/drift.go` — `Symbol`, `ExtractResult`, `Extractor` interface, `Options` | Public surface per PRD §6 "Drift extractor". |
-| A4-02 | `internal/audit/drift/govet/extract.go` — Go AST extractor | Walks `code/` (or `Options.CodeRoot` if set). For each `*.go` not under `/testdata/` and not `_test.go` (unless `Options.IncludeTests`), runs `go/parser.ParseFile` and walks the resulting `*ast.File`. Records exported `FuncDecl`, `TypeSpec`, `ValueSpec` declarations with `(Pkg, Name, Kind, File, Line)`. |
-| A4-03 | Module-root detection | For each parsed file, walk up to the nearest `go.mod` to compute the import path. Cached per-directory. |
-| A4-04 | Parse-error tolerance | A parse failure on one file produces an `info` `DRIFT900` `SkipNote` (not a hard error). The rest of the extraction continues. |
-| A4-05 | `testdata/` exclusion test (resolves AT-04) | Test fixture: `code/foo/foo.go` with `Foo` symbol + `code/foo/testdata/bar.go` with `Bar` symbol. Assertion: `Bar` is never in `ExtractResult.Symbols`, even with `IncludeTests: true`. |
-| A4-06 | Extractor unit tests | Table-driven over a small embedded Go fixture set. Asserts symbol count, kinds, and line numbers. |
-| A4-07 | Self-extraction sanity check | Run `govet.Extract` against `code/oz/`. Assert at least N exported symbols (N to be set after first run, conservative — e.g. 50). Confirms the extractor works on real code. |
+| A4-R01 | `internal/audit/drift/drift.go` — `Symbol` type + `LoadSymbols(*graph.Graph) []Symbol` | `Symbol` has `Pkg`, `Name`, `Kind`, `File`, `Line` fields mapped from `code_symbol` graph nodes. `LoadSymbols` filters `NodeTypeCodeSymbol` nodes and returns a sorted slice. |
+| A4-R02 | Unit tests for `LoadSymbols` | Table-driven: graph with zero, one, and mixed node types; assert correct Symbol slice and sort order. |
+| A4-R03 | `internal/audit/drift/specscan/scan.go` — spec scanner | Walks `specs/` (and `docs/` if `Options.IncludeDocs`). For each markdown file, extracts: backticked tokens matching `^[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)?$` (Go-identifier-shaped), and backtick or markdown-link targets starting with `code/`. Records `(File, Line, Candidate)`. |
+| A4-R04 | Unit tests for spec scanner | Fixture files covering: exported identifier, `Pkg.Symbol` form, `code/` path link, unexported identifier (not captured), inline code vs block code. |
+| A4-R05 | Self-validation | Load this repo's `context/graph.json` and call `LoadSymbols`; assert >= 50 symbols. Document actual count. Resolves AT-04 (originally testdata exclusion — now moot since goindexer already skips testdata). |
 
 ### Sprint risks
-- Parsing errors should never crash the auditor. A4-04 is the tolerance test; treat any panic in the extractor as a Sprint A4 blocker.
+- AT-04 is resolved by CI-1 (goindexer already excludes testdata/ and _test.go). No separate test needed here.
 
 ### Definition of done
-- `govet.Extract` runs cleanly against `code/oz/`
-- All A4 tests pass; AT-04 resolved
-- No findings produced yet — that is Sprint A5
+- `LoadSymbols` correctly maps all `code_symbol` nodes from a graph
+- Spec scanner extracts candidates with file + line positions
+- All A4 tests pass
+- Self-validation: this repo's graph produces >= 50 symbols via `LoadSymbols`
+- AT-04 closed
 
 ---
 
