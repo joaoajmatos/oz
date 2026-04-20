@@ -9,6 +9,17 @@
 
 ## Known Issues
 
+### oz audit staleness — accepted noise (Sprint A3 self-validation, 2026-04-20)
+
+Running `oz audit --only=orphans,coverage,staleness` after a fresh `oz context build` produces 1 warning and 1 info finding and 0 errors.
+
+| Code | Finding | Disposition |
+|---|---|---|
+| COV002 | `code/oz/` is not owned by any agent | Carried over from A2. Accepted. |
+| STALE004 | semantic.json not found | Expected. No enrichment has been run. Info-only. |
+
+AT-02 (determinism): resolved. Determinism test (A3-05) passes 100 consecutive runs with byte-identical findings.
+
 ### oz audit orphans + coverage — accepted noise (Sprint A2 self-validation, 2026-04-20)
 
 Running `oz audit --only=orphans,coverage` against this repo produces 3 warnings and 0 errors.

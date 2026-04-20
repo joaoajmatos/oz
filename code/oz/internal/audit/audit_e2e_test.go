@@ -9,7 +9,9 @@ import (
 	"github.com/oz-tools/oz/internal/audit"
 	"github.com/oz-tools/oz/internal/audit/coverage"
 	"github.com/oz-tools/oz/internal/audit/orphans"
+	"github.com/oz-tools/oz/internal/audit/staleness"
 	ozcontext "github.com/oz-tools/oz/internal/context"
+	"github.com/oz-tools/oz/internal/semantic"
 	"github.com/oz-tools/oz/internal/testws"
 )
 
@@ -249,6 +251,91 @@ func TestCoverageE2E_OwnedCodeDir(t *testing.T) {
 		if f.Code == "COV002" && f.File == "code/oz" {
 			t.Errorf("unexpected COV002 for code/oz (owned via wildcard): %+v", f)
 		}
+	}
+}
+
+// --- A3-06: Staleness E2E cases ---
+
+// TestStalenessE2E_Clean: build + audit → no STALE001.
+func TestStalenessE2E_Clean(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("coding", testws.Role("Builds things")).
+		Build()
+	root := ws.Path()
+
+	buildGraph(t, root)
+
+	r, err := audit.RunAll(root, []audit.Check{&staleness.Check{}}, audit.Options{})
+	if err != nil {
+		t.Fatalf("audit.RunAll: %v", err)
+	}
+
+	if hasCode(r.Findings, "STALE001") {
+		t.Error("unexpected STALE001 after fresh build")
+	}
+}
+
+// TestStalenessE2E_StaleGraph: build + add a new note file + audit → STALE001.
+func TestStalenessE2E_StaleGraph(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("coding", testws.Role("Builds things")).
+		Build()
+	root := ws.Path()
+
+	buildGraph(t, root)
+
+	// Add a new note file after the build; this creates a new graph node,
+	// so the freshly-computed ContentHash will differ from graph.json.
+	notesDir := filepath.Join(root, "notes")
+	if err := os.MkdirAll(notesDir, 0755); err != nil {
+		t.Fatalf("mkdir notes: %v", err)
+	}
+	notePath := filepath.Join(notesDir, "new-note.md")
+	if err := os.WriteFile(notePath, []byte("## New note\n\nAdded after build.\n"), 0644); err != nil {
+		t.Fatalf("write note: %v", err)
+	}
+
+	r, err := audit.RunAll(root, []audit.Check{&staleness.Check{}}, audit.Options{})
+	if err != nil {
+		t.Fatalf("audit.RunAll: %v", err)
+	}
+
+	if !hasCode(r.Findings, "STALE001") {
+		t.Error("expected STALE001 after adding a file without rebuilding")
+	}
+}
+
+// TestStalenessE2E_StaleOverlay: build + write semantic.json with wrong graph_hash → STALE002.
+func TestStalenessE2E_StaleOverlay(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("coding", testws.Role("Builds things")).
+		Build()
+	root := ws.Path()
+
+	buildGraph(t, root)
+
+	// Write a semantic.json with a wrong graph_hash.
+	overlay := &semantic.Overlay{
+		SchemaVersion: "1",
+		GraphHash:     "wrong-hash-does-not-match",
+		Concepts: []semantic.Concept{
+			{ID: "concept:foo", Name: "foo", Tag: "EXTRACTED", Confidence: 1.0, Reviewed: true},
+		},
+	}
+	if err := semantic.Write(root, overlay); err != nil {
+		t.Fatalf("semantic.Write: %v", err)
+	}
+
+	r, err := audit.RunAll(root, []audit.Check{&staleness.Check{}}, audit.Options{})
+	if err != nil {
+		t.Fatalf("audit.RunAll: %v", err)
+	}
+
+	if !hasCode(r.Findings, "STALE002") {
+		t.Error("expected STALE002 when semantic.json has wrong graph_hash")
+	}
+	if hasCode(r.Findings, "STALE001") {
+		t.Error("unexpected STALE001 — graph.json should be fresh")
 	}
 }
 
