@@ -9,7 +9,18 @@
 
 ## Known Issues
 
-<!-- Known bugs or problems, with workarounds if available. -->
+### oz audit orphans + coverage — accepted noise (Sprint A2 self-validation, 2026-04-20)
+
+Running `oz audit --only=orphans,coverage` against this repo produces 3 warnings and 0 errors.
+All are accepted noise per pre-mortem AT-03 (threshold: > 3 warnings triggers tuning).
+
+| Code | Finding | Disposition |
+|---|---|---|
+| COV002 | `code/oz/` is not owned by any agent | Expected. The oz-coding agent has broad responsibilities but no explicit `code/oz/**` scope path. The workspace follows a convention-light ownership model (AE-02). No tuning needed. |
+| ORPH002 | `docs/oz-context-v1-prd.md` has no inbound references | Historical PRD, superseded by the shipped feature. Accepted noise. |
+| ORPH002 | `docs/sprints.md` has no inbound references | Historical sprint plan, not linked from live docs. Accepted noise. |
+
+AT-03 is considered **not triggered** (3 warnings ≤ threshold of 3).
 
 ## Pending Decisions
 

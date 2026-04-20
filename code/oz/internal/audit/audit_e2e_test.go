@@ -2,10 +2,14 @@ package audit_test
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
-	ozcontext "github.com/oz-tools/oz/internal/context"
 	"github.com/oz-tools/oz/internal/audit"
+	"github.com/oz-tools/oz/internal/audit/coverage"
+	"github.com/oz-tools/oz/internal/audit/orphans"
+	ozcontext "github.com/oz-tools/oz/internal/context"
 	"github.com/oz-tools/oz/internal/testws"
 )
 
@@ -78,6 +82,173 @@ func TestAuditE2E(t *testing.T) {
 	}
 	if len(r2.Findings) != 0 {
 		t.Errorf("round-trip: expected 0 findings, got %d", len(r2.Findings))
+	}
+}
+
+// buildGraph is a test helper: builds and serializes the context graph.
+func buildGraph(t *testing.T, root string) {
+	t.Helper()
+	result, err := ozcontext.Build(root)
+	if err != nil {
+		t.Fatalf("context.Build: %v", err)
+	}
+	if err := ozcontext.Serialize(root, result.Graph); err != nil {
+		t.Fatalf("context.Serialize: %v", err)
+	}
+}
+
+// hasCode reports whether any finding in fs has the given code.
+func hasCode(fs []audit.Finding, code string) bool {
+	for _, f := range fs {
+		if f.Code == code {
+			return true
+		}
+	}
+	return false
+}
+
+// findingsForFile returns findings whose File field matches the given path.
+func findingsForFile(fs []audit.Finding, file string) []audit.Finding {
+	var out []audit.Finding
+	for _, f := range fs {
+		if f.File == file {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+// TestOrphansE2E_UnreferencedSpec verifies that a spec not in any agent's
+// read-chain produces an ORPH001 finding.
+func TestOrphansE2E_UnreferencedSpec(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("coding", testws.Role("Builds things")).
+		WithSpec("specs/api.md", testws.Section("Overview", "API overview")).
+		// Note: agent read-chain does NOT include specs/api.md.
+		Build()
+
+	buildGraph(t, ws.Path())
+
+	r, err := audit.RunAll(ws.Path(), []audit.Check{&orphans.Check{}}, audit.Options{})
+	if err != nil {
+		t.Fatalf("audit.RunAll: %v", err)
+	}
+
+	if ff := findingsForFile(r.Findings, "specs/api.md"); len(ff) == 0 {
+		t.Error("expected ORPH001 for unreferenced specs/api.md, got none")
+	} else if !hasCode(ff, "ORPH001") {
+		t.Errorf("expected ORPH001 for specs/api.md, got %+v", ff)
+	}
+}
+
+// TestOrphansE2E_ReferencedSpec verifies that a spec in an agent's read-chain
+// does NOT produce an ORPH001 finding.
+func TestOrphansE2E_ReferencedSpec(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("coding",
+			testws.Role("Builds things"),
+			testws.ReadChain("specs/api.md"),
+		).
+		WithSpec("specs/api.md", testws.Section("Overview", "API overview")).
+		Build()
+
+	buildGraph(t, ws.Path())
+
+	r, err := audit.RunAll(ws.Path(), []audit.Check{&orphans.Check{}}, audit.Options{})
+	if err != nil {
+		t.Fatalf("audit.RunAll: %v", err)
+	}
+
+	for _, f := range r.Findings {
+		if f.Code == "ORPH001" && f.File == "specs/api.md" {
+			t.Errorf("unexpected ORPH001 for referenced specs/api.md: %+v", f)
+		}
+	}
+}
+
+// TestCoverageE2E_DanglingPath verifies that an agent scope path that does not
+// exist on disk produces a COV001 finding.
+func TestCoverageE2E_DanglingPath(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("coding",
+			testws.Role("Builds things"),
+			// Scope path that will never exist on disk.
+			testws.Scope("code/nonexistent-dir"),
+		).
+		Build()
+
+	buildGraph(t, ws.Path())
+
+	r, err := audit.RunAll(ws.Path(), []audit.Check{&coverage.Check{}}, audit.Options{})
+	if err != nil {
+		t.Fatalf("audit.RunAll: %v", err)
+	}
+
+	if !hasCode(r.Findings, "COV001") {
+		t.Error("expected COV001 for dangling scope path, got none")
+	}
+}
+
+// TestCoverageE2E_UnownedCodeDir verifies that a top-level code/ directory
+// with no owning agent scope produces a COV002 finding.
+func TestCoverageE2E_UnownedCodeDir(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("coding",
+			testws.Role("Builds things"),
+			// Agent owns a different path, not the code/ directory we create below.
+			testws.Scope("code/other/**"),
+		).
+		Build()
+
+	// Create a code/ directory that no agent owns.
+	if err := os.MkdirAll(filepath.Join(ws.Path(), "code", "unowned"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	buildGraph(t, ws.Path())
+
+	r, err := audit.RunAll(ws.Path(), []audit.Check{&coverage.Check{}}, audit.Options{})
+	if err != nil {
+		t.Fatalf("audit.RunAll: %v", err)
+	}
+
+	found := false
+	for _, f := range r.Findings {
+		if f.Code == "COV002" && f.File == "code/unowned" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected COV002 for code/unowned/, findings: %+v", r.Findings)
+	}
+}
+
+// TestCoverageE2E_OwnedCodeDir verifies that a code/ directory owned via a
+// wildcard scope does NOT produce a COV002 finding.
+func TestCoverageE2E_OwnedCodeDir(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("coding",
+			testws.Role("Builds things"),
+			testws.Scope("code/**"),
+		).
+		Build()
+
+	if err := os.MkdirAll(filepath.Join(ws.Path(), "code", "oz"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	buildGraph(t, ws.Path())
+
+	r, err := audit.RunAll(ws.Path(), []audit.Check{&coverage.Check{}}, audit.Options{})
+	if err != nil {
+		t.Fatalf("audit.RunAll: %v", err)
+	}
+
+	for _, f := range r.Findings {
+		if f.Code == "COV002" && f.File == "code/oz" {
+			t.Errorf("unexpected COV002 for code/oz (owned via wildcard): %+v", f)
+		}
 	}
 }
 
