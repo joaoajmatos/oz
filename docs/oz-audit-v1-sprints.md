@@ -106,6 +106,11 @@ Already produced this session:
 ## Sprint A4 — drift extractor (Go AST)
 **Goal**: `internal/audit/drift/govet` extracts every exported Go symbol from `code/`. No findings yet — just the extraction primitive.
 
+> STATUS: PAUSED — Sprint A4 is blocked pending the code indexing sprint
+> (`docs/oz-codeindex-v1-sprints.md`). Once `oz context build` indexes code into
+> the graph, the standalone Go AST extractor (`A4-01`–`A4-06`) is no longer needed.
+> Sprint A4 will be re-scoped to drift orchestration using graph queries directly.
+
 ### Stories
 
 | # | Story | AC |
