@@ -118,7 +118,7 @@ Already produced this session:
 |---|---|---|
 | A4-R01 | `internal/audit/drift/drift.go` — `Symbol` type + `LoadSymbols(*graph.Graph) []Symbol` | `Symbol` has `Pkg`, `Name`, `Kind`, `File`, `Line` fields mapped from `code_symbol` graph nodes. `LoadSymbols` filters `NodeTypeCodeSymbol` nodes and returns a sorted slice. |
 | A4-R02 | Unit tests for `LoadSymbols` | Table-driven: graph with zero, one, and mixed node types; assert correct Symbol slice and sort order. |
-| A4-R03 | `internal/audit/drift/specscan/scan.go` — spec scanner | Walks `specs/` (and `docs/` if `Options.IncludeDocs`). For each markdown file, extracts: backticked tokens matching `^[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)?$` (Go-identifier-shaped), and backtick or markdown-link targets starting with `code/`. Records `(File, Line, Candidate)`. |
+| A4-R03 | `internal/audit/drift/specscan/scan.go` — spec scanner | Walks `specs/` (and `docs/` if `Options.IncludeDocs`). For each markdown file, extracts: backticked tokens matching the default exported-Go pattern (see `DefaultGoExportedIdentPattern` in `specscan` — **underscores excluded** for AT-01), optionally OR’d with `Options.IdentPatterns`; and backtick or markdown-link targets starting with `code/`. Records `(File, Line, Candidate)`. |
 | A4-R04 | Unit tests for spec scanner | Fixture files covering: exported identifier, `Pkg.Symbol` form, `code/` path link, unexported identifier (not captured), inline code vs block code. |
 | A4-R05 | Self-validation | Load this repo's `context/graph.json` and call `LoadSymbols`; assert >= 50 symbols. Document actual count. Resolves AT-04 (originally testdata exclusion — now moot since goindexer already skips testdata). |
 
@@ -141,7 +141,7 @@ Already produced this session:
 
 | # | Story | AC |
 |---|---|---|
-| A5-01 | `internal/audit/drift/specscan/scan.go` — spec scanner | Walks `specs/` (and `docs/` if `Options.IncludeDocs`). For each markdown file, extracts: backticked tokens matching `^[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)?$` (Go-identifier-shaped), and backtick or markdown-link targets starting with `code/`. Records `(file, line, candidate)`. |
+| A5-01 | `internal/audit/drift/specscan/scan.go` — spec scanner | Same as A4-R03: default pattern `DefaultGoExportedIdentPattern` (no underscores); `IdentPatterns` override; `code/` path refs. |
 | A5-02 | Drift orchestrator — wires extractor + scanner → findings | Produces `DRIFT001` (missing `code/...` path), `DRIFT002` (missing Go identifier), `DRIFT003` (exported symbol never mentioned in any spec or doc), `DRIFT004` (spec mentions symbol that exists but in a different file). |
 | A5-03 | Findings carry source location | Every drift finding sets `file` to the spec file path and `line` to the markdown line where the candidate was extracted. `Refs` includes the symbol or path that triggered it. |
 | A5-04 | `--include-tests` and `--include-docs` flags wired | Default: tests excluded, docs not scanned for drift. Both flags pass through to `drift.Options`. |

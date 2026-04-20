@@ -50,7 +50,7 @@ Single Go binary built with `go build`. No runtime dependencies. Subcommands:
 |---------|---------|---------|
 | `oz init` | `cmd/init.go` + `internal/scaffold/` | Scaffold a new oz-compliant workspace |
 | `oz validate` | `cmd/validate.go` + `internal/validate/` | Lint workspace against the convention |
-| `oz audit` | `cmd/audit.go` | Detect spec-code drift (stub: loads `graph.json`) |
+| `oz audit` | `cmd/audit.go` + `internal/audit/*` | Structural + drift checks over `graph.json` and workspace; JSON and human reports |
 | `oz context build` | `internal/context/` | Build the structural graph |
 | `oz context query` | `internal/query/` | Route a task to the best-matching agent |
 | `oz context enrich` | `internal/enrich/` | LLM enrichment pass via OpenRouter |
@@ -74,6 +74,36 @@ Single Go binary built with `go build`. No runtime dependencies. Subcommands:
 | `internal/semantic` | `Overlay` schema, load/write helpers, staleness check |
 | `internal/openrouter` | Isolated HTTP client for OpenRouter API |
 | `internal/testws` | Test workspace builder + YAML fixture loader + golden suite runner |
+| `internal/audit` | Finding model, `RunAll`, deterministic sort; subpackages: `orphans`, `coverage`, `staleness`, `drift`, `report` |
+
+---
+
+## oz audit (V1)
+
+`oz audit` (parent command) runs one or more checks, aggregates a single `Report`, and exits
+non-zero when `--exit-on` policy is violated (default: any `error`-severity finding).
+
+**Subcommands**: `orphans`, `coverage`, `staleness`, `drift`, and `graph-summary` (legacy
+node/edge counts to stdout). With no subcommand, all registered checks run in registration order.
+
+**Shared flags** (parent and subcommands): `--json` (schema_version `"1"`), `--severity`,
+`--exit-on`, `--only` (parent only). Drift-specific flags on the parent as well:
+`--include-tests` (merge exported symbols from `*_test.go` into drift’s symbol set),
+`--include-docs` (scan `docs/` in addition to `specs/` for backticks / `code/` links).
+
+**Determinism**: findings are sorted by `(severity rank, check name, code, file, line,
+message)` before render. `encoding/json` map keys (`counts`) are emitted in sorted key order.
+Two consecutive runs on an unchanged workspace should yield byte-identical `--json` output
+(regression-tested in `internal/audit/audit_e2e_test.go`).
+
+**Finding catalogue** (stable codes): Tier A — `ORPH001`–`ORPH003`, `COV001`–`COV004`,
+`STALE001`–`STALE004`. Tier B drift — `DRIFT001`–`DRIFT003` (symbols sourced from graph
+`code_symbol` nodes; see `specs/decisions/0001-audit-v1-symbols-from-graph-codeindex.md`).
+`DRIFT004` / `DRIFT900` from the PRD are not implemented in V1.
+
+**Performance**: `go test ./internal/audit -bench=BenchmarkAuditAll` exercises the full
+check bundle on a small scaffolded workspace (target: sub-second on the oz repo after a
+fresh `oz context build`).
 
 ---
 
@@ -188,7 +218,9 @@ Agent nodes carry optional fields parsed from AGENT.md (`role`, `scope`, `read_c
 | `crystallized_from` | Reserved for future crystallize integration |
 | `contains` | A `code_file` node declares a `code_symbol` node |
 
-`oz audit` loads this file (stub today) to prove downstream tools can consume the contract before full drift checks exist.
+`oz audit` loads this file for all checks: orphans/coverage/staleness/drift traverse nodes
+and edges; drift additionally treats `code_symbol` nodes as the exported Go symbol catalogue
+(see ADR 0001).
 
 ---
 

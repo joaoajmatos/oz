@@ -12,7 +12,8 @@
 //	    WithSpec("specs/api.md", testws.Section("overview", "...")).
 //	    Build()
 //
-// The builder calls scaffold.Scaffold internally so non-agent files
+// The builder accepts any `testing.TB` (`*testing.T` or `*testing.B`) so benchmarks can
+// scaffold workspaces. It calls scaffold.Scaffold internally so non-agent files
 // (AGENTS.md, OZ.md, rules/, etc.) are always consistent with oz init output.
 package testws
 
@@ -29,7 +30,7 @@ import (
 
 // Builder constructs oz-compliant workspaces for tests.
 type Builder struct {
-	t         *testing.T
+	tb        testing.TB
 	agents    []agentDef
 	specs     []fileDef
 	decisions []fileDef
@@ -126,10 +127,10 @@ func Section(heading, content string) SpecOption {
 	}
 }
 
-// New returns a new Builder bound to t.
-func New(t *testing.T) *Builder {
-	t.Helper()
-	return &Builder{t: t}
+// New returns a new Builder bound to tb (*testing.T or *testing.B).
+func New(tb testing.TB) *Builder {
+	tb.Helper()
+	return &Builder{tb: tb}
 }
 
 // WithAgent adds an agent to the workspace.
@@ -182,12 +183,12 @@ func (b *Builder) WithSemanticOverlay(overlay SemanticOverlay) *Builder {
 	return b
 }
 
-// Build materializes the workspace in t.TempDir() and returns a handle to it.
-// The directory is automatically removed when the test ends.
+// Build materializes the workspace in tb.TempDir() and returns a handle to it.
+// The directory is automatically removed when the test or benchmark ends.
 func (b *Builder) Build() *Workspace {
-	b.t.Helper()
+	b.tb.Helper()
 
-	dir := b.t.TempDir()
+	dir := b.tb.TempDir()
 
 	// Build agent configs for scaffold.
 	agentCfgs := make([]scaffold.AgentConfig, len(b.agents))
@@ -212,28 +213,28 @@ func (b *Builder) Build() *Workspace {
 	}
 
 	if err := scaffold.Scaffold(dir, cfg); err != nil {
-		b.t.Fatalf("testws: scaffold failed: %v", err)
+		b.tb.Fatalf("testws: scaffold failed: %v", err)
 	}
 
 	// Overwrite each AGENT.md with detailed content from the builder.
 	for _, a := range b.agents {
 		path := filepath.Join(dir, "agents", a.Name, "AGENT.md")
 		if err := os.WriteFile(path, []byte(renderAgentMD(a)), 0644); err != nil {
-			b.t.Fatalf("testws: write AGENT.md for %s: %v", a.Name, err)
+			b.tb.Fatalf("testws: write AGENT.md for %s: %v", a.Name, err)
 		}
 	}
 
 	// Write spec files.
 	for _, s := range b.specs {
 		if err := b.writeMarkdown(dir, s); err != nil {
-			b.t.Fatalf("testws: write spec %s: %v", s.Path, err)
+			b.tb.Fatalf("testws: write spec %s: %v", s.Path, err)
 		}
 	}
 
 	// Write decision files.
 	for _, d := range b.decisions {
 		if err := b.writeMarkdown(dir, d); err != nil {
-			b.t.Fatalf("testws: write decision %s: %v", d.Path, err)
+			b.tb.Fatalf("testws: write decision %s: %v", d.Path, err)
 		}
 	}
 
@@ -241,28 +242,28 @@ func (b *Builder) Build() *Workspace {
 	for _, c := range b.contexts {
 		path := filepath.Join(dir, "context", c.Topic, c.File)
 		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-			b.t.Fatalf("testws: mkdir for context %s: %v", path, err)
+			b.tb.Fatalf("testws: mkdir for context %s: %v", path, err)
 		}
 		if err := os.WriteFile(path, []byte(c.Content), 0644); err != nil {
-			b.t.Fatalf("testws: write context %s: %v", path, err)
+			b.tb.Fatalf("testws: write context %s: %v", path, err)
 		}
 	}
 
 	// Write notes.
 	for _, n := range b.notes {
 		if err := b.writeMarkdown(dir, n); err != nil {
-			b.t.Fatalf("testws: write note %s: %v", n.Path, err)
+			b.tb.Fatalf("testws: write note %s: %v", n.Path, err)
 		}
 	}
 
 	// Write semantic overlay if provided.
 	if b.overlay != nil {
 		if err := b.writeOverlay(dir, b.overlay); err != nil {
-			b.t.Fatalf("testws: write semantic overlay: %v", err)
+			b.tb.Fatalf("testws: write semantic overlay: %v", err)
 		}
 	}
 
-	return &Workspace{t: b.t, path: dir}
+	return &Workspace{tb: b.tb, path: dir}
 }
 
 // writeOverlay converts the simplified test overlay to the full semantic.json
@@ -397,7 +398,7 @@ func renderMarkdown(f fileDef) string {
 
 // Workspace is a handle to a materialized test workspace.
 type Workspace struct {
-	t    *testing.T
+	tb   testing.TB
 	path string
 }
 

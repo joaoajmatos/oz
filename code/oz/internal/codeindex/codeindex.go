@@ -30,9 +30,19 @@ type Indexer interface {
 	IndexFile(f DiscoveredCodeFile) (*Result, error)
 }
 
+// WalkOpts configures WalkCode behaviour.
+type WalkOpts struct {
+	// IncludeTestGo, when true, includes *_test.go files in the walk result.
+	// When false (zero value), *_test.go files are skipped — the default for
+	// context/graph.json builds. Drift uses IncludeTestGo: true only when
+	// merging supplemental test symbols (see internal/audit/drift).
+	IncludeTestGo bool
+}
+
 // WalkCode walks root/code/ and returns all files handled by provided indexers.
-// Skips: vendor/, testdata/, *_test.go, files with no registered indexer.
-func WalkCode(root string, indexers []Indexer) ([]DiscoveredCodeFile, error) {
+// Skips: vendor/, testdata/, files with no registered indexer.
+// By default (opts.IncludeTestGo == false) *_test.go files are skipped.
+func WalkCode(root string, indexers []Indexer, opts WalkOpts) ([]DiscoveredCodeFile, error) {
 	codeDir := filepath.Join(root, "code")
 	if st, err := os.Stat(codeDir); err != nil || !st.IsDir() {
 		return nil, nil
@@ -60,7 +70,7 @@ func WalkCode(root string, indexers []Indexer) ([]DiscoveredCodeFile, error) {
 		}
 
 		base := filepath.Base(path)
-		if strings.HasSuffix(base, "_test.go") {
+		if !opts.IncludeTestGo && strings.HasSuffix(base, "_test.go") {
 			return nil
 		}
 

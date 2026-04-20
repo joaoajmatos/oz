@@ -37,19 +37,27 @@ func LoadSymbols(g *graph.Graph) []Symbol {
 		if n.Type != graph.NodeTypeCodeSymbol {
 			continue
 		}
-		symbols = append(symbols, Symbol{
-			Pkg:  n.Package,
-			Name: n.Name,
-			Kind: n.SymbolKind,
-			File: n.File,
-			Line: n.Line,
-		})
+		symbols = append(symbols, symbolFromGraphNode(n))
 	}
+	sortSymbols(symbols)
+	return symbols
+}
+
+func symbolFromGraphNode(n graph.Node) Symbol {
+	return Symbol{
+		Pkg:  n.Package,
+		Name: n.Name,
+		Kind: n.SymbolKind,
+		File: n.File,
+		Line: n.Line,
+	}
+}
+
+func sortSymbols(symbols []Symbol) {
 	sort.Slice(symbols, func(i, j int) bool {
 		if symbols[i].Pkg != symbols[j].Pkg {
 			return symbols[i].Pkg < symbols[j].Pkg
 		}
 		return symbols[i].Name < symbols[j].Name
 	})
-	return symbols
 }

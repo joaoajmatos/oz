@@ -21,6 +21,10 @@ var (
 	auditSeverity string
 	auditExitOn   string
 	auditOnly     string
+
+	// Drift-only options (also apply when running the parent `oz audit` aggregator).
+	auditIncludeDriftTests bool
+	auditIncludeDriftDocs  bool
 )
 
 // registeredChecks holds all checks registered via registerCheck.
@@ -50,6 +54,8 @@ func init() {
 	auditCmd.PersistentFlags().StringVar(&auditSeverity, "severity", "info", "minimum severity to display (error|warn|info)")
 	auditCmd.PersistentFlags().StringVar(&auditExitOn, "exit-on", "error", "set exit code on severity (error|warn|none)")
 	auditCmd.Flags().StringVar(&auditOnly, "only", "", "comma-separated list of check names to run")
+	auditCmd.PersistentFlags().BoolVar(&auditIncludeDriftTests, "include-tests", false, "drift check: include exported symbols from *_test.go files")
+	auditCmd.PersistentFlags().BoolVar(&auditIncludeDriftDocs, "include-docs", false, "drift check: also scan docs/ for code references")
 
 	auditCmd.AddCommand(auditOrphansCmd)
 	auditCmd.AddCommand(auditCoverageCmd)
@@ -75,7 +81,10 @@ func runAuditAll(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	r, err := audit.RunAll(root, checks, audit.Options{})
+	r, err := audit.RunAll(root, checks, audit.Options{
+		IncludeTests: auditIncludeDriftTests,
+		IncludeDocs:  auditIncludeDriftDocs,
+	})
 	if err != nil {
 		return err
 	}

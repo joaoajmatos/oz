@@ -28,13 +28,16 @@ unreviewed `semantic.json` nodes.
 
 ### Structural graph (`context/graph.json`)
 
-- Schema version: `"1"`
-- Node types: `agent`, `spec_section`, `decision`, `doc`, `context_snapshot`, `note`
-- Edge types: `reads`, `owns`, `references`, `supports`, `crystallized_from` (reserved)
+- Schema version: `"2"` (includes `code_file` / `code_symbol` from `oz context build`)
+- Node types: `agent`, `spec_section`, `decision`, `doc`, `context_snapshot`, `note`,
+  `code_file`, `code_symbol`
+- Edge types: `reads`, `owns`, `references`, `supports`, `crystallized_from` (reserved),
+  `contains` (code file → symbol)
 - Deterministic output: byte-identical on repeated builds with identical inputs
 - SHA-256 content hash embedded in output
 
-On the oz workspace: **58 nodes, 28 edges** (as of 2026-04-19).
+On the oz workspace: counts vary with repository growth; run `oz context build` and inspect
+`graph.json` or `oz audit graph-summary` for current totals.
 
 ### BM25F query engine
 
@@ -113,11 +116,21 @@ Key resolutions:
 
 ---
 
+### oz audit (V1)
+
+- Commands: `oz audit` (all checks), `oz audit orphans|coverage|staleness|drift`, `oz audit graph-summary`.
+- JSON: `schema_version: "1"` on the **report** envelope; findings sorted deterministically.
+- Drift symbols: loaded from graph `code_symbol` nodes (Go AST indexing in `context build`);
+  optional `--include-tests` merges `*_test.go` exports. Spec scanner heuristics and AT-01
+  narrowing are documented in `docs/oz-audit-v1-prd.md` §6 and `internal/audit/drift/specscan`.
+- ADR: `specs/decisions/0001-audit-v1-symbols-from-graph-codeindex.md`.
+
 ## Fast-follow items
 
 The following items were deferred from V1 but are tracked:
 
-1. **`oz audit` full drift checks**: loads `graph.json` today. Tree-sitter AST comparison against specs is the next step. Open item in `docs/open-items.md`.
+1. **`oz audit` Tier-B extensions**: `DRIFT004` / parse-error surfacing (`DRIFT900`), additional
+   languages (likely tree-sitter once non-Go code is indexed). See `docs/open-items.md`.
 2. **`oz crystallize`**: promotes `notes/` content up the hierarchy. Not implemented.
 3. **Bigrams**: tokenizer supports `use_bigrams = true` in `scoring.toml` but off by default (can over-index; needs validation on a wider corpus first).
 4. **Interactive `oz context review`**: shipped. Edge case: if user quits mid-review, partial state is written. A transaction-style approach (write only on completion) is a fast-follow.

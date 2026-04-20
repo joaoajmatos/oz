@@ -57,7 +57,7 @@ func Build(root string) (*BuildResult, error) {
 
 	// 4. Index code files and symbols under code/.
 	goIdx := goindexer.New()
-	codeFiles, err := codeindex.WalkCode(root, []codeindex.Indexer{goIdx})
+	codeFiles, err := codeindex.WalkCode(root, []codeindex.Indexer{goIdx}, codeindex.WalkOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("walk code files: %w", err)
 	}

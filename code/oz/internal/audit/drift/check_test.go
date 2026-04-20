@@ -3,10 +3,12 @@ package drift
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/oz-tools/oz/internal/audit"
 	"github.com/oz-tools/oz/internal/audit/drift/specscan"
+	"github.com/oz-tools/oz/internal/graph"
 )
 
 // hasCode reports whether any finding in fs has the given code.
@@ -319,6 +321,49 @@ func TestSymbolSet_QualifiedMatch(t *testing.T) {
 	}
 	if ss.matches("other.RunAll") {
 		t.Error("expected no match for wrong package qualifier")
+	}
+}
+
+func TestLoadDriftSymbols_IncludeTestsMergesTestExports(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "code", "lib"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmod\n\ngo 1.22\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "code", "lib", "lib.go"), []byte("package lib\n\nfunc Production() {}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "code", "lib", "lib_test.go"), []byte("package lib\n\nimport \"testing\"\n\nfunc TestProduction(t *testing.T) {}\n\nfunc OnlyInTestExport() {}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	g := &graph.Graph{SchemaVersion: graph.SchemaVersion}
+
+	syms, err := loadDriftSymbols(root, g, false)
+	if err != nil {
+		t.Fatalf("loadDriftSymbols includeTests=false: %v", err)
+	}
+	if len(syms) != 0 {
+		t.Fatalf("want 0 symbols with empty graph and includeTests=false, got %d", len(syms))
+	}
+
+	syms, err = loadDriftSymbols(root, g, true)
+	if err != nil {
+		t.Fatalf("loadDriftSymbols includeTests=true: %v", err)
+	}
+	found := false
+	for _, s := range syms {
+		if s.Name == "OnlyInTestExport" {
+			found = true
+			if !strings.HasSuffix(s.File, "_test.go") {
+				t.Errorf("OnlyInTestExport file = %q, want *_test.go", s.File)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected OnlyInTestExport from _test.go, got %#v", syms)
 	}
 }
 

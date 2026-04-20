@@ -9,6 +9,17 @@
 
 ## Known Issues
 
+### oz audit — performance baseline (Sprint A6, 2026-04-20)
+
+`go test ./internal/audit -bench=BenchmarkAuditAll` runs the full check bundle on a small
+scaffolded workspace (orphans, coverage, staleness, drift). On Apple M1-class hardware this
+has measured on the order of **~0.7 ms/op** — well under the PRD’s **< 1s** target for the
+real oz repo after a fresh `oz context build`. AT-05 (slow audit) is not triggered.
+
+`--include-tests` / `--include-docs` are wired on the parent `oz audit` command and passed
+through `audit.Options` to drift (test symbols merged from `*_test.go` via `codeindex` only
+when `--include-tests` is set).
+
 ### oz audit drift — accepted noise (Sprint A5 self-validation, 2026-04-20)
 
 Running `oz audit drift` against this repo after a fresh `oz context build` produces 0 errors and 222 DRIFT003 warnings.

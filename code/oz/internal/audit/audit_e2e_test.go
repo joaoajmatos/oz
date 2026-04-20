@@ -1,6 +1,7 @@
 package audit_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -8,11 +9,14 @@ import (
 
 	"github.com/oz-tools/oz/internal/audit"
 	"github.com/oz-tools/oz/internal/audit/coverage"
+	"github.com/oz-tools/oz/internal/audit/drift"
 	"github.com/oz-tools/oz/internal/audit/orphans"
 	"github.com/oz-tools/oz/internal/audit/staleness"
 	ozcontext "github.com/oz-tools/oz/internal/context"
 	"github.com/oz-tools/oz/internal/semantic"
 	"github.com/oz-tools/oz/internal/testws"
+	"github.com/oz-tools/oz/internal/validate"
+	"github.com/oz-tools/oz/internal/workspace"
 )
 
 // TestAuditE2E builds a real workspace, runs context.Build + Serialize to
@@ -372,3 +376,126 @@ func (c *driftStub) Codes() []string {
 	return []string{"DRIFT001", "DRIFT002", "DRIFT003"}
 }
 func (c *driftStub) Run(_ string, _ audit.Options) ([]audit.Finding, error) { return nil, nil }
+
+// --- Sprint A6: determinism, full pipeline, benchmark ---
+
+func materializeCleanAuditWorkspace(tb testing.TB) string {
+	tb.Helper()
+	ws := testws.New(tb).
+		WithAgent("coding",
+			testws.Role("Builds tools"),
+			testws.Scope("code/**"),
+			testws.Responsibilities("Maintains code under code/"),
+			testws.ReadChain(
+				"AGENTS.md",
+				"OZ.md",
+				"specs/decisions/_template.md",
+				"docs/architecture.md",
+				"docs/open-items.md",
+			),
+		).
+		Build()
+	root := ws.Path()
+
+	w, err := workspace.New(root)
+	if err != nil {
+		tb.Fatalf("workspace.New: %v", err)
+	}
+	if vr := validate.Validate(w); !vr.Valid() {
+		for _, f := range vr.Findings {
+			if f.Severity == validate.Error {
+				tb.Fatalf("validate: %s", f.Message)
+			}
+		}
+		tb.Fatal("validate failed")
+	}
+
+	buildGraphTB(tb, root)
+	br, err := ozcontext.Build(root)
+	if err != nil {
+		tb.Fatalf("context.Build: %v", err)
+	}
+	overlay := &semantic.Overlay{
+		SchemaVersion: semantic.SchemaVersion,
+		GraphHash:     br.Graph.ContentHash,
+		Concepts:      []semantic.Concept{},
+		Edges:         []semantic.ConceptEdge{},
+	}
+	if err := semantic.Write(root, overlay); err != nil {
+		tb.Fatalf("semantic.Write: %v", err)
+	}
+	return root
+}
+
+func buildGraphTB(tb testing.TB, root string) {
+	tb.Helper()
+	result, err := ozcontext.Build(root)
+	if err != nil {
+		tb.Fatalf("context.Build: %v", err)
+	}
+	if err := ozcontext.Serialize(root, result.Graph); err != nil {
+		tb.Fatalf("context.Serialize: %v", err)
+	}
+}
+
+func allProductionAuditChecks() []audit.Check {
+	return []audit.Check{
+		&orphans.Check{},
+		&coverage.Check{},
+		&staleness.Check{},
+		&drift.Check{},
+	}
+}
+
+// TestAuditRunAll_JSONDeterministicTwice verifies two consecutive RunAll + JSON
+// encodings are byte-identical (A6-02 / PRD A-02).
+func TestAuditRunAll_JSONDeterministicTwice(t *testing.T) {
+	root := materializeCleanAuditWorkspace(t)
+	checks := allProductionAuditChecks()
+	opts := audit.Options{}
+
+	var first []byte
+	for i := 0; i < 2; i++ {
+		r, err := audit.RunAll(root, checks, opts)
+		if err != nil {
+			t.Fatalf("audit.RunAll: %v", err)
+		}
+		b, err := json.MarshalIndent(r, "", "  ")
+		if err != nil {
+			t.Fatalf("json.MarshalIndent: %v", err)
+		}
+		b = append(b, '\n')
+		if i == 0 {
+			first = b
+			continue
+		}
+		if !bytes.Equal(first, b) {
+			t.Fatalf("run %d JSON differs from run 0", i)
+		}
+	}
+}
+
+// TestAuditV1ScaffoldValidateBuildAuditPipeline mirrors the shipped workflow:
+// scaffold (oz init equivalent) → validate → context build → audit (A6-03).
+func TestAuditV1ScaffoldValidateBuildAuditPipeline(t *testing.T) {
+	root := materializeCleanAuditWorkspace(t)
+	r, err := audit.RunAll(root, allProductionAuditChecks(), audit.Options{})
+	if err != nil {
+		t.Fatalf("audit.RunAll: %v", err)
+	}
+	if r.Counts[audit.SeverityError] != 0 {
+		t.Fatalf("expected 0 errors, got counts %+v findings sample: %+v", r.Counts, r.Findings)
+	}
+}
+
+func BenchmarkAuditAll(b *testing.B) {
+	root := materializeCleanAuditWorkspace(b)
+	checks := allProductionAuditChecks()
+	opts := audit.Options{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := audit.RunAll(root, checks, opts); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

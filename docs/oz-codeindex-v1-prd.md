@@ -126,8 +126,8 @@ type Indexer interface {
 }
 
 // WalkCode walks root/code/ and returns all files handled by provided indexers.
-// Skips: vendor/, testdata/, *_test.go, files with no registered indexer.
-func WalkCode(root string, indexers []Indexer) ([]DiscoveredCodeFile, error)
+// Skips: vendor/, testdata/, and (by default) *_test.go; set opts.IncludeTestGo to include tests.
+func WalkCode(root string, indexers []Indexer, opts WalkOpts) ([]DiscoveredCodeFile, error)
 ```
 
 New package: `internal/codeindex/goindexer/`
@@ -142,7 +142,7 @@ New package: `internal/codeindex/goindexer/`
 `internal/context/builder.go` adds a code-index pass after markdown indexing:
 
 ```go
-codeindex.WalkCode(root, []codeindex.Indexer{goindexer.New()})
+codeindex.WalkCode(root, []codeindex.Indexer{goindexer.New()}, codeindex.WalkOpts{})
 ```
 
 Collected file/symbol nodes and `contains` edges are appended before graph normalization.

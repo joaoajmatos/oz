@@ -12,8 +12,11 @@ import (
 	"strings"
 
 	"github.com/oz-tools/oz/internal/audit"
-	ozcontext "github.com/oz-tools/oz/internal/context"
 	"github.com/oz-tools/oz/internal/audit/drift/specscan"
+	"github.com/oz-tools/oz/internal/codeindex"
+	"github.com/oz-tools/oz/internal/codeindex/goindexer"
+	ozcontext "github.com/oz-tools/oz/internal/context"
+	"github.com/oz-tools/oz/internal/graph"
 )
 
 // Check implements audit.Check for spec-code drift detection.
@@ -37,7 +40,10 @@ func (c *Check) Run(root string, opts audit.Options) ([]audit.Finding, error) {
 		return nil, fmt.Errorf("drift: load graph: %w", err)
 	}
 
-	symbols := LoadSymbols(g)
+	symbols, err := loadDriftSymbols(root, g, opts.IncludeTests)
+	if err != nil {
+		return nil, fmt.Errorf("drift: load symbols: %w", err)
+	}
 
 	candidates, err := specscan.Scan(root, specscan.Options{IncludeDocs: opts.IncludeDocs})
 	if err != nil {
@@ -45,6 +51,36 @@ func (c *Check) Run(root string, opts audit.Options) ([]audit.Finding, error) {
 	}
 
 	return runCheck(root, symbols, candidates), nil
+}
+
+// loadDriftSymbols returns exported symbols from the graph (production Go files).
+// When includeTests is true, symbols from *_test.go under code/ are merged in
+// (the graph build skips test files by default; see codeindex.WalkOpts).
+func loadDriftSymbols(root string, g *graph.Graph, includeTests bool) ([]Symbol, error) {
+	symbols := LoadSymbols(g)
+	if !includeTests {
+		return symbols, nil
+	}
+
+	goIdx := goindexer.New()
+	files, err := codeindex.WalkCode(root, []codeindex.Indexer{goIdx}, codeindex.WalkOpts{IncludeTestGo: true})
+	if err != nil {
+		return nil, err
+	}
+	for _, cf := range files {
+		if !strings.HasSuffix(cf.Path, "_test.go") {
+			continue
+		}
+		res, err := goIdx.IndexFile(cf)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range res.Symbols {
+			symbols = append(symbols, symbolFromGraphNode(n))
+		}
+	}
+	sortSymbols(symbols)
+	return symbols, nil
 }
 
 // runCheck is the pure orchestration logic, separated from Run for testability.

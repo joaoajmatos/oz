@@ -172,7 +172,7 @@ oz ships as a **single Go binary** with subcommands:
 ```
 oz init        # scaffold a new oz-compliant workspace interactively
 oz validate    # lint a workspace against the oz convention
-oz audit       # detect drift between specs and code (graph integration complete; full drift checks pending)
+oz audit       # structural + Go drift checks; JSON output; CI-friendly exit codes
 oz context     # build and query the workspace knowledge graph
 oz crystallize # promote notes into canonical workspace truth (planned)
 ```
@@ -198,11 +198,22 @@ Lints a workspace against the oz convention. Reports:
 
 Exit code 0 = valid. Exit code 1 = invalid. Suitable for CI.
 
-### oz audit (partial)
+### oz audit (V1 complete)
 
-Detects drift between specs and code. On-demand only (not automatic). Currently: loads
-`context/graph.json` and prints a summary, proving the downstream contract. Full tree-sitter
-AST-level drift checks are planned but not yet implemented.
+On-demand workspace health checks (not automatic). Loads `context/graph.json` and walks
+the workspace to report:
+
+- **Orphans** (`ORPH001`–`ORPH003`): convention files with weak or missing inbound references.
+- **Coverage** (`COV001`–`COV004`): agent scope paths vs disk and ownership overlaps.
+- **Staleness** (`STALE001`–`STALE004`): graph / semantic overlay freshness.
+- **Drift** (`DRIFT001`–`DRIFT003`): spec markdown references to missing `code/` paths,
+  unknown exported identifiers (against graph `code_symbol` nodes), and exported symbols
+  never mentioned in scanned markdown. Optional `--include-docs` and `--include-tests`.
+
+Human output groups by severity; `--json` emits `schema_version: "1"` with sorted
+`findings[]` and per-severity `counts`. Subcommands mirror each check; `oz audit graph-summary`
+prints the historical node/edge summary. See `docs/architecture.md` and ADR 0001 for symbol
+indexing policy (`go/parser` via `context build`, not tree-sitter in V1).
 
 ### oz context (V1 complete)
 
@@ -379,7 +390,7 @@ oz validate [path]  # defaults to current directory
 
 - **oz init**: complete — scaffolds a full oz-compliant workspace from embedded templates.
 - **oz validate**: complete — enforces all 7 required AGENT.md sections, checks required files/directories, warns on unreviewed semantic nodes.
-- **oz audit**: graph integration complete — loads `context/graph.json` and prints a summary. Full drift checks (tree-sitter AST comparison) are a fast-follow.
+- **oz audit**: V1 complete — orphans, coverage, staleness, drift, JSON report, deterministic ordering, `graph-summary` stub preserved. Multi-language / tree-sitter drift is deferred.
 - **oz context**: V1 complete — `build`, `query`, `enrich`, `review`, and `serve` all ship. MCP server validated. BM25F scoring with Porter stemming and softmax routing.
 - **oz crystallize**: planned — not yet implemented.
 
