@@ -1,11 +1,13 @@
 package cmd
 
 import (
-	"bufio"
+	"errors"
 	"fmt"
-	"os"
 	"strings"
 
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
 	"github.com/oz-tools/oz/internal/convention"
@@ -17,17 +19,73 @@ var initClaudeFlag bool
 var initCmd = &cobra.Command{
 	Use:   "init [path]",
 	Short: "Scaffold a new oz workspace",
-	Long: `Interactively scaffold a new oz-compliant workspace.
-
-Asks for a project name, description, code directory mode, and which agents
-to register. Then generates the full directory structure and all required files.`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runInit,
+	Long:  `Interactively scaffold a new oz-compliant workspace.`,
+	Args:  cobra.MaximumNArgs(1),
+	RunE:  runInit,
 }
 
 func init() {
-	initCmd.Flags().BoolVar(&initClaudeFlag, "claude", false, "generate CLAUDE.md for Claude Code native integration")
+	initCmd.Flags().BoolVar(&initClaudeFlag, "claude", false, "generate CLAUDE.md for Claude Code integration")
 }
+
+// ── Styles ────────────────────────────────────────────────────────────────────
+
+var (
+	ozPurple = lipgloss.Color("#7C3AED")
+	ozFaint  = lipgloss.Color("#6B7280")
+	ozGreen  = lipgloss.Color("#10B981")
+	ozLavend = lipgloss.Color("#A78BFA")
+
+	styleHeader = lipgloss.NewStyle().
+			Bold(true).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(ozPurple).
+			Padding(0, 2)
+
+	styleBrand = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(ozPurple)
+
+	styleSubtle = lipgloss.NewStyle().
+			Foreground(ozFaint)
+
+	styleSuccess = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(ozGreen)
+
+	styleCmd = lipgloss.NewStyle().
+			Foreground(ozLavend).
+			Bold(true)
+
+	styleTreeRoot = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(ozPurple)
+
+	styleTreeDir = lipgloss.NewStyle().
+			Foreground(ozLavend)
+
+	styleTreeFile = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#D1D5DB"))
+
+	styleSectionTitle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(lipgloss.Color("#F9FAFB"))
+)
+
+// ── Theme ─────────────────────────────────────────────────────────────────────
+
+func ozTheme() *huh.Theme {
+	t := huh.ThemeBase()
+	t.Focused.Base = t.Focused.Base.BorderForeground(ozPurple)
+	t.Focused.Title = t.Focused.Title.Foreground(ozPurple).Bold(true)
+	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(ozPurple)
+	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(ozLavend)
+	t.Focused.FocusedButton = t.Focused.FocusedButton.Background(ozPurple).Foreground(lipgloss.Color("#FFFFFF"))
+	t.Focused.BlurredButton = t.Focused.BlurredButton.Foreground(ozFaint)
+	return t
+}
+
+// ── Command ───────────────────────────────────────────────────────────────────
 
 func runInit(cmd *cobra.Command, args []string) error {
 	path := "."
@@ -35,72 +93,109 @@ func runInit(cmd *cobra.Command, args []string) error {
 		path = args[0]
 	}
 
-	r := bufio.NewReader(os.Stdin)
+	printInitHeader()
 
-	fmt.Println("oz init — scaffolding a new oz workspace")
-	fmt.Println()
-
-	name, err := prompt(r, "Project name", "")
-	if err != nil {
-		return err
-	}
-	if name == "" {
-		return fmt.Errorf("project name is required")
-	}
-
-	description, err := prompt(r, "Description", "")
-	if err != nil {
-		return err
-	}
-
-	codeMode, err := promptChoice(r,
-		"Code directory mode",
-		[]string{"inline", "submodule"},
-		"inline",
+	// ── Step 1: main form ────────────────────────────────────────────────────
+	var (
+		name        string
+		description string
+		codeMode    string
+		useDefaults bool
 	)
+
+	mainForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Title("Project name").
+				Description("A short identifier for this workspace.").
+				Placeholder("my-project").
+				CharLimit(64).
+				Validate(func(s string) error {
+					if strings.TrimSpace(s) == "" {
+						return fmt.Errorf("required")
+					}
+					return nil
+				}).
+				Value(&name),
+
+			huh.NewInput().
+				Title("Description").
+				Description("One-line description of the project (optional).").
+				Placeholder("An LLM-first development workspace").
+				CharLimit(120).
+				Value(&description),
+		),
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Code directory mode").
+				Description("How source code is organized in this workspace.").
+				Options(
+					huh.NewOption("inline     code lives in this repository", "inline"),
+					huh.NewOption("submodule  code in a separate git submodule", "submodule"),
+				).
+				Value(&codeMode),
+		),
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Use default agents? (recommended)").
+				Description("Creates a single 'maintainer' agent. Choose No to define custom agents.").
+				Affirmative("Yes").
+				Negative("No, I'll define them").
+				Value(&useDefaults),
+		),
+	).WithTheme(ozTheme())
+
+	if err := mainForm.Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return nil
+		}
+		return err
+	}
+
+	// ── Step 2: agent configuration ──────────────────────────────────────────
+	agents, err := collectAgents(useDefaults)
 	if err != nil {
 		return err
 	}
 
-	agents, err := promptAgents(r)
-	if err != nil {
-		return err
-	}
-
+	// ── Step 3: scaffold with spinner ────────────────────────────────────────
 	cfg := scaffold.Config{
-		Name:        name,
-		Description: description,
+		Name:        strings.TrimSpace(name),
+		Description: strings.TrimSpace(description),
 		CodeMode:    codeMode,
 		Agents:      agents,
 		ClaudeMD:    initClaudeFlag,
 	}
 
-	fmt.Println()
-	fmt.Printf("Scaffolding oz workspace in %s ...\n", path)
+	var scaffoldErr error
+	err = spinner.New().
+		Title(" Scaffolding workspace…").
+		Action(func() {
+			scaffoldErr = scaffold.Scaffold(path, cfg)
+		}).
+		Run()
 
-	if err := scaffold.Scaffold(path, cfg); err != nil {
-		return fmt.Errorf("scaffold: %w", err)
+	if err != nil {
+		return err
+	}
+	if scaffoldErr != nil {
+		return fmt.Errorf("scaffold: %w", scaffoldErr)
 	}
 
+	// ── Step 4: success output ───────────────────────────────────────────────
 	fmt.Println()
-	fmt.Println("Done. Workspace structure:")
-	printTree(path, initClaudeFlag)
+	fmt.Println(styleSuccess.Render("  ✓ Workspace ready"))
+	fmt.Println()
+	printTree(path, initClaudeFlag, agents)
+	fmt.Println()
+	printNextSteps()
 
 	return nil
 }
 
-// promptAgents asks whether to use the default agent set or define custom ones.
-// If the user declines defaults, it loops prompting for name + description
-// until an empty name is entered.
-func promptAgents(r *bufio.Reader) ([]scaffold.AgentConfig, error) {
-	fmt.Printf("Use default agents? [Y/n]: ")
-	line, err := r.ReadString('\n')
-	if err != nil {
-		return nil, err
-	}
-	line = strings.TrimSpace(line)
-
-	if line == "" || strings.EqualFold(line, "y") {
+// collectAgents gathers agent configs either from defaults or interactively.
+func collectAgents(useDefaults bool) ([]scaffold.AgentConfig, error) {
+	if useDefaults {
 		agents := make([]scaffold.AgentConfig, 0, len(convention.DefaultAgents))
 		for _, n := range convention.DefaultAgents {
 			t := ""
@@ -112,97 +207,160 @@ func promptAgents(r *bufio.Reader) ([]scaffold.AgentConfig, error) {
 		return agents, nil
 	}
 
+	fmt.Println()
+	fmt.Println(styleSubtle.Render("  Define your agents — press Enter with an empty name when done."))
+	fmt.Println()
+
 	var agents []scaffold.AgentConfig
 	for {
-		name, err := prompt(r, "Agent name", "")
-		if err != nil {
+		var agentName string
+
+		nameForm := huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title(fmt.Sprintf("Agent name %s", styleSubtle.Render(fmt.Sprintf("(%d defined so far — leave empty to finish)", len(agents))))).
+					Placeholder("e.g. coding, reviewer, devops").
+					Value(&agentName),
+			),
+		).WithTheme(ozTheme())
+
+		if err := nameForm.Run(); err != nil {
+			if errors.Is(err, huh.ErrUserAborted) {
+				break
+			}
 			return nil, err
 		}
-		if name == "" {
+
+		agentName = strings.TrimSpace(agentName)
+		if agentName == "" {
 			break
 		}
-		description, err := prompt(r, "Description", "")
-		if err != nil {
+
+		var agentDesc, agentType string
+		addAnother := true
+
+		detailForm := huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("Description").
+					Description("What is this agent responsible for?").
+					Placeholder("Builds and maintains source code").
+					Value(&agentDesc),
+
+				huh.NewSelect[string]().
+					Title("Agent type").
+					Options(
+						huh.NewOption("generic  general-purpose agent", "generic"),
+						huh.NewOption("coding   builds and modifies source code", "coding"),
+					).
+					Value(&agentType),
+
+				huh.NewConfirm().
+					Title("Add another agent?").
+					Affirmative("Yes").
+					Negative("No, done").
+					Value(&addAnother),
+			),
+		).WithTheme(ozTheme())
+
+		if err := detailForm.Run(); err != nil {
+			if errors.Is(err, huh.ErrUserAborted) {
+				break
+			}
 			return nil, err
 		}
-		agentType, err := promptChoice(r, "Agent type", []string{"coding", "generic"}, "generic")
-		if err != nil {
-			return nil, err
+
+		t := agentType
+		if t == "generic" {
+			t = ""
 		}
-		if agentType == "generic" {
-			agentType = ""
+		agents = append(agents, scaffold.AgentConfig{
+			Name:        agentName,
+			Description: agentDesc,
+			Type:        t,
+		})
+
+		if !addAnother {
+			break
 		}
-		agents = append(agents, scaffold.AgentConfig{Name: name, Description: description, Type: agentType})
 	}
+
+	// Fallback: if no agents defined, use defaults
+	if len(agents) == 0 {
+		for _, n := range convention.DefaultAgents {
+			agents = append(agents, scaffold.AgentConfig{Name: n})
+		}
+	}
+
 	return agents, nil
 }
 
-// prompt prints a prompt with an optional default and returns the trimmed input.
-func prompt(r *bufio.Reader, label, defaultVal string) (string, error) {
-	if defaultVal != "" {
-		fmt.Printf("%s [%s]: ", label, defaultVal)
-	} else {
-		fmt.Printf("%s: ", label)
-	}
-	line, err := r.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-	v := strings.TrimSpace(line)
-	if v == "" {
-		return defaultVal, nil
-	}
-	return v, nil
+// ── Output helpers ────────────────────────────────────────────────────────────
+
+func printInitHeader() {
+	fmt.Println()
+	title := styleBrand.Render("oz init") + "\n" + styleSubtle.Render("scaffold a new oz workspace")
+	fmt.Println(styleHeader.Render(title))
+	fmt.Println()
 }
 
-// promptChoice prints a multiple-choice prompt and returns the chosen option.
-func promptChoice(r *bufio.Reader, label string, choices []string, defaultVal string) (string, error) {
-	fmt.Printf("%s [%s] (%s): ", label, defaultVal, strings.Join(choices, "/"))
-	line, err := r.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-	v := strings.TrimSpace(line)
-	if v == "" {
-		return defaultVal, nil
-	}
-	for _, c := range choices {
-		if strings.EqualFold(v, c) {
-			return c, nil
-		}
-	}
-	return "", fmt.Errorf("invalid choice %q — expected one of: %s", v, strings.Join(choices, ", "))
+type treeEntry struct {
+	name string
+	dir  bool
 }
 
-// printTree prints a minimal view of the scaffolded workspace.
-func printTree(root string, claudeMD bool) {
-	entries := []string{
-		".gitignore",
-		"AGENTS.md",
-		"OZ.md",
-		"README.md",
-		"agents/<name>/AGENT.md",
-		"specs/decisions/_template.md",
-		"docs/architecture.md",
-		"docs/open-items.md",
-		"context/",
-		"rules/coding-guidelines.md",
-		"notes/",
-		"code/",
-		"skills/",
-		"tools/",
-		"scripts/",
-		".oz/",
+func printTree(root string, claudeMD bool, agents []scaffold.AgentConfig) {
+	entries := []treeEntry{
+		{".gitignore", false},
+		{"AGENTS.md", false},
+		{"OZ.md", false},
+		{"README.md", false},
 	}
 	if claudeMD {
-		entries = append([]string{"CLAUDE.md"}, entries...)
+		entries = append([]treeEntry{{"CLAUDE.md", false}}, entries...)
 	}
-	fmt.Printf("%s/\n", root)
+
+	// Show registered agents
+	for _, a := range agents {
+		entries = append(entries, treeEntry{fmt.Sprintf("agents/%s/AGENT.md", a.Name), false})
+	}
+
+	entries = append(entries,
+		treeEntry{"specs/decisions/_template.md", false},
+		treeEntry{"docs/", true},
+		treeEntry{"context/", true},
+		treeEntry{"rules/coding-guidelines.md", false},
+		treeEntry{"skills/workspace-management/", true},
+		treeEntry{"notes/", true},
+		treeEntry{"code/", true},
+		treeEntry{".oz/", true},
+	)
+
+	fmt.Println("  " + styleTreeRoot.Render(root+"/"))
 	for i, e := range entries {
-		prefix := "├── "
+		connector := "├── "
 		if i == len(entries)-1 {
-			prefix = "└── "
+			connector = "└── "
 		}
-		fmt.Printf("  %s%s\n", prefix, e)
+		if e.dir {
+			fmt.Printf("  %s%s\n", connector, styleTreeDir.Render(e.name))
+		} else {
+			fmt.Printf("  %s%s\n", connector, styleTreeFile.Render(e.name))
+		}
 	}
+}
+
+func printNextSteps() {
+	fmt.Println("  " + styleSectionTitle.Render("Next steps"))
+	fmt.Println()
+
+	steps := []struct{ cmd, desc string }{
+		{"oz context build", "build the initial agent context snapshot"},
+		{"oz audit drift  ", "check workspace convention compliance"},
+		{"oz add claude   ", "add CLAUDE.md for Claude Code integration"},
+	}
+	for _, s := range steps {
+		fmt.Printf("  %s  %s\n", styleCmd.Render(s.cmd), styleSubtle.Render(s.desc))
+	}
+	fmt.Println()
 }
