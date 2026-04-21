@@ -109,7 +109,7 @@ Developers who run `oz context build` and `oz context enrich`, review the semant
 ```mermaid
 flowchart TB
   subgraph layerStruct ["Layer 1: Structural graph"]
-    graph["context/graph.json deterministic build"]
+    graphJson["context/graph.json deterministic build"]
   end
   subgraph layerSem ["Layer 2: Semantic overlay"]
     sem["context/semantic.json enrich and review"]

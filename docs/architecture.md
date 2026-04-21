@@ -21,7 +21,7 @@ flowchart TB
     conv["Markdown: AGENTS.md, OZ.md, agents, specs, docs, context, notes"]
   end
   subgraph layerGraph ["Layer 2: Structural graph"]
-    graph["context/graph.json from oz context build"]
+    graphJson["context/graph.json from oz context build"]
   end
   subgraph layerSem ["Layer 3: Semantic overlay"]
     sem["context/semantic.json from oz context enrich and review"]
