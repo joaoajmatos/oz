@@ -1,0 +1,13 @@
+# pm package
+
+Optional oz package: adds `agents/pm/` and `skills/pm/` for in-repo product management workflows.
+
+Install with:
+
+```bash
+oz add pm
+```
+
+After install, `oz validate` should pass. If your workspace uses a custom `AGENTS.md` or `OZ.md`
+layout that omits `## Source of Truth Hierarchy`, register **pm** manually using the patterns in
+`AGENTS.md` and `OZ.md` from a fresh `oz init` workspace.

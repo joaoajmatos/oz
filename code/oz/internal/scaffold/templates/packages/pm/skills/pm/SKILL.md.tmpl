@@ -1,0 +1,31 @@
+---
+name: pm
+description: Routes product-management requests to the correct playbook under skills/pm/references/.
+triggers:
+  - prd
+  - pre-mortem
+  - user story
+  - job story
+  - wwa
+  - sprint plan
+  - retro
+  - release notes
+  - backlog
+---
+
+# Skill: pm
+
+> Entry point for PM workflows bundled with the optional `pm` package.
+
+## When to invoke
+
+Invoke when the user asks for product-management artefacts: PRDs, pre-mortems, story writing
+(user / job / WWA), sprint planning, retrospectives, or release notes — and those workflows
+should follow the in-repo playbooks.
+
+## Steps
+
+1. **Identify the workflow** from the request (create-prd, pre-mortem, write-stories variant, sprint plan/retro/release-notes).
+2. **Open the matching reference** from the Skills table in `agents/pm/AGENT.md` and execute its steps in order.
+3. **Write outputs** to the path the reference suggests (typically `docs/` or `docs/planning/`).
+4. **Stop** when the reference’s checklist is satisfied; do not invent extra sections beyond the playbook unless the user asks.

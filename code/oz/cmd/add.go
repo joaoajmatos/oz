@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -12,10 +13,20 @@ import (
 )
 
 var addForceFlag bool
+var addPackageForce bool
 
 var addCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add integrations to an existing oz workspace",
+	Short: "Add integrations or optional packages to an existing oz workspace",
+	Long: strings.TrimSpace(`
+Add subcommands fall into two groups:
+
+  • Integrations: ` + "`oz add claude`" + `, ` + "`oz add cursor`" + ` — IDE / editor hook wiring.
+  • Optional packages: ` + "`oz add <package>`" + ` — bundled agent + skill trees shipped with the oz binary.
+    V1 package IDs: ` + strings.Join(scaffold.ValidPackageIDs(), ", ") + `.
+
+With no path argument, the current directory is used; the nearest ancestor containing
+AGENTS.md and OZ.md is treated as the workspace root.`),
 }
 
 var addClaudeCmd = &cobra.Command{
@@ -51,6 +62,48 @@ func init() {
 	addClaudeCmd.Flags().BoolVar(&addForceFlag, "force", false, "overwrite CLAUDE.md if it already exists")
 	addCmd.AddCommand(addClaudeCmd)
 	addCmd.AddCommand(addCursorCmd)
+
+	for _, id := range scaffold.ValidPackageIDs() {
+		id := id
+		c := &cobra.Command{
+			Use:   id + " [path]",
+			Short: fmt.Sprintf("Add optional package %q (agent + skills)", id),
+			Long: fmt.Sprintf(`Install optional package %q into an existing oz workspace.
+
+Writes package files from templates embedded in the oz binary. Refuses to overwrite
+existing package files unless --force is set.
+
+With no path argument, the current directory is used; the nearest ancestor containing
+AGENTS.md and OZ.md is treated as the workspace root.`, id),
+			Args: cobra.MaximumNArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return runAddPackage(cmd, args, id)
+			},
+		}
+		c.Flags().BoolVar(&addPackageForce, "force", false, "overwrite package files if they already exist")
+		addCmd.AddCommand(c)
+	}
+}
+
+func runAddPackage(cmd *cobra.Command, args []string, id string) error {
+	root, err := resolveWorkspaceRoot(args)
+	if err != nil {
+		return err
+	}
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+	paths, err := scaffold.InstallPackage(id, root, force)
+	if err != nil {
+		return err
+	}
+	out := cmd.OutOrStdout()
+	fmt.Fprintf(out, "Added package %q to %s\n", id, root)
+	for _, p := range paths {
+		fmt.Fprintf(out, "  %s\n", p)
+	}
+	return nil
 }
 
 func runAddClaude(_ *cobra.Command, args []string) error {

@@ -59,23 +59,4 @@ AT-03 is considered **not triggered** (3 warnings ≤ threshold of 3).
 
 ## Pending Decisions
 
-### CI-1 CT-01 threshold decision — no mitigation needed (2026-04-20)
-
-After shipping code indexing (schema v2), running `oz context build` on this repository produced:
-
-- `code_file`: 55
-- `code_symbol`: 222
-- Total code nodes: 277
-
-CT-01 mitigation threshold is `> 500` code nodes. Current total is below threshold, so no partitioning or additional mitigation is required in CI-1.
-
-### AGENT.md required sections updated — spec needs to reflect this
-
-The oz workspace convention now requires `Rules` and `Skills` sections in every `AGENT.md`, in addition to the existing Role, Read-chain, Responsibilities, Out of scope, and Context topics sections.
-
-- **Rules**: lists which rule files govern this agent's behavior (separate from read-chain, which is context-only)
-- **Skills**: lists which skills this agent is authorized to invoke
-
-`oz validate` should be updated to check for these sections.
-`specs/oz-project-specification.md` should be updated to include Rules and Skills in the canonical AGENT.md template.
-Owner: oz-spec (spec update) + oz-coding (validate enforcement)
+<!-- No pending decisions at this time. -->
