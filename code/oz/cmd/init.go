@@ -321,9 +321,9 @@ func collectAgents(useDefaults bool) ([]scaffold.AgentConfig, error) {
 // ── Output helpers ────────────────────────────────────────────────────────────
 
 func printInitHeader() {
-	fmt.Println()
-	title := styleBrand.Render("oz init") + "\n" + styleSubtle.Render("scaffold a new oz workspace")
-	fmt.Println(styleHeader.Render(title))
+	PrintBanner()
+	subtitle := styleSubtle.Render("scaffold a new oz workspace")
+	fmt.Println("  " + subtitle)
 	fmt.Println()
 }
 
