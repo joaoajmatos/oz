@@ -216,6 +216,20 @@ func runInit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// defaultScaffoldAgentRole is a one-line routing hint for AGENTS.md when the user did not
+// supply a description (e.g. default `oz init` agent set).
+func defaultScaffoldAgentRole(name, agentType string) string {
+	if agentType == "coding" {
+		return "Primary work is implementing or fixing code under `code/` (including tests and templates you ship with the repo)."
+	}
+	switch name {
+	case "maintainer":
+		return "Creating or updating agents, skills, or rules (workspace-management), manifests (`AGENTS.md`, `OZ.md`), `oz validate` / `oz audit`, layout — not the main application code under `code/`."
+	default:
+		return "Edit this cell: when should an LLM pick this agent? (paths, tools, artefacts)."
+	}
+}
+
 // collectAgents gathers agent configs either from defaults or interactively.
 func collectAgents(useDefaults bool) ([]scaffold.AgentConfig, error) {
 	if useDefaults {
@@ -225,7 +239,11 @@ func collectAgents(useDefaults bool) ([]scaffold.AgentConfig, error) {
 			if n == "coding" {
 				t = "coding"
 			}
-			agents = append(agents, scaffold.AgentConfig{Name: n, Type: t})
+			agents = append(agents, scaffold.AgentConfig{
+				Name:        n,
+				Type:        t,
+				Description: defaultScaffoldAgentRole(n, t),
+			})
 		}
 		return agents, nil
 	}
@@ -311,7 +329,15 @@ func collectAgents(useDefaults bool) ([]scaffold.AgentConfig, error) {
 	// Fallback: if no agents defined, use defaults
 	if len(agents) == 0 {
 		for _, n := range convention.DefaultAgents {
-			agents = append(agents, scaffold.AgentConfig{Name: n})
+			t := ""
+			if n == "coding" {
+				t = "coding"
+			}
+			agents = append(agents, scaffold.AgentConfig{
+				Name:        n,
+				Type:        t,
+				Description: defaultScaffoldAgentRole(n, t),
+			})
 		}
 	}
 

@@ -70,6 +70,23 @@ Agents are not code. They are conventions.
 Agents share context via `context/` at the workspace root, organized by topic.
 Any agent can read any context topic.
 
+#### AGENTS.md agent routing
+
+`AGENTS.md` is the LLM entry point. Under `## Agents`, the workspace MUST include a single
+markdown **routing table** (not free-form subsections) with exactly these columns, in order:
+
+| Column | Purpose |
+|---|---|
+| **Agent** | Bold handle for the agent (e.g. `**oz-coding**`). Convention: matches the directory name under `agents/<name>/`. |
+| **Use when** | One scannable line of **routing hints**: concrete situations (paths, commands, artefact types) where this agent is the right choice — not a vague job title. Prefer disambiguation (“X, not Y”) when two agents are easy to confuse. Avoid pipe characters (markdown column separators) inside the cell. |
+| **Definition** | Backtick path to `agents/<name>/AGENT.md`. |
+
+Optional packages and other tooling MAY append rows to this table when they register an agent,
+using the same column shape so merges stay predictable.
+
+`OZ.md` carries a **Registered Agents** table with the same three columns for the workspace manifest;
+keep **Use when** text aligned between the two files when both exist.
+
 #### AGENT.md required sections
 
 Every `agents/<name>/AGENT.md` must contain these sections in order:
@@ -153,7 +170,8 @@ flowchart TB
 
 ### Key conventions
 
-- `AGENTS.md` is the single entry point for any LLM. It always exists at root.
+- `AGENTS.md` is the single entry point for any LLM. It always exists at root and MUST route
+  agents using the `## Agents` markdown table defined above.
 - `OZ.md` is the workspace manifest. It declares the oz standard version and registered agents.
 - `context/` is shared across all agents — organized by topic, not by agent.
 - `code/` holds actual project code. May contain git submodules.

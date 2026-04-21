@@ -5,9 +5,11 @@ project: {{.Name}}
 description: {{.Description}}
 
 ## Registered Agents
-{{range .Agents}}
-- **{{.Name}}**: `agents/{{.Name}}/AGENT.md`
-{{- end}}
+
+| Agent | Use when | Definition |
+|---|---|---|
+{{range .Agents}}| **{{.Name}}** | {{if .Description}}{{.Description}}{{else}}{{if eq .Type "coding"}}Primary work is implementing or fixing code under `code/` (including tests and templates you ship with the repo).{{else}}{{if eq .Name "maintainer"}}Creating or updating agents, skills, or rules (workspace-management), manifests (`AGENTS.md`, `OZ.md`), `oz validate` / `oz audit`, layout — not the main application code under `code/`.{{else}}Edit this cell: when should an LLM pick **{{.Name}}**? (paths, tools, artefacts).{{end}}{{end}}{{end}} | `agents/{{.Name}}/AGENT.md` |
+{{end}}
 
 ## Source of Truth Hierarchy
 

@@ -8,15 +8,17 @@
 
 ## How to navigate this workspace
 
-1. Find your role below.
-2. Read your `AGENT.md` file.
-3. Follow the read-chain in your agent definition before starting any task.
+1. In **Agents** below, pick the row whose **Use when** column best matches your situation.
+2. Open the **Definition** path (`AGENT.md` for that agent).
+3. Follow the read-chain there before starting any task.
 
 ## Agents
-{{range .Agents}}
-### {{.Name}}
 
-Agent definition: `agents/{{.Name}}/AGENT.md`
+**Use when** is a routing hint: describe *situations* (paths, commands, doc types), not a generic job title. One line per cell; do not use `|` inside the cell (it breaks the markdown table).
+
+| Agent | Use when | Definition |
+|---|---|---|
+{{range .Agents}}| **{{.Name}}** | {{if .Description}}{{.Description}}{{else}}{{if eq .Type "coding"}}Primary work is implementing or fixing code under `code/` (including tests and templates you ship with the repo).{{else}}{{if eq .Name "maintainer"}}Creating or updating agents, skills, or rules (workspace-management), manifests (`AGENTS.md`, `OZ.md`), `oz validate` / `oz audit`, layout — not the main application code under `code/`.{{else}}Edit this cell: when should an LLM pick **{{.Name}}**? (paths, tools, artefacts).{{end}}{{end}}{{end}} | `agents/{{.Name}}/AGENT.md` |
 {{end}}
 ## Source of Truth Hierarchy
 

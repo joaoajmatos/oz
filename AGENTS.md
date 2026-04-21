@@ -11,8 +11,8 @@ with clean integrations for Claude Code, Cursor, and any other editor or model.
 
 ## How to navigate this workspace
 
-1. Find your role in the **Agents** section below.
-2. Open your `AGENT.md` file.
+1. In **Agents** below, pick the row whose **Use when** column best matches your situation (not every keyword has to match).
+2. Open the **Definition** path (`AGENT.md` for that agent).
 3. Follow the read-chain defined there before starting any task. Do not skip steps.
 
 Each agent authorizes `skills/oz/` for the full `oz` CLI and MCP workflow (`validate`,
@@ -26,26 +26,13 @@ then proceed with the source of truth hierarchy below.
 
 ## Agents
 
-### oz-coding
+**Use when** is a routing hint: it should say *which situations* choose that agent, not repeat the job title from `AGENT.md`. One line per cell; do not use `|` inside the cell (it breaks the markdown table).
 
-**Builds the oz toolset in Go.**
-Go implementation work: subcommands, internal packages, templates, tests.
-
-Agent definition: `agents/oz-coding/AGENT.md`
-
-### oz-maintainer
-
-**Keeps workspace convention consistent and the repo healthy.**
-Audits workspace structure, keeps agent definitions current, flags drift.
-
-Agent definition: `agents/oz-maintainer/AGENT.md`
-
-### oz-spec
-
-**Evolves the oz standard specification.**
-Owns `specs/oz-project-specification.md` and `specs/decisions/`. Crystallizes notes into spec language.
-
-Agent definition: `agents/oz-spec/AGENT.md`
+| Agent | Use when | Definition |
+|---|---|---|
+| **oz-coding** | Primary work is Go in `code/oz/`, the `oz` CLI, its tests, or embedded files under `internal/scaffold/` | `agents/oz-coding/AGENT.md` |
+| **oz-maintainer** | Convention work: **new or updated agents, skills, or rules** (via `skills/workspace-management/`), keeping `AGENTS.md` / `OZ.md` / manifests accurate, `oz validate` / `oz audit`, layout — not shipping Go in `code/oz/` and not rewriting normative sections of `specs/oz-project-specification.md` | `agents/oz-maintainer/AGENT.md` |
+| **oz-spec** | Primary work is normative convention text: `specs/oz-project-specification.md`, `specs/decisions/` (ADRs), or spec alignment — not implementing Go in `code/oz/` | `agents/oz-spec/AGENT.md` |
 
 ---
 

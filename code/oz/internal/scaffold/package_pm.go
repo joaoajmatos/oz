@@ -84,25 +84,43 @@ func mergePMManifests(root string) ([]string, error) {
 }
 
 func mergeAgentsPM(content string) (string, bool, error) {
-	if strings.Contains(content, "agents/pm/AGENT.md") {
+	if strings.Contains(content, "| **pm** |") {
 		return content, false, nil
 	}
-	if !strings.Contains(content, "## Source of Truth Hierarchy") {
-		return content, false, nil
-	}
-	block := "### pm\n\n" +
-		"**Runs product management workflows in-repo (PRDs, risk reviews, backlog items, sprint rituals).**\n\n" +
-		"Agent definition: `agents/pm/AGENT.md`\n"
+	row := "| **pm** | PRDs, pre-mortems, backlog stories, sprint plan/retro/release notes, or other PM workflows using `skills/pm/` | `agents/pm/AGENT.md` |"
+	next, ok := insertAgentMarkdownTableRow(content, "## Agents", row)
+	return next, ok, nil
+}
 
-	marker := "\n---\n\n## Source of Truth Hierarchy"
-	if pos := strings.Index(content, marker); pos >= 0 {
-		return content[:pos] + "\n" + block + content[pos:], true, nil
+// insertAgentMarkdownTableRow appends row after the last markdown table body line that
+// starts with "| **" and contains "`agents/`", in the section from sectionHeading up to
+// "## Source of Truth Hierarchy". The section must include an | Agent | header table.
+func insertAgentMarkdownTableRow(content, sectionHeading, row string) (string, bool) {
+	if !strings.Contains(content, sectionHeading) || !strings.Contains(content, "## Source of Truth Hierarchy") {
+		return content, false
 	}
-	idx := strings.Index(content, "## Source of Truth Hierarchy")
-	if idx < 0 {
-		return content, false, nil
+	agentsStart := strings.Index(content, sectionHeading)
+	sourceRel := strings.Index(content[agentsStart:], "## Source of Truth Hierarchy")
+	if sourceRel < 0 {
+		return content, false
 	}
-	return content[:idx] + block + "\n" + content[idx:], true, nil
+	sourceIdx := agentsStart + sourceRel
+	section := content[agentsStart:sourceIdx]
+	if !strings.Contains(section, "| Agent |") || !strings.Contains(section, "|---|") {
+		return content, false
+	}
+	lines := strings.Split(content[:sourceIdx], "\n")
+	insertAfter := -1
+	for i, line := range lines {
+		if strings.HasPrefix(line, "| **") && strings.Contains(line, "`agents/") {
+			insertAfter = i
+		}
+	}
+	if insertAfter < 0 {
+		return content, false
+	}
+	lines = append(lines[:insertAfter+1], append([]string{row}, lines[insertAfter+1:]...)...)
+	return strings.Join(lines, "\n") + content[sourceIdx:], true
 }
 
 func mergeOZPM(content string) (string, bool, error) {
@@ -125,19 +143,12 @@ func mergeOZPM(content string) (string, bool, error) {
 	section := content[agentsStart:sourceIdx]
 
 	if strings.Contains(section, "| Agent |") && strings.Contains(section, "|---|") {
-		lines := strings.Split(content[:sourceIdx], "\n")
-		insertAfter := -1
-		for i, line := range lines {
-			if strings.HasPrefix(line, "| **") && strings.Contains(line, "`agents/") {
-				insertAfter = i
-			}
+		row := "| **pm** | PRDs, pre-mortems, backlog stories, sprint plan/retro/release notes, or other PM workflows using `skills/pm/` | `agents/pm/AGENT.md` |"
+		next, ok := insertAgentMarkdownTableRow(content, "## Registered Agents", row)
+		if ok {
+			return next, true, nil
 		}
-		if insertAfter < 0 {
-			return content, false, nil
-		}
-		row := "| **pm** | Runs product management workflows in-repo | `agents/pm/AGENT.md` |"
-		lines = append(lines[:insertAfter+1], append([]string{row}, lines[insertAfter+1:]...)...)
-		return strings.Join(lines, "\n") + content[sourceIdx:], true, nil
+		return content, false, nil
 	}
 
 	if strings.Contains(section, "- **") && strings.Contains(section, "`agents/") {

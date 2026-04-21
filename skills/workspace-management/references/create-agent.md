@@ -30,10 +30,10 @@ Use `assets/AGENT.md.tmpl` as your starting point.
 3. Copy `assets/AGENT.md.tmpl` to `agents/<name>/AGENT.md`.
 4. Fill in all seven required sections. Do not leave placeholder text.
 5. Register the agent in `AGENTS.md`:
-   - Add a `### <name>` subsection under `## Agents`.
-   - Include a one-line bold description and `Agent definition: agents/<name>/AGENT.md`.
+   - Add a row to the `## Agents` markdown table (`| Agent | Use when | Definition |`).
+   - **Agent**: `**<name>**` — **Use when**: concrete situations (paths, commands, artefacts); disambiguate vs other agents if needed (no `|` in the cell) — **Definition**: `` `agents/<name>/AGENT.md` ``.
 6. Register the agent in `OZ.md`:
-   - Add a row to the `## Registered Agents` table.
+   - Add a row to the `## Registered Agents` table using the same `| Agent | Use when | Definition |` columns as `AGENTS.md` (keep the two rows aligned).
 7. Verify: re-read the spec section on AGENT.md required sections and confirm compliance.
 
 ### Tweaking an existing agent

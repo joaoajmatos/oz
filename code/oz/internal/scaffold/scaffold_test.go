@@ -105,6 +105,22 @@ func TestScaffold_OZmd_ContainsVersion(t *testing.T) {
 	if !strings.Contains(content, "oz standard:") {
 		t.Error("OZ.md: missing 'oz standard' field")
 	}
+	if !strings.Contains(content, "| Agent | Use when | Definition |") {
+		t.Error("OZ.md: expected Registered Agents markdown table with Use when column")
+	}
+}
+
+func TestScaffold_AGENTSmd_HasAgentRoutingTable(t *testing.T) {
+	dir := t.TempDir()
+	if err := scaffold.Scaffold(dir, defaultCfg); err != nil {
+		t.Fatal(err)
+	}
+	content := readFile(t, filepath.Join(dir, "AGENTS.md"))
+	for _, want := range []string{"| Agent | Use when | Definition |", "| **coding** |", "| **maintainer** |", "`agents/coding/AGENT.md`", "`agents/maintainer/AGENT.md`"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("AGENTS.md: missing %q\n%s", want, content)
+		}
+	}
 }
 
 func TestScaffold_AgentFiles(t *testing.T) {

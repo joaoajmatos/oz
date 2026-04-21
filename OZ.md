@@ -8,11 +8,11 @@ description: Open workspace convention and toolset for LLM-first development
 
 ## Registered Agents
 
-| Agent | Role | Definition |
+| Agent | Use when | Definition |
 |---|---|---|
-| **oz-coding** | Builds the oz toolset in Go | `agents/oz-coding/AGENT.md` |
-| **oz-maintainer** | Keeps workspace convention consistent and repo healthy | `agents/oz-maintainer/AGENT.md` |
-| **oz-spec** | Evolves the oz standard specification | `agents/oz-spec/AGENT.md` |
+| **oz-coding** | Primary work is Go in `code/oz/`, the `oz` CLI, its tests, or embedded files under `internal/scaffold/` | `agents/oz-coding/AGENT.md` |
+| **oz-maintainer** | Convention work: **new or updated agents, skills, or rules** (via `skills/workspace-management/`), keeping `AGENTS.md` / `OZ.md` / manifests accurate, `oz validate` / `oz audit`, layout — not shipping Go in `code/oz/` and not rewriting normative sections of `specs/oz-project-specification.md` | `agents/oz-maintainer/AGENT.md` |
+| **oz-spec** | Primary work is normative convention text: `specs/oz-project-specification.md`, `specs/decisions/` (ADRs), or spec alignment — not implementing Go in `code/oz/` | `agents/oz-spec/AGENT.md` |
 
 ---
 

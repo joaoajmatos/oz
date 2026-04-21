@@ -8,9 +8,11 @@ import (
 func TestMergeAgentsPM_WithSeparatorBeforeSource(t *testing.T) {
 	in := `# AGENTS
 
-### other
+## Agents
 
-Agent definition: ` + "`agents/other/AGENT.md`" + `
+| Agent | Use when | Definition |
+|---|---|---|
+| **other** | Does things | ` + "`agents/other/AGENT.md`" + ` |
 
 ---
 
@@ -25,8 +27,8 @@ Agent definition: ` + "`agents/other/AGENT.md`" + `
 	if !changed {
 		t.Fatal("expected merge")
 	}
-	if !strings.Contains(out, "### pm") || !strings.Contains(out, "agents/pm/AGENT.md") {
-		t.Fatalf("missing pm block:\n%s", out)
+	if !strings.Contains(out, "| **pm** |") || !strings.Contains(out, "agents/pm/AGENT.md") {
+		t.Fatalf("missing pm row:\n%s", out)
 	}
 	if !strings.Contains(out, "## Source of Truth Hierarchy") {
 		t.Fatal("lost Source heading")
@@ -35,8 +37,10 @@ Agent definition: ` + "`agents/other/AGENT.md`" + `
 
 func TestMergeAgentsPM_ScaffoldStyle(t *testing.T) {
 	in := `## Agents
-### coding
-Agent definition: ` + "`agents/coding/AGENT.md`" + `
+
+| Agent | Use when | Definition |
+|---|---|---|
+| **coding** | Builds code | ` + "`agents/coding/AGENT.md`" + ` |
 
 ## Source of Truth Hierarchy
 
@@ -48,14 +52,17 @@ x`
 	if !changed {
 		t.Fatal("expected merge")
 	}
-	if !strings.Contains(out, "### pm") {
+	if !strings.Contains(out, "| **pm** |") {
 		t.Fatal(out)
 	}
 }
 
 func TestMergeAgentsPM_Idempotent(t *testing.T) {
-	in := `### pm
-Agent definition: ` + "`agents/pm/AGENT.md`" + `
+	in := `## Agents
+
+| Agent | Use when | Definition |
+|---|---|---|
+| **pm** | Already | ` + "`agents/pm/AGENT.md`" + ` |
 
 ## Source of Truth Hierarchy
 `
@@ -71,7 +78,7 @@ Agent definition: ` + "`agents/pm/AGENT.md`" + `
 func TestMergeOZPM_Table(t *testing.T) {
 	in := `## Registered Agents
 
-| Agent | Role | Definition |
+| Agent | Use when | Definition |
 |---|---|---|
 | **a** | r | ` + "`agents/a/AGENT.md`" + ` |
 
