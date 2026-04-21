@@ -7,8 +7,7 @@
 **oz**: Open workspace convention and toolset for LLM-first development.
 
 oz gives any LLM a structured, predictable workspace it can immediately understand —
-without custom integrations or provider-specific configuration. The convention is
-trust-based and provider-agnostic.
+with clean integrations for Claude Code, Cursor, and any other editor or model.
 
 ## How to navigate this workspace
 

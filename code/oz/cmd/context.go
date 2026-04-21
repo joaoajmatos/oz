@@ -38,12 +38,13 @@ var (
 	queryIncludeNotes bool
 	enrichModel       string
 	reviewAcceptAll   bool
+	quietBuild        bool
 )
 
 var contextQueryCmd = &cobra.Command{
-	Use:   "query <text>",
+	Use:   "query [text]",
 	Short: "Query the context graph for agent routing",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runContextQuery,
 }
 
@@ -93,6 +94,7 @@ func init() {
 	contextCmd.AddCommand(contextEnrichCmd)
 	contextCmd.AddCommand(contextReviewCmd)
 	contextCmd.AddCommand(contextServeCmd)
+	contextBuildCmd.Flags().BoolVarP(&quietBuild, "quiet", "q", false, "suppress output")
 	contextQueryCmd.Flags().BoolVar(&queryRaw, "raw", false, "output routing debug JSON (scores + query-relevant subgraph) instead of routing packet")
 	contextQueryCmd.Flags().BoolVar(&queryIncludeNotes, "include-notes", false, "include notes/ in context blocks")
 	contextEnrichCmd.Flags().StringVar(&enrichModel, "model", "", "OpenRouter model ID (default: anthropic/claude-haiku-4)")
@@ -114,8 +116,10 @@ func runContextBuild(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("write graph: %w", err)
 	}
 
-	cmd.Printf("context/graph.json written — %d nodes, %d edges (hash: %s)\n",
-		result.NodeCount, result.EdgeCount, result.Graph.ContentHash[:12])
+	if !quietBuild {
+		cmd.Printf("context/graph.json written — %d nodes, %d edges (hash: %s)\n",
+			result.NodeCount, result.EdgeCount, result.Graph.ContentHash[:12])
+	}
 	return nil
 }
 
@@ -123,6 +127,11 @@ func runContextQuery(cmd *cobra.Command, args []string) error {
 	root, err := findWorkspaceRoot()
 	if err != nil {
 		return err
+	}
+
+	// No query text: return workspace overview (all agents listed).
+	if len(args) == 0 {
+		return printJSON(cmd, query.ListAgents(root))
 	}
 
 	// S6-01: warn if semantic overlay is stale.
@@ -203,12 +212,12 @@ func runContextServe(_ *cobra.Command, _ []string) error {
 	return srv.Serve(os.Stdin)
 }
 
-func printJSON(cmd *cobra.Command, v interface{}) error {
+func printJSON(_ *cobra.Command, v interface{}) error {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return err
 	}
-	cmd.Println(string(data))
+	fmt.Fprintln(os.Stdout, string(data))
 	return nil
 }
 

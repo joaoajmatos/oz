@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".oz/hooks/oz-session-init.sh"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": ".oz/hooks/oz-after-edit.sh"
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".oz/hooks/oz-pre-commit.sh",
+        "matcher": "git commit",
+        "failClosed": true
+      }
+    ]
+  }
+}

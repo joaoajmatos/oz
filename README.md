@@ -54,6 +54,27 @@ You rarely need to memorize subcommands: point collaborators or models at **`AGE
 
 ---
 
+## Editor integrations
+
+oz integrates cleanly with Claude Code and Cursor. Run the appropriate command inside any oz workspace:
+
+```bash
+oz add claude   # writes CLAUDE.md + Claude Code hooks (.claude/settings.json)
+oz add cursor   # writes Cursor hooks (.cursor/hooks.json)
+```
+
+Both commands install the three shared hook scripts under `.oz/hooks/`:
+
+| Hook | What it does |
+|------|-------------|
+| `oz-session-init.sh` | Injects agent routing context at session start |
+| `oz-after-edit.sh` | Runs `oz validate` + `oz context build` after `.md`/`.go` edits |
+| `oz-pre-commit.sh` | Blocks `git commit` if `oz validate` or `oz audit staleness` fails |
+
+`oz init` also offers to configure hooks as part of the workspace creation flow.
+
+---
+
 ## MCP (Model Context Protocol)
 
 `oz context serve` is a stdio MCP server so Claude Code, Cursor, and other clients can call **`query_graph`**, **`get_node`**, **`get_neighbors`**, and **`agent_for_task`** against the current workspace.

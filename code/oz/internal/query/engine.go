@@ -93,6 +93,34 @@ func Run(workspacePath, queryText string) Result {
 	return RunWithOptions(workspacePath, queryText, Options{})
 }
 
+// ListAgents returns a workspace overview: all agents as CandidateAgents with
+// confidence 0.0. Used when no query text is provided (e.g. sessionStart hooks).
+func ListAgents(workspacePath string) Result {
+	g, err := ozcontext.LoadGraph(workspacePath)
+	if err != nil {
+		result, buildErr := ozcontext.Build(workspacePath)
+		if buildErr != nil {
+			return Result{Reason: "no_clear_owner"}
+		}
+		g = result.Graph
+	}
+
+	cfg := LoadConfig(workspacePath)
+	docs := BuildAgentDocs(g.Nodes, cfg)
+	if len(docs) == 0 {
+		return Result{Reason: "no_clear_owner"}
+	}
+
+	candidates := make([]CandidateAgent, len(docs))
+	for i, d := range docs {
+		candidates[i] = CandidateAgent{Name: d.Name, Confidence: 0.0}
+	}
+	return Result{
+		Reason:          "workspace_overview",
+		CandidateAgents: candidates,
+	}
+}
+
 // loadRelevantConcepts reads context/semantic.json (if present) and returns
 // concept names owned by agentName. Returns nil when no overlay exists.
 func loadRelevantConcepts(workspacePath, agentName string, _ *graph.Graph) []string {

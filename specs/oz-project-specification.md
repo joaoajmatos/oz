@@ -11,11 +11,12 @@ oz is an open source **workspace convention and toolset** for LLM-first developm
 
 It solves a specific problem: LLMs (Claude, Codex, Cursor, etc.) have no persistent
 understanding of a codebase. Every session starts from zero. oz gives any LLM a
-structured, predictable workspace it can immediately understand — without custom
-integrations or provider-specific configuration.
+structured, predictable workspace it can immediately understand — with clean
+integrations for Claude Code, Cursor, and any other editor or model.
 
 oz is **not** an agent orchestrator. It is a convention + toolset that any LLM can
-follow by reading markdown files. The convention is trust-based and provider-agnostic.
+follow by reading markdown files. The convention integrates cleanly with providers
+rather than abstracting them away.
 
 The core idea: open the workspace, read AGENTS.md, and the LLM knows exactly what
 to do.
@@ -259,11 +260,12 @@ on convention. Notes become specs, docs, or context entries. Not yet implemented
 1. **Convention over configuration.** oz workspaces are predictable. Any LLM or
    human can understand the structure without reading docs.
 
-2. **Provider agnostic.** oz works with Claude, Codex, Cursor, or any LLM.
-   No provider-specific integrations. Markdown is the interface.
+2. **Clean provider integrations.** oz works with Claude, Codex, Cursor, or any LLM.
+   Markdown is the common interface; first-class integrations (hooks, CLAUDE.md, MCP)
+   let each provider participate fully.
 
-3. **Trust-based.** The read-chain and hierarchy are not enforced by code.
-   They are conventions that well-behaved LLMs follow. This is intentional.
+3. **Convention-enforced.** The read-chain and hierarchy are backed by hooks and
+   `oz validate`. Conventions are machine-checkable, not just hoped-for.
 
 4. **Code wins, spec follows.** Code is the source of truth for behaviour.
    When code and spec diverge, the spec is flagged and updated to match.

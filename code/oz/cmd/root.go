@@ -6,7 +6,7 @@ var rootCmd = &cobra.Command{
 	Use:   "oz",
 	Short: "oz — workspace convention and toolset for LLM-first development",
 	Long: `oz gives any LLM a structured, predictable workspace it can immediately
-understand — without custom integrations or provider-specific configuration.`,
+understand — with clean integrations for Claude Code, Cursor, and any other editor or model.`,
 }
 
 // Execute runs the root command.

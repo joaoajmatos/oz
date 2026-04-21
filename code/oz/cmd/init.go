@@ -14,7 +14,10 @@ import (
 	"github.com/oz-tools/oz/internal/scaffold"
 )
 
-var initClaudeFlag bool
+var (
+	initClaudeFlag  bool
+	initNoHooksFlag bool
+)
 
 var initCmd = &cobra.Command{
 	Use:   "init [path]",
@@ -26,6 +29,7 @@ var initCmd = &cobra.Command{
 
 func init() {
 	initCmd.Flags().BoolVar(&initClaudeFlag, "claude", false, "generate CLAUDE.md for Claude Code integration")
+	initCmd.Flags().BoolVar(&initNoHooksFlag, "no-hooks", false, "skip IDE hook configuration for Claude Code and Cursor")
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -158,13 +162,32 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// ── Step 3: scaffold with spinner ────────────────────────────────────────
+	// ── Step 3: hooks confirmation ───────────────────────────────────────────
+	setupHooks := !initNoHooksFlag
+	if !initNoHooksFlag {
+		hooksForm := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title("Configure IDE hooks?").
+					Description("Writes Claude Code + Cursor hook configs that enforce oz convention on every edit and commit.").
+					Affirmative("Yes").
+					Negative("No").
+					Value(&setupHooks),
+			),
+		).WithTheme(ozTheme())
+		if err := hooksForm.Run(); err != nil && !errors.Is(err, huh.ErrUserAborted) {
+			return err
+		}
+	}
+
+	// ── Step 4: scaffold with spinner ────────────────────────────────────────
 	cfg := scaffold.Config{
 		Name:        strings.TrimSpace(name),
 		Description: strings.TrimSpace(description),
 		CodeMode:    codeMode,
 		Agents:      agents,
 		ClaudeMD:    initClaudeFlag,
+		Hooks:       setupHooks,
 	}
 
 	var scaffoldErr error
@@ -186,9 +209,9 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println(styleSuccess.Render("  ✓ Workspace ready"))
 	fmt.Println()
-	printTree(path, initClaudeFlag, agents)
+	printTree(path, initClaudeFlag, setupHooks, agents)
 	fmt.Println()
-	printNextSteps()
+	printNextSteps(setupHooks)
 
 	return nil
 }
@@ -309,7 +332,7 @@ type treeEntry struct {
 	dir  bool
 }
 
-func printTree(root string, claudeMD bool, agents []scaffold.AgentConfig) {
+func printTree(root string, claudeMD bool, hooks bool, agents []scaffold.AgentConfig) {
 	entries := []treeEntry{
 		{".gitignore", false},
 		{"AGENTS.md", false},
@@ -335,6 +358,13 @@ func printTree(root string, claudeMD bool, agents []scaffold.AgentConfig) {
 		treeEntry{"code/", true},
 		treeEntry{".oz/", true},
 	)
+	if hooks {
+		entries = append(entries,
+			treeEntry{".cursor/hooks.json", false},
+			treeEntry{".cursor/hooks/", true},
+			treeEntry{".claude/settings.json", false},
+		)
+	}
 
 	fmt.Println("  " + styleTreeRoot.Render(root+"/"))
 	for i, e := range entries {
@@ -350,17 +380,22 @@ func printTree(root string, claudeMD bool, agents []scaffold.AgentConfig) {
 	}
 }
 
-func printNextSteps() {
+func printNextSteps(hooks bool) {
 	fmt.Println("  " + styleSectionTitle.Render("Next steps"))
 	fmt.Println()
 
 	steps := []struct{ cmd, desc string }{
 		{"oz context build", "build the initial agent context snapshot"},
 		{"oz audit drift  ", "check workspace convention compliance"},
-		{"oz add claude   ", "add CLAUDE.md for Claude Code integration"},
+		{"oz add claude   ", "add Claude Code integration (CLAUDE.md + hooks)"},
+		{"oz add cursor   ", "add Cursor integration (hooks)"},
 	}
 	for _, s := range steps {
 		fmt.Printf("  %s  %s\n", styleCmd.Render(s.cmd), styleSubtle.Render(s.desc))
+	}
+	if hooks {
+		fmt.Println()
+		fmt.Println("  " + styleSubtle.Render("IDE hooks configured — oz convention is enforced on every edit and commit."))
 	}
 	fmt.Println()
 }
