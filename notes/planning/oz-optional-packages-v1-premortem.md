@@ -2,8 +2,8 @@
 
 **Date**: 2026-04-21
 **Status**: Open — pre-launch
-**PRD**: docs/planning/oz-optional-packages-v1-prd.md
-**Sprint plan**: docs/planning/oz-optional-packages-v1-sprints.md
+**PRD**: notes/planning/oz-optional-packages-v1-prd.md
+**Sprint plan**: notes/planning/oz-optional-packages-v1-sprints.md
 
 ---
 
@@ -89,4 +89,4 @@ If templates copy external material, legal risk. Mitigation: only ship original 
 - [ ] `oz add not-a-package` errors with list of valid IDs
 - [ ] PM agent lists authorized skills: create-prd, pre-mortem, write-stories, sprint modes
 - [ ] Self-validation: `go test ./...` green; note any new audit/validate noise
-- [ ] PRD + this pre-mortem + sprint plan committed under `docs/planning/`
+- [ ] PRD + this pre-mortem + sprint plan committed under `notes/planning/`

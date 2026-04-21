@@ -4,7 +4,7 @@
 **Status**: V1 shipped and self-validated against the oz workspace
 
 This snapshot describes the V1 implementation state for future agents entering this workspace.
-Read `docs/architecture.md` for the full system design and `docs/planning/oz-context-v1-sprints.md` for the sprint history.
+Read `docs/architecture.md` for the full system design and `notes/planning/oz-context-v1-sprints.md` for the sprint history.
 
 ---
 
@@ -101,7 +101,7 @@ All tests: `go test ./... ` — zero failures, zero skips.
 
 ## Pre-mortem resolution
 
-All 6 Tigers and 3 Elephants from `docs/planning/oz-context-v1-premortem.md` are resolved.
+All 6 Tigers and 3 Elephants from `notes/planning/oz-context-v1-premortem.md` are resolved.
 
 Key resolutions:
 - **T-01** (undefined scoring): BM25F + Porter stemming + softmax specified before Sprint 1
@@ -122,7 +122,7 @@ Key resolutions:
 - JSON: `schema_version: "1"` on the **report** envelope; findings sorted deterministically.
 - Drift symbols: loaded from graph `code_symbol` nodes (Go AST indexing in `context build`);
   optional `--include-tests` merges `*_test.go` exports. Spec scanner heuristics and AT-01
-  narrowing are documented in `docs/planning/oz-audit-v1-prd.md` §6 and `internal/audit/drift/specscan`.
+  narrowing are documented in `notes/planning/oz-audit-v1-prd.md` §6 and `internal/audit/drift/specscan`.
 - ADR: `specs/decisions/0001-audit-v1-symbols-from-graph-codeindex.md`.
 
 ## Fast-follow items

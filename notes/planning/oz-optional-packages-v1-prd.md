@@ -4,7 +4,7 @@
 **Date**: 2026-04-21
 **Status**: Draft
 **Stakeholders**: oz-coding (implementation), oz-maintainer (convention), oz-spec (spec alignment)
-**Related**: Pre-mortem `docs/planning/oz-optional-packages-v1-premortem.md`, sprint plan `docs/planning/oz-optional-packages-v1-sprints.md`
+**Related**: Pre-mortem `notes/planning/oz-optional-packages-v1-premortem.md`, sprint plan `notes/planning/oz-optional-packages-v1-sprints.md`
 
 ---
 
@@ -158,7 +158,7 @@ V1 may reference these as **Cursor slash-commands** and/or as **skills under `sk
 
 | Phase | Scope | Relative timeframe |
 |-------|--------|---------------------|
-| **V1.0** | Registry, `pm` package, `oz add <package>`, `oz init` multi-select, tests, docs in `docs/planning/` | First release after implementation complete |
+| **V1.0** | Registry, `pm` package, `oz add <package>`, `oz init` multi-select, tests, docs in `notes/planning/` | First release after implementation complete |
 | **V1.1** | Second package (TBD), safer manifest merge, `oz add pm --dry-run` | After V1 feedback |
 | **V2** | Migrate `claude` / `cursor` into the same registry (if desired), optional remote package feeds | Future |
 

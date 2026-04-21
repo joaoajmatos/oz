@@ -158,6 +158,7 @@ flowchart TB
 - `context/` is shared across all agents — organized by topic, not by agent.
 - `code/` holds actual project code. May contain git submodules.
 - `notes/` is the only low-trust layer. Everything else should be considered authoritative.
+  Optional convention: `notes/planning/` for product-management artifacts (PRDs, pre-mortems, sprint plans) that inform work but are not normative until promoted to `specs/` or `docs/`.
 
 ---
 

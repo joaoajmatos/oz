@@ -302,4 +302,4 @@ Delivers A-07, A-09, A-11, A-12.
 
 ---
 
-*This PRD is paired with `docs/planning/oz-audit-v1-premortem.md` (risk register) and `docs/planning/oz-audit-v1-sprints.md` (sprint plan). Implementation begins after the pre-mortem go/no-go is signed off.*
+*This PRD is paired with `notes/planning/oz-audit-v1-premortem.md` (risk register) and `notes/planning/oz-audit-v1-sprints.md` (sprint plan). Implementation begins after the pre-mortem go/no-go is signed off.*

@@ -31,7 +31,7 @@ Alternative acceptable pattern: shorter prefixes (`prd`, `pre-mortem`) if you wa
 
 - **Description**: Create a Product Requirements Document using the 8-section template (summary, contacts, background, objective, segments, value propositions, solution, release).
 - **Triggers** (examples): `PRD`, `product requirements`, `write PRD`, `create-prd`.
-- **Steps**: Gather inputs → apply template sections → save as `PRD-<product-name>.md` (or project convention under `docs/planning/`).
+- **Steps**: Gather inputs → apply template sections → save as `PRD-<product-name>.md` (or project convention under `notes/planning/`).
 - **References** (optional): `references/eight-section-outline.md` with the section checklist only (keep SKILL.md short).
 
 **Source body**: Use the **create-prd** playbook you maintain in Cursor/plugins or paste the canonical instructions into `references/` during implementation — do not rely on chat-only copies.
@@ -74,7 +74,7 @@ The PM agent should authorize invocation of:
 - `skills/pm-write-stories/`
 - `skills/pm-sprint/`
 
-Optional: add **Context topics** pointing at `docs/planning/` for shipped PRDs and this inventory.
+Optional: add **Context topics** pointing at `notes/planning/` for shipped PRDs and this inventory.
 
 ---
 
@@ -99,4 +99,4 @@ Slash commands (`/write-stories`, `/sprint`) are **editor affordances**. Oz skil
 ## Open decisions
 
 - [ ] Exact trigger keyword list per skill (keep short vs exhaustive).
-- [ ] Whether PRD/pre-mortem output paths default to `docs/planning/` only or also `notes/` for drafts.
+- [x] PRD/pre-mortem/sprint outputs default to `notes/planning/`; scratch or ephemeral drafts can live at `notes/*.md` and be crystallized or moved into `notes/planning/` when worth keeping.

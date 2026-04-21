@@ -2,7 +2,7 @@
 
 **Date**: 2026-04-19
 **Status**: All items resolved — V1 shipped
-**PRD**: docs/planning/oz-context-v1-prd.md
+**PRD**: notes/planning/oz-context-v1-prd.md
 
 ---
 

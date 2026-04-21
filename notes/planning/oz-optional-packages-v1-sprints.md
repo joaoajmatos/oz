@@ -1,7 +1,7 @@
 # oz optional packages V1 — Sprint plan & backlog
 
-**PRD**: docs/planning/oz-optional-packages-v1-prd.md  
-**Pre-mortem**: docs/planning/oz-optional-packages-v1-premortem.md  
+**PRD**: notes/planning/oz-optional-packages-v1-prd.md  
+**Pre-mortem**: notes/planning/oz-optional-packages-v1-premortem.md  
 **Format**: 1-week sprints, small team (adjust owners to your roster)
 
 ---

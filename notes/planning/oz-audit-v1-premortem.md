@@ -2,8 +2,8 @@
 
 **Date**: 2026-04-19
 **Status**: Closed — V1 shipped (2026-04-20)
-**PRD**: docs/planning/oz-audit-v1-prd.md
-**Sprint plan**: docs/planning/oz-audit-v1-sprints.md
+**PRD**: notes/planning/oz-audit-v1-prd.md
+**Sprint plan**: notes/planning/oz-audit-v1-sprints.md
 
 ---
 
