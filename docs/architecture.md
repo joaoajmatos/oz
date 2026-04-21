@@ -155,11 +155,11 @@ flowchart LR
 flowchart LR
   stdin[MCP_stdin_JSON-RPC_per_line] --> init[initialize_and_initialized]
   init --> list[tools_list_four_schemas]
-  list --> call[tools_call_dispatcher]
-  call --> qg[query_graph]
-  call --> gn[get_node]
-  call --> neigh[get_neighbors]
-  call --> aft[agent_for_task]
+  list --> toolDispatch[tools_call_dispatcher]
+  toolDispatch --> qg[query_graph]
+  toolDispatch --> gn[get_node]
+  toolDispatch --> neigh[get_neighbors]
+  toolDispatch --> aft[agent_for_task]
   qg --> stdout[MCP_stdout_JSON-RPC_responses]
   gn --> stdout
   neigh --> stdout
