@@ -66,6 +66,35 @@ func TestScaffold_RootFilesContainProjectName(t *testing.T) {
 	}
 }
 
+func TestScaffold_README_hasQuickstartAndCodeMode(t *testing.T) {
+	dir := t.TempDir()
+	if err := scaffold.Scaffold(dir, defaultCfg); err != nil {
+		t.Fatal(err)
+	}
+	content := readFile(t, filepath.Join(dir, "README.md"))
+	for _, s := range []string{"oz validate", "AGENTS.md", "oz context build", "Inline mode", "code/README.md"} {
+		if !strings.Contains(content, s) {
+			t.Errorf("README.md: missing expected snippet %q", s)
+		}
+	}
+}
+
+func TestScaffold_README_submoduleMode(t *testing.T) {
+	dir := t.TempDir()
+	cfg := defaultCfg
+	cfg.CodeMode = "submodule"
+	if err := scaffold.Scaffold(dir, cfg); err != nil {
+		t.Fatal(err)
+	}
+	content := readFile(t, filepath.Join(dir, "README.md"))
+	if !strings.Contains(content, "Submodule mode") {
+		t.Error("README.md: expected Submodule mode row for code/")
+	}
+	if strings.Contains(content, "](./code/README.md)") {
+		t.Error("README.md: should not link code/README.md in submodule mode")
+	}
+}
+
 func TestScaffold_OZmd_ContainsVersion(t *testing.T) {
 	dir := t.TempDir()
 	if err := scaffold.Scaffold(dir, defaultCfg); err != nil {

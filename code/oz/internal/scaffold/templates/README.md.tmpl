@@ -2,11 +2,63 @@
 
 {{.Description}}
 
-## Getting started
+This directory is an [**oz workspace**](https://github.com/oz-tools/oz): a small, explicit convention for LLM-first development — agents, specs, a trust hierarchy, and a single **`oz` CLI** for validation, structural graphs, audits, and optional MCP.
 
-<!-- Add setup instructions here. -->
+**Standard version:** `OZ.md` declares **oz standard v{{.OZVersion}}**.
 
-## Development
+## Prerequisites
 
-This workspace follows the [oz convention](https://github.com/oz-tools/oz).
-See `AGENTS.md` for workspace structure and agent definitions.
+- The [**oz**](https://github.com/oz-tools/oz) binary on your `PATH` (install from this repository’s `code/oz` with `go install` / `make`, or use a released build when available).
+
+## First steps
+
+1. Open **[`AGENTS.md`](./AGENTS.md)** — workspace entry for people and models; pick a role and follow that agent’s read-chain.
+2. Run **`oz validate`** from any path under the workspace root (oz discovers the root automatically).
+3. When you need routing, drift checks, or audits against the repo tree, run **`oz context build`** first (writes gitignored `context/graph.json`).
+
+## Repository layout
+
+| Path | Role |
+|------|------|
+| [`AGENTS.md`](./AGENTS.md) | Entry point and agent index |
+| [`OZ.md`](./OZ.md) | Manifest: standard version, registered agents |
+| [`agents/<name>/AGENT.md`](./agents/) | Per-agent role, read-chain, skills, responsibilities |
+| [`specs/`](./specs/) | Highest-trust specifications and ADRs |
+| [`docs/`](./docs/) | Architecture notes and open items |
+| [`context/`](./context/) | Curated snapshots for agents |
+| [`skills/`](./skills/) | Reusable procedural playbooks (`workspace-management` is scaffolded by default) |
+| [`rules/`](./rules/) | Hard constraints referenced from `AGENT.md` |
+| [`notes/`](./notes/) | Lowest-trust scratch — promote into specs/docs when ready |
+{{ if eq .CodeMode "submodule" }}
+| [`code/`](./code/) | **Submodule mode** — add implementation repositories here; no default `code/README.md` is generated. |
+{{ else }}
+| [`code/`](./code/) | **Inline mode** — primary implementation tree; see [`code/README.md`](./code/README.md) to describe layout and how to build. |
+{{ end }}
+
+## Common `oz` commands
+
+```bash
+oz validate                 # required files, directories, manifest, agents
+oz context build            # regenerate context/graph.json
+oz context query "<task>"   # BM25F routing → JSON packet (agent, scope, context blocks)
+oz audit                    # health checks (staleness, drift, orphans, …)
+```
+
+Optional: **`oz context serve`** exposes the same graph over **MCP** (stdio) for editors that support it. Example config:
+
+```json
+{
+  "mcpServers": {
+    "oz": {
+      "command": "oz",
+      "args": ["context", "serve"]
+    }
+  }
+}
+```
+
+Run **`oz context build`** after meaningful changes before relying on MCP or audits.
+
+## Customizing this file
+
+This README is generated once by **`oz init`** (or restored if missing by **`oz repair`**). Replace generic sections with **your** install/build instructions, links, and contribution guide. Keep **`AGENTS.md`** authoritative for **which agent owns which work**.

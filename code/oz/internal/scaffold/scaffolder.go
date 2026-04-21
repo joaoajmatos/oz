@@ -31,6 +31,7 @@ type templateData struct {
 	Name        string
 	Description string
 	OZVersion   string
+	CodeMode    string // "inline" or "submodule"
 	Agents      []AgentConfig
 }
 
@@ -48,6 +49,7 @@ func Scaffold(path string, cfg Config) error {
 		Name:        cfg.Name,
 		Description: cfg.Description,
 		OZVersion:   convention.Version,
+		CodeMode:    cfg.CodeMode,
 		Agents:      cfg.Agents,
 	}
 

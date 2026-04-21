@@ -65,6 +65,7 @@ func Repair(root string, cfg Config) (RepairResult, error) {
 		Name:        cfg.Name,
 		Description: cfg.Description,
 		OZVersion:   convention.Version,
+		CodeMode:    cfg.CodeMode,
 		Agents:      cfg.Agents,
 	}
 
