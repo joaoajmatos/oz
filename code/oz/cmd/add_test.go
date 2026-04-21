@@ -11,6 +11,35 @@ import (
 	"github.com/oz-tools/oz/internal/workspace"
 )
 
+func TestAddList_IncludesIntegrationsAndPackages(t *testing.T) {
+	var stdout bytes.Buffer
+	rootCmd.SetOut(&stdout)
+	rootCmd.SetErr(&stdout)
+	rootCmd.SetArgs([]string{"add", "list"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	out := stdout.String()
+	for _, want := range []string{"Integrations", "Optional packages", "claude", "cursor", "pm"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected output to contain %q\n%s", want, out)
+		}
+	}
+}
+
+func TestAddList_AliasLs(t *testing.T) {
+	var stdout bytes.Buffer
+	rootCmd.SetOut(&stdout)
+	rootCmd.SetErr(&stdout)
+	rootCmd.SetArgs([]string{"add", "ls"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stdout.String(), "Optional packages") {
+		t.Fatal("alias ls should run list")
+	}
+}
+
 func TestAddPM_HappyPath(t *testing.T) {
 	dir := t.TempDir()
 	cfg := scaffold.Config{

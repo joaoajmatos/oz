@@ -25,6 +25,8 @@ Add subcommands fall into two groups:
   • Optional packages: ` + "`oz add <package>`" + ` — bundled agent + skill trees shipped with the oz binary.
     V1 package IDs: ` + strings.Join(scaffold.ValidPackageIDs(), ", ") + `.
 
+Use ` + "`oz add list`" + ` (alias: ` + "`oz add ls`" + `) for a formatted table of integrations and packages.
+
 With no path argument, the current directory is used; the nearest ancestor containing
 AGENTS.md and OZ.md is treated as the workspace root.`),
 }
@@ -59,6 +61,8 @@ AGENTS.md and OZ.md is treated as the workspace root.`,
 }
 
 func init() {
+	addCmd.AddCommand(addListCmd)
+
 	addClaudeCmd.Flags().BoolVar(&addForceFlag, "force", false, "overwrite CLAUDE.md if it already exists")
 	addCmd.AddCommand(addClaudeCmd)
 	addCmd.AddCommand(addCursorCmd)
