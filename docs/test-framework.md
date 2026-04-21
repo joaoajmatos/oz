@@ -243,23 +243,25 @@ testws.ExpectNoOwner(t, result)     // agent == null
 
 ---
 
-## Tuning workflow
+## Routing weight tuning (maintainers only)
 
-The golden suites double as the tuning harness for BM25F weights.
+This is **not** end-user tooling: there is no `oz` subcommand and no repo script for parameter sweeps. Weights and BM25F knobs live in [`context/scoring.toml`](../context/scoring.toml) for real workspaces (`oz context query` loads that file from the workspace root). The golden routing suites under `code/oz/internal/query/testdata/golden/` usually **do not** ship a `context/scoring.toml`, so [`TestRoutingAccuracy`](../code/oz/internal/query/query_test.go) exercises the same defaults as [`DefaultScoringConfig()`](../code/oz/internal/query/config.go) until you add a file to a fixture on purpose.
 
-```bash
-# Run with default weights
-go test ./internal/query -run TestRoutingAccuracy -v
+**Typical maintainer loop**
 
-# Run with alternate weights
-OZ_SCORING_CONFIG=testdata/tuning/high_readchain.toml \
-  go test ./internal/query -run TestRoutingAccuracy -v
+1. From `code/oz`, run the accuracy gate:
 
-# Sweep a parameter
-./scripts/sweep-scoring.sh w_concept 1.0 4.0 0.5
-```
+   ```bash
+   go test ./internal/query -run TestRoutingAccuracy -v
+   ```
 
-Before locking default weights in `context/scoring.toml`, run a sweep over the golden suites and pick the configuration that maximises overall accuracy subject to per-suite minimums.
+2. To try different defaults against the golden suites, edit `DefaultScoringConfig()` in `internal/query/config.go`, re-run the test, and iterate until per-suite minimums are met.
+
+3. Mirror the chosen numbers into the repo-root [`context/scoring.toml`](../context/scoring.toml) (that file’s header already says it should match `DefaultScoringConfig()`). Keep TOML key names aligned with the `[weights]`, `[routing]`, `[bm25]`, `[fields]`, and `[tokenize]` sections — not informal aliases from planning docs.
+
+4. Optionally sanity-check routing on this workspace with `oz context query "…"` after editing `context/scoring.toml`.
+
+There is no supported env var or shell sweep in-tree; if you need a grid search, do it ad hoc (e.g. local shell loop over temp TOML files) outside the shipped `oz` CLI.
 
 ---
 
