@@ -59,7 +59,7 @@ func TestBuilder_BasicWorkspace(t *testing.T) {
 			testws.Responsibilities("Implements handlers and middleware"),
 			testws.OutOfScope("UI work"),
 			testws.Rules("rules/coding-guidelines.md"),
-			testws.Skills("skills/commit/"),
+			testws.Skills("skills/oz/"),
 		).
 		WithAgent("frontend",
 			testws.Scope("code/ui/**"),

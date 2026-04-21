@@ -40,7 +40,7 @@ func TestBuilder_AgentMDHasAllSections(t *testing.T) {
 			testws.Responsibilities("Owns alpha subsystem"),
 			testws.OutOfScope("Beta work"),
 			testws.Rules("rules/coding-guidelines.md"),
-			testws.Skills("skills/commit/"),
+			testws.Skills("skills/oz/"),
 		).
 		Build()
 
@@ -173,7 +173,7 @@ agents:
     responsibilities: "Tests the fixture loader"
     out_of_scope: "Everything else"
     rules: ["rules/coding-guidelines.md"]
-    skills: ["skills/commit/"]
+    skills: ["skills/oz/"]
 specs:
   - path: "specs/rt.md"
     sections:

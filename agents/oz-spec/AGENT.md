@@ -43,8 +43,7 @@ These files govern your behavior. Read them and follow them without exception:
 
 You are authorized to invoke these skills:
 
-- `skills/write-adr/` — create a new ADR in `specs/decisions/` from a decision description
-- `skills/crystallize/` — promote content from `notes/` into the correct canonical layer
+- `skills/oz/` — run the `oz` binary: validate, context build/query/serve (routing + MCP), audit (especially drift after spec touches code), optional enrich/review
 
 ---
 

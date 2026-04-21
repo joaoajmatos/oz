@@ -15,8 +15,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
-      - "skills/test-runner/"
+      - "skills/oz/"
 
   - name: maintainer
     role: "Keeps the workspace healthy and convention-compliant."
@@ -34,7 +33,8 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/oz-validate/"
+      - "skills/oz/"
+      - "skills/workspace-management/"
 
   - name: spec
     role: "Evolves the oz standard specification and design decisions."
@@ -52,8 +52,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/write-adr/"
-      - "skills/crystallize/"
+      - "skills/oz/"
 
 specs:
   - path: "specs/project-spec.md"

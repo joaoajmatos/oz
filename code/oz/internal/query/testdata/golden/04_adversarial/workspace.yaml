@@ -15,7 +15,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: auth
     role: "Owns authentication, authorization, and identity management."
@@ -31,7 +31,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: security
     role: "Owns security review, vulnerability management, and compliance."
@@ -48,7 +48,7 @@ agents:
     rules:
       - "rules/security-guidelines.md"
     skills:
-      - "skills/security-scan/"
+      - "skills/oz/"
 
   - name: qa
     role: "Owns test automation strategy and quality assurance."
@@ -64,7 +64,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/test-runner/"
+      - "skills/oz/"
 
   - name: docs
     role: "Maintains product documentation, API reference, and user guides."
@@ -79,7 +79,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/crystallize/"
+      - "skills/oz/"
 
 specs:
   - path: "specs/api-design.md"

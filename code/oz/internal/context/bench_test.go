@@ -100,7 +100,7 @@ func buildLargeWorkspace(t *testing.T) *testws.Workspace {
 			testws.Responsibilities("Implements features in scope. Reviews PRs. Maintains documentation."),
 			testws.OutOfScope("Work outside declared scope paths."),
 			testws.Rules("rules/coding-guidelines.md"),
-			testws.Skills("skills/commit/"),
+			testws.Skills("skills/oz/"),
 		)
 	}
 	addLargeWorkspaceContent(b)

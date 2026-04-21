@@ -14,7 +14,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: grpc-server
     role: "Owns gRPC service definitions and server implementations."
@@ -29,7 +29,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: graphql
     role: "Maintains the GraphQL schema and resolvers."
@@ -44,7 +44,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: auth
     role: "Owns authentication, authorization, and identity management."
@@ -62,7 +62,7 @@ agents:
       - "rules/coding-guidelines.md"
       - "rules/security-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: billing
     role: "Owns payment processing, subscriptions, and invoicing."
@@ -78,7 +78,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: notifications
     role: "Manages email, SMS, and push notification delivery."
@@ -94,7 +94,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: search
     role: "Owns full-text search indexing and query execution."
@@ -109,7 +109,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: storage
     role: "Manages file storage, CDN, and media processing."
@@ -125,7 +125,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: cache
     role: "Owns caching strategy and Redis infrastructure."
@@ -140,7 +140,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: queue
     role: "Manages message queues and async job processing."
@@ -156,7 +156,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: database
     role: "Owns database schemas, migrations, and query optimization."
@@ -172,7 +172,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/db-migrate/"
+      - "skills/oz/"
 
   - name: frontend-app
     role: "Builds the React web application."
@@ -189,7 +189,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: mobile-ios
     role: "Builds the iOS native application."
@@ -205,7 +205,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: mobile-android
     role: "Builds the Android native application."
@@ -221,7 +221,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: data-pipeline
     role: "Builds ETL pipelines and data warehouse integrations."
@@ -238,7 +238,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/run-pipeline/"
+      - "skills/oz/"
 
   - name: analytics
     role: "Owns analytics dashboards, metrics, and A/B testing."
@@ -254,7 +254,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: ml
     role: "Owns machine learning models and ML infrastructure."
@@ -270,7 +270,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/run-pipeline/"
+      - "skills/oz/"
 
   - name: infra
     role: "Manages cloud infrastructure, Kubernetes, and networking."
@@ -287,7 +287,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/deploy/"
+      - "skills/oz/"
 
   - name: ci-cd
     role: "Owns CI/CD pipelines and release automation."
@@ -303,7 +303,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/deploy/"
+      - "skills/oz/"
 
   - name: monitoring
     role: "Owns observability, alerting, and incident response tooling."
@@ -319,7 +319,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/rollback/"
+      - "skills/oz/"
 
   - name: security
     role: "Owns security reviews, vulnerability management, and compliance."
@@ -336,7 +336,7 @@ agents:
     rules:
       - "rules/security-guidelines.md"
     skills:
-      - "skills/security-scan/"
+      - "skills/oz/"
 
   - name: qa
     role: "Owns test automation strategy and quality assurance."
@@ -353,7 +353,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/test-runner/"
+      - "skills/oz/"
 
   - name: design
     role: "Owns the design system, UX patterns, and visual language."
@@ -384,7 +384,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/crystallize/"
+      - "skills/oz/"
 
   - name: devops
     role: "Automates deployment workflows and manages release cadence."
@@ -401,8 +401,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/deploy/"
-      - "skills/rollback/"
+      - "skills/oz/"
 
 specs:
   - path: "specs/api-design.md"

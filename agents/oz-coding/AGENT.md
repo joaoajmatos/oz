@@ -41,8 +41,7 @@ These files govern your behavior. Read them and follow them without exception:
 
 You are authorized to invoke these skills:
 
-- `skills/commit/` — structured commit workflow (stage, message, verify)
-- `skills/test-runner/` — run the Go test suite and interpret failures
+- `skills/oz/` — run the `oz` binary: validate, context build/query/serve (routing + MCP), audit, optional enrich/review; use for dogfooding and scoped context from the graph
 
 ---
 

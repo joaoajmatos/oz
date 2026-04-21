@@ -34,7 +34,7 @@ func TestEndToEnd(t *testing.T) {
 			testws.Responsibilities("Implements API endpoints, handlers, and middleware"),
 			testws.OutOfScope("UI work"),
 			testws.Rules("rules/coding-guidelines.md"),
-			testws.Skills("skills/commit/"),
+			testws.Skills("skills/oz/"),
 		).
 		WithAgent("frontend",
 			testws.Role("Builds the React web application"),
@@ -42,7 +42,7 @@ func TestEndToEnd(t *testing.T) {
 			testws.Responsibilities("Implements React components and pages"),
 			testws.OutOfScope("Backend logic"),
 			testws.Rules("rules/coding-guidelines.md"),
-			testws.Skills("skills/commit/"),
+			testws.Skills("skills/oz/"),
 		).
 		WithSpec("specs/api-design.md",
 			testws.Section("Overview", "REST API following OpenAPI 3.0"),

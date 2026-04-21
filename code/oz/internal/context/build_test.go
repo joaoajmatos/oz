@@ -171,7 +171,7 @@ func TestBuild_AgentFields(t *testing.T) {
 			testws.OutOfScope("UI work"),
 			testws.ReadChain("AGENTS.md", "specs/api.md"),
 			testws.Rules("rules/coding-guidelines.md"),
-			testws.Skills("skills/commit/"),
+			testws.Skills("skills/oz/"),
 		).
 		Build()
 

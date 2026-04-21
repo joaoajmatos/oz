@@ -16,6 +16,10 @@ trust-based and provider-agnostic.
 2. Open your `AGENT.md` file.
 3. Follow the read-chain defined there before starting any task. Do not skip steps.
 
+Each agent authorizes `skills/oz/` for the full `oz` CLI and MCP workflow (`validate`,
+`context` build/query/serve, `audit`, optional enrich/review) so this workspace dogfoods the
+shipped toolset.
+
 If no agent matches your task, read `specs/oz-project-specification.md` for full context,
 then proceed with the source of truth hierarchy below.
 

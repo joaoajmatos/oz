@@ -21,9 +21,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
-      - "skills/test-runner/"
-      - "skills/db-migrate/"
+      - "skills/oz/"
 
   - name: frontend
     role: "Builds the React web application and design system."
@@ -40,8 +38,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
-      - "skills/test-runner/"
+      - "skills/oz/"
 
   - name: mobile
     role: "Builds iOS and Android mobile clients."
@@ -58,7 +55,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
+      - "skills/oz/"
 
   - name: infra
     role: "Manages cloud infrastructure, CI/CD pipelines, and deployments."
@@ -76,8 +73,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/deploy/"
-      - "skills/rollback/"
+      - "skills/oz/"
 
   - name: data
     role: "Builds data pipelines, analytics, and reporting infrastructure."
@@ -95,8 +91,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/commit/"
-      - "skills/run-pipeline/"
+      - "skills/oz/"
 
   - name: auth
     role: "Owns authentication, authorization, and session management."
@@ -114,8 +109,7 @@ agents:
       - "rules/coding-guidelines.md"
       - "rules/security-guidelines.md"
     skills:
-      - "skills/commit/"
-      - "skills/security-scan/"
+      - "skills/oz/"
 
   - name: docs
     role: "Maintains product documentation, API reference, and user guides."
@@ -132,7 +126,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/crystallize/"
+      - "skills/oz/"
 
   - name: design
     role: "Owns the design system, UX patterns, and visual language."
@@ -165,8 +159,7 @@ agents:
     rules:
       - "rules/coding-guidelines.md"
     skills:
-      - "skills/test-runner/"
-      - "skills/e2e-runner/"
+      - "skills/oz/"
 
   - name: security
     role: "Owns security review, vulnerability management, and compliance."
@@ -184,7 +177,7 @@ agents:
       - "rules/coding-guidelines.md"
       - "rules/security-guidelines.md"
     skills:
-      - "skills/security-scan/"
+      - "skills/oz/"
 
 specs:
   - path: "specs/api-design.md"
