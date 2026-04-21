@@ -52,8 +52,8 @@ All are accepted noise per pre-mortem AT-03 (threshold: > 3 warnings triggers tu
 | Code | Finding | Disposition |
 |---|---|---|
 | COV002 | `code/oz/` is not owned by any agent | Expected. The oz-coding agent has broad responsibilities but no explicit `code/oz/**` scope path. The workspace follows a convention-light ownership model (AE-02). No tuning needed. |
-| ORPH002 | `docs/oz-context-v1-prd.md` has no inbound references | Historical PRD, superseded by the shipped feature. Accepted noise. |
-| ORPH002 | `docs/sprints.md` has no inbound references | Historical sprint plan, not linked from live docs. Accepted noise. |
+| ORPH002 | `docs/planning/oz-context-v1-prd.md` has no inbound references | Historical PRD, superseded by the shipped feature. Accepted noise. |
+| ORPH002 | `docs/planning/oz-context-v1-sprints.md` has no inbound references | Historical sprint plan, not linked from live docs. Accepted noise. |
 
 AT-03 is considered **not triggered** (3 warnings ≤ threshold of 3).
 

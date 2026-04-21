@@ -3,8 +3,8 @@
 **Author**: oz-spec
 **Date**: 2026-04-20
 **Status**: Draft
-**PRD**: docs/oz-codeindex-v1-prd.md
-**Pre-mortem**: docs/oz-codeindex-v1-premortem.md
+**PRD**: docs/planning/oz-codeindex-v1-prd.md
+**Pre-mortem**: docs/planning/oz-codeindex-v1-premortem.md
 **Format**: 1-week sprints, solo developer
 
 ---
@@ -17,15 +17,15 @@
 
 | # | Story | Acceptance Criteria |
 |---|---|---|
-| CI-0-01 | Draft and freeze `docs/oz-codeindex-v1-prd.md` | PRD includes schema changes, indexer interface, integration path, and drift A4 impact section. |
-| CI-0-02 | Draft and freeze `docs/oz-codeindex-v1-premortem.md` | CT-01 and CT-02 are listed as launch-blocking tigers with mitigation/owner/deadline. |
-| CI-0-03 | Draft and freeze `docs/oz-codeindex-v1-sprints.md` | CI-0 and CI-1 are defined with story-level acceptance criteria and explicit DoD. |
-| CI-0-04 | Update `docs/oz-audit-v1-sprints.md` to pause legacy A4 | Sprint A4 section contains PAUSED notice and re-scope statement toward graph-query drift orchestration. |
+| CI-0-01 | Draft and freeze `docs/planning/oz-codeindex-v1-prd.md` | PRD includes schema changes, indexer interface, integration path, and drift A4 impact section. |
+| CI-0-02 | Draft and freeze `docs/planning/oz-codeindex-v1-premortem.md` | CT-01 and CT-02 are listed as launch-blocking tigers with mitigation/owner/deadline. |
+| CI-0-03 | Draft and freeze `docs/planning/oz-codeindex-v1-sprints.md` | CI-0 and CI-1 are defined with story-level acceptance criteria and explicit DoD. |
+| CI-0-04 | Update `docs/planning/oz-audit-v1-sprints.md` to pause legacy A4 | Sprint A4 section contains PAUSED notice and re-scope statement toward graph-query drift orchestration. |
 
 ### Definition of done
 
 - All three code-index planning docs are committed.
-- `docs/oz-audit-v1-sprints.md` contains the A4 paused notice.
+- `docs/planning/oz-audit-v1-sprints.md` contains the A4 paused notice.
 - Scope handoff to CI-1 is explicit and unambiguous.
 
 ---

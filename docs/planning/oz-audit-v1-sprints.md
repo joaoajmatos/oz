@@ -1,7 +1,7 @@
 # oz audit V1 — Sprint Plan
 
-**PRD**: docs/oz-audit-v1-prd.md
-**Pre-mortem**: docs/oz-audit-v1-premortem.md
+**PRD**: docs/planning/oz-audit-v1-prd.md
+**Pre-mortem**: docs/planning/oz-audit-v1-premortem.md
 **Test framework**: docs/test-framework.md
 **Format**: 1-week sprints, solo developer
 
@@ -15,9 +15,9 @@ Pre-mortem go/no-go before Sprint A1:
 **Goal**: Lock the PRD, pre-mortem, and finding-code catalogue. No code in this sprint.
 
 Already produced this session:
-- [x] PRD: `docs/oz-audit-v1-prd.md`
-- [x] Pre-mortem: `docs/oz-audit-v1-premortem.md`
-- [x] Sprint plan: `docs/oz-audit-v1-sprints.md` (this file)
+- [x] PRD: `docs/planning/oz-audit-v1-prd.md`
+- [x] Pre-mortem: `docs/planning/oz-audit-v1-premortem.md`
+- [x] Sprint plan: `docs/planning/oz-audit-v1-sprints.md` (this file)
 - [x] Tier scope confirmed: Tier A (structural) + Tier B (Go AST), no LLM in V1
 - [x] Command shape confirmed: subcommands per check + parent `oz audit` aggregator
 
@@ -174,7 +174,7 @@ Already produced this session:
 | A6-05 | `docs/architecture.md` updated | New section on `oz audit`: subcommands, finding catalogue, deterministic ordering, JSON schema. Update the existing audit row in §Components. |
 | A6-06 | `specs/oz-project-specification.md` updated | `oz audit` block changes from "partial — loads graph.json and prints summary" to "complete — structural + Go drift checks, JSON output, CI exit codes". The `oz audit graph-summary` subcommand documented. |
 | A6-07 | `context/implementation/summary.md` updated | Audit fast-follow item removed. New audit subsection added covering finding catalogue and JSON schema version. |
-| A6-08 | All pre-mortem items verified closed | Every Tiger and Elephant in `docs/oz-audit-v1-premortem.md` marked resolved or moved to a tracked V2 follow-up. |
+| A6-08 | All pre-mortem items verified closed | Every Tiger and Elephant in `docs/planning/oz-audit-v1-premortem.md` marked resolved or moved to a tracked V2 follow-up. |
 | A6-09 | Promote a decision record | `specs/decisions/0002-go-parser-over-tree-sitter-for-audit-v1.md` (or next ADR number). Records the V1 extractor choice. |
 
 ### Definition of done

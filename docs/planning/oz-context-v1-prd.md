@@ -106,9 +106,26 @@ Developers who run `oz context build` and `oz context enrich`, review the semant
 
 ### Architecture: Three Layers
 
-**Layer 1 — Structural graph (deterministic, no LLM)**
+```mermaid
+flowchart TB
+  subgraph layerStruct ["Layer 1: Structural graph"]
+    graph["context/graph.json deterministic build"]
+  end
+  subgraph layerSem ["Layer 2: Semantic overlay"]
+    sem["context/semantic.json enrich and review"]
+  end
+  subgraph layerQuery ["Layer 3: Query and routing"]
+    query["oz context query and MCP tools"]
+  end
+  layerStruct --> layerSem
+  layerStruct --> layerQuery
+  layerSem --> layerQuery
+```
+
+#### Layer 1 — Structural graph (deterministic, no LLM)
 
 A pure Go parser walks the workspace and extracts:
+
 - All agent definitions: name, scope paths, read-chain, declared ownership
 - All spec sections and the decisions that back them
 - All docs, context snapshots, and notes — tagged by source-of-truth tier
@@ -118,9 +135,10 @@ Output: `context/graph.json` — nodes typed as `agent`, `spec_section`, `doc`, 
 
 Determinism guarantee: identical workspace = identical output (sorted keys, stable serialisation, no timestamps in content hash).
 
-**Layer 2 — Semantic overlay (LLM-produced, git-tracked)**
+#### Layer 2 — Semantic overlay (LLM-produced, git-tracked)
 
 A separate `oz context enrich` command (not run automatically). An LLM pass over the structural graph extracts:
+
 - Concept nodes (abstract ideas present across multiple files)
 - `implements_spec`, `drifted_from`, `semantically_similar_to`, `agent_owns_concept` edges
 - Each edge tagged `EXTRACTED` (found directly) or `INFERRED` (reasonable inference) with a `confidence_score` (0.0–1.0 for INFERRED, always 1.0 for EXTRACTED)
@@ -129,9 +147,10 @@ Output: `context/semantic.json` — a delta overlay, not a replacement for `grap
 
 LLM calls are made via **OpenRouter** (`OPENROUTER_API_KEY`). Model is selectable with `--model`. This is the only external network dependency in the entire oz binary, and it is isolated to `oz context enrich`.
 
-**Layer 3 — Query and routing (pure logic, no LLM at runtime)**
+#### Layer 3 — Query and routing (pure logic, no LLM at runtime)
 
 `oz context query "<task>"` merges structural graph + semantic overlay at call time:
+
 1. Tokenises the query against agent scope declarations and concept nodes
 2. Scores candidate agents by scope match + concept proximity
 3. Filters context blocks: excludes notes/ by default, sorts by trust tier
@@ -171,7 +190,7 @@ LLM calls are made via **OpenRouter** (`OPENROUTER_API_KEY`). Model is selectabl
 
 **Step 3 — Score with BM25F.** For each candidate agent:
 
-```
+```text
 score(agent, query) = Σ over query terms t:
     IDF(t) · tf̃(t, agent) · (k1 + 1) / (tf̃(t, agent) + k1)
 
@@ -187,7 +206,7 @@ Defaults: `k1 = 1.5`, `b = 0.75`. The negative `out_of_scope` weight subtracts w
 
 **Step 4 — Softmax confidence.** Raw BM25 scores are not comparable across queries. Normalize:
 
-```
+```text
 confidence(agent_i) = exp(score_i / T) / Σ_j exp(score_j / T)
 ```
 
@@ -195,7 +214,7 @@ Temperature `T` controls sharpness. Low `T` gives sharp winners; high `T` keeps 
 
 **Step 5 — Absolute floor and routing decision.**
 
-```
+```text
 if max(raw_scores) < MIN_SCORE:
     return { agent: null, confidence: 0, reason: "no_clear_owner" }
 if confidence(top) >= CONFIDENCE_THRESHOLD:
@@ -251,7 +270,16 @@ The following questions were raised during PRD review and resolved:
 
 ## 8. Timeline & Phasing
 
+```mermaid
+flowchart LR
+  phase1["Phase_1 structural graph and query"]
+  phase2["Phase_2 semantic overlay and MCP"]
+  phase3["Phase_3 V2 graph intelligence"]
+  phase1 --> phase2 --> phase3
+```
+
 ### Phase 1 — Structural Graph + Query (pure Go, no LLM dependency)
+
 Delivers C-01, C-02, C-03, C-05, C-09.
 
 - `oz context build` → `context/graph.json`
@@ -262,6 +290,7 @@ Delivers C-01, C-02, C-03, C-05, C-09.
 This phase unblocks `oz audit` development and delivers the core token-saving routing benefit immediately.
 
 ### Phase 2 — Semantic Overlay + MCP Server
+
 Delivers C-04, C-06, C-07, C-08.
 
 - `oz context enrich` → `context/semantic.json`
@@ -269,6 +298,7 @@ Delivers C-04, C-06, C-07, C-08.
 - Routing packets enriched with concept nodes when semantic.json present
 
 ### Phase 3 — Graph Intelligence (V2 scope)
+
 Delivers C-10, C-11, C-12, plus watch mode, git hooks, and conflict detection.
 
 ---

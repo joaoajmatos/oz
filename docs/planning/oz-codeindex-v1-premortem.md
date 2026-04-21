@@ -3,8 +3,8 @@
 **Author**: oz-spec
 **Date**: 2026-04-20
 **Status**: Draft
-**PRD**: docs/oz-codeindex-v1-prd.md
-**Sprint plan**: docs/oz-codeindex-v1-sprints.md
+**PRD**: docs/planning/oz-codeindex-v1-prd.md
+**Sprint plan**: docs/planning/oz-codeindex-v1-sprints.md
 
 ---
 

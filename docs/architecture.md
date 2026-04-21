@@ -15,24 +15,19 @@ running `oz context build && oz context query` in this repo.
 
 ## Three-layer architecture
 
-```
-┌──────────────────────────────────────────┐
-│  Layer 1: Convention                      │
-│  AGENTS.md · OZ.md · agents/*/AGENT.md   │
-│  specs/ · docs/ · context/ · notes/      │
-│  — Human-readable markdown convention     │
-├──────────────────────────────────────────┤
-│  Layer 2: Structural graph               │
-│  context/graph.json                      │
-│  — Deterministic machine-readable index   │
-│    built by `oz context build`            │
-├──────────────────────────────────────────┤
-│  Layer 3: Semantic overlay               │
-│  context/semantic.json                   │
-│  — LLM-extracted concepts + typed edges  │
-│    produced by `oz context enrich`        │
-│    human-reviewed via `oz context review` │
-└──────────────────────────────────────────┘
+```mermaid
+flowchart TB
+  subgraph layerConv ["Layer 1: Convention"]
+    conv["Markdown: AGENTS.md, OZ.md, agents, specs, docs, context, notes"]
+  end
+  subgraph layerGraph ["Layer 2: Structural graph"]
+    graph["context/graph.json from oz context build"]
+  end
+  subgraph layerSem ["Layer 3: Semantic overlay"]
+    sem["context/semantic.json from oz context enrich and review"]
+  end
+  layerConv --> layerGraph
+  layerGraph --> layerSem
 ```
 
 Layer 1 is always the source of truth. Layers 2 and 3 are derived artefacts; they can be
@@ -111,77 +106,64 @@ fresh `oz context build`).
 
 ### oz context build
 
-```
-workspace root
-  └─ Walker (internal/context/walker.go)
-       — discovers all oz-convention files
-       — respects .ozignore
-  └─ Parsers
-       ParseAgentMD  → agent nodes (role, scope, read-chain, rules, skills)
-       IndexMarkdownFile → spec_section, decision, doc, context_snapshot, note nodes
-  └─ Code indexers (internal/codeindex/)
-       — walks code/ for supported languages
-       — v1: Go indexer extracts exported symbols
-       — emits code_file, code_symbol, contains edges
-  └─ Cross-reference extractor (internal/context/extractor.go)
-       — reads, owns, references, supports edges
-  └─ Deterministic serializer (internal/context/serializer.go)
-       — sorts nodes and edges by stable key
-       — computes SHA-256 content hash
-       — writes context/graph.json
+```mermaid
+flowchart TD
+  root[Workspace_root]
+  root --> walker[Walker_context_walker]
+  walker --> parsers[Parsers]
+  parsers --> agents[ParseAgentMD_agent_nodes]
+  parsers --> md[IndexMarkdownFile_section_nodes]
+  root --> codeidx[Code_indexers]
+  codeidx --> symbols[code_file_symbol_contains_edges]
+  agents --> xref[Cross_reference_extractor]
+  md --> xref
+  symbols --> xref
+  xref --> ser[Deterministic_serializer]
+  ser --> out[context_graph_json]
 ```
 
 ### oz context query
 
-```
-query text
-  └─ LoadGraph (or Build if graph.json absent)
-  └─ LoadConfig (context/scoring.toml or defaults)
-  └─ TokenizeQuery
-       lowercase → strip punctuation → split → filter stopwords → stem (Porter)
-       optional bigrams if use_bigrams = true in scoring.toml
-  └─ BuildAgentDocs
-       5 BM25F fields per agent: scope, role, responsibilities, read-chain, out-of-scope
-  └─ ComputeBM25F (multi-field BM25F, IDF floor = 1.0 for small corpora)
-  └─ Softmax (temperature-scaled; configurable T in scoring.toml)
-  └─ Route (MIN_SCORE floor, CONFIDENCE_THRESHOLD for ambiguous routing)
-  └─ BuildContextBlocks
-       — selects relevant spec/doc/context nodes from graph
-       — sorted by trust tier (specs > docs > context > notes)
-       — notes excluded by default; enabled with --include-notes
-  └─ Assemble routing packet (agent, confidence, scope, context_blocks, excluded)
-  └─ loadRelevantConcepts (concepts from semantic.json owned by winning agent)
+```mermaid
+flowchart TD
+  q[Query_text]
+  q --> load[LoadGraph_or_Build_if_absent]
+  load --> cfg[LoadConfig_scoring_toml_or_defaults]
+  cfg --> tok[TokenizeQuery_Porter_optional_bigrams]
+  tok --> docs[BuildAgentDocs_five_BM25F_fields]
+  docs --> bm25[ComputeBM25F_IDF_floor]
+  bm25 --> sm[Softmax_temperature_T]
+  sm --> route[Route_min_score_and_confidence_threshold]
+  route --> blocks[BuildContextBlocks_trust_tier_sort]
+  blocks --> pack[Assemble_routing_packet]
+  pack --> concepts[loadRelevantConcepts_from_semantic_json]
 ```
 
 ### oz context enrich
 
-```
-graph.json
-  └─ EnrichmentPromptBuilder
-       — builds structured JSON prompt from graph subgraph
-  └─ OpenRouter client (OPENROUTER_API_KEY)
-       — sends prompt; requests JSON response conforming to semantic.json schema
-  └─ ResponseParser
-       — validates LLM JSON against schema
-       — rejects malformed edges; logs skipped items; best-effort
-  └─ Overlay writer (semantic.Write)
-       — merges with existing semantic.json
-       — preserves reviewed: true items across re-runs
-       — embeds graph_hash for staleness detection
+```mermaid
+flowchart LR
+  g[graph_json] --> prompt[EnrichmentPromptBuilder]
+  prompt --> or[OpenRouter_client_OPENROUTER_API_KEY]
+  or --> parse[ResponseParser_validate_schema]
+  parse --> write[semantic_Write_merge_and_graph_hash]
 ```
 
 ### oz context serve (MCP)
 
-```
-stdin (newline-delimited JSON-RPC 2.0)
-  └─ Capability negotiation (initialize / notifications/initialized)
-  └─ tools/list → four tool schemas
-  └─ tools/call dispatcher:
-       query_graph     → full routing packet (same as oz context query)
-       get_node        → node by ID from graph.json
-       get_neighbors   → adjacent nodes, optional edge-type filter
-       agent_for_task  → agent name + confidence only (low token cost)
-stdout (newline-delimited JSON-RPC 2.0 responses)
+```mermaid
+flowchart LR
+  stdin[MCP_stdin_JSON-RPC_per_line] --> init[initialize_and_initialized]
+  init --> list[tools_list_four_schemas]
+  list --> call[tools_call_dispatcher]
+  call --> qg[query_graph]
+  call --> gn[get_node]
+  call --> neigh[get_neighbors]
+  call --> aft[agent_for_task]
+  qg --> stdout[MCP_stdout_JSON-RPC_responses]
+  gn --> stdout
+  neigh --> stdout
+  aft --> stdout
 ```
 
 ---
@@ -245,7 +227,7 @@ Schema version `"1"`. Produced by `oz context enrich`, reviewed via `oz context 
 
 On `oz context query` and `oz context serve` startup, the `graph_hash` embedded in `semantic.json` is compared against the SHA-256 of the current `graph.json`. If they differ:
 
-```
+```text
 warning: semantic overlay may be stale — run 'oz context enrich' to update
 ```
 

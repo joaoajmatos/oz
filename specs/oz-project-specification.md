@@ -37,6 +37,16 @@ Each agent definition specifies a read-chain — an ordered list of files to loa
 before starting any task. This is the LLM's boot sequence. It controls what the
 LLM knows about itself, its constraints, and the codebase before it acts.
 
+```mermaid
+sequenceDiagram
+  participant LLM
+  participant Agents as AGENTS_md
+  participant Agent as agents_name_AGENT_md
+  LLM->>Agents: read_entry_point
+  Agents->>LLM: route_to_agent_definition
+  LLM->>Agent: execute_read_chain_in_order
+```
+
 ### Source of Truth Hierarchy
 
 When information conflicts, oz defines a strict trust order (highest to lowest):
@@ -122,37 +132,22 @@ Additional sections (e.g. `## References`, `## Notes`) are allowed but not requi
 
 ## Workspace Structure
 
-```
-<workspace>/
-├── AGENTS.md                    # Entry point for all LLMs. Routes to correct agent.
-├── OZ.md                        # Workspace manifest. oz standard version, registered agents.
-├── README.md                    # Human-facing project readme.
-├── agents/
-│   └── <name>/
-│       └── AGENT.md             # Role definition + read-chain for this agent.
-├── specs/
-│   └── decisions/
-│       └── _template.md         # ADR template. All decisions live here.
-├── docs/
-│   ├── architecture.md          # High-level architecture.
-│   └── open-items.md            # Open questions, known issues, pending decisions.
-├── context/
-│   └── <topic>/
-│       └── summary.md           # Shared context snapshots, organized by topic.
-│                                # Any agent can read any topic. Not agent-specific.
-├── skills/                      # Reusable LLM skill definitions.
-│   └── <name>/
-│       ├── SKILL.md             # Entry point: when to invoke and steps to follow.
-│       ├── references/          # Sub-instructions and routing for branching skills.
-│       └── assets/              # Templates, examples, and support files.
-├── rules/
-│   └── coding-guidelines.md     # Hard constraints for all code in this workspace.
-├── notes/                       # Raw thinking. Lowest trust. Crystallized via oz crystallize.
-├── code/                        # Project code. Can be inline or git submodules.
-│   └── README.md
-├── tools/                       # oz tools + custom workspace tooling.
-└── scripts/
-    └── setup.sh
+```mermaid
+flowchart TB
+  root["Workspace root"]
+  root --> entry["AGENTS.md entry for LLMs"]
+  root --> oz["OZ.md manifest"]
+  root --> readme["README.md"]
+  root --> agentsDir["agents/name/AGENT.md"]
+  root --> specsDir["specs/decisions ADRs"]
+  root --> docsDir["docs architecture open-items"]
+  root --> ctxDir["context/topic/summary.md shared"]
+  root --> skillsDir["skills/name SKILL references assets"]
+  root --> rulesDir["rules/coding-guidelines.md"]
+  root --> notesDir["notes/"]
+  root --> codeDir["code/ README optional submodules"]
+  root --> toolsDir["tools/"]
+  root --> scriptsDir["scripts/"]
 ```
 
 ### Key conventions
@@ -169,17 +164,20 @@ Additional sections (e.g. `## References`, `## Notes`) are allowed but not requi
 
 oz ships as a **single Go binary** with subcommands:
 
-```
-oz init        # scaffold a new oz-compliant workspace interactively
-oz validate    # lint a workspace against the oz convention
-oz audit       # structural + Go drift checks; JSON output; CI-friendly exit codes
-oz context     # build and query the workspace knowledge graph
-oz crystallize # promote notes into canonical workspace truth (planned)
+```mermaid
+flowchart TB
+  binary["oz binary"]
+  binary --> initCmd["oz init scaffold workspace"]
+  binary --> validateCmd["oz validate convention lint"]
+  binary --> auditCmd["oz audit structure and drift"]
+  binary --> contextCmd["oz context graph and query"]
+  binary --> crystallizeCmd["oz crystallize planned"]
 ```
 
 ### oz init (priority — build this first)
 
 Interactively scaffolds a new oz workspace. Asks:
+
 - Project name
 - Description
 - Code directory mode: `inline` or `submodule`
@@ -190,6 +188,7 @@ Generates the full directory structure and all required files from templates.
 ### oz validate (build second)
 
 Lints a workspace against the oz convention. Reports:
+
 - Missing required files/directories
 - Missing recommended files/directories
 - Agent definitions missing required sections (Role, Read-chain, Rules, Skills, Responsibilities, Out of scope, Context topics)
@@ -252,115 +251,6 @@ of full workspace token size on the 10-agent test fixture.
 
 Promotes content from `notes/` up the hierarchy into the correct canonical location based
 on convention. Notes become specs, docs, or context entries. Not yet implemented.
-
----
-
-## Repository Structure
-
-oz is a Go monorepo. Single binary, multiple subcommands.
-
-```
-oz/                              # the oz repo is itself an oz workspace
-├── AGENTS.md
-├── OZ.md
-├── agents/
-│   ├── oz-coding/
-│   │   └── AGENT.md             # builds oz tools
-│   ├── oz-maintainer/
-│   │   └── AGENT.md             # keeps convention consistent
-│   └── oz-spec/
-│       └── AGENT.md             # evolves the oz standard specification
-├── specs/
-│   └── decisions/               # ADRs for oz design decisions
-├── docs/
-├── context/
-├── notes/
-├── code/
-│   └── oz/                      # the actual Go code lives here
-│       ├── main.go
-│       ├── cmd/
-│       │   ├── init.go          # oz init subcommand
-│       │   ├── validate.go      # oz validate subcommand
-│       │   ├── audit.go         # oz audit subcommand
-│       │   ├── context.go       # oz context subcommand
-│       │   └── crystallize.go   # oz crystallize subcommand
-│       ├── internal/
-│       │   ├── convention/      # oz workspace convention as Go types
-│       │   │   └── convention.go
-│       │   ├── workspace/       # workspace detection and traversal
-│       │   │   └── workspace.go
-│       │   ├── scaffold/        # scaffolding logic for oz init
-│       │   │   ├── scaffolder.go
-│       │   │   ├── templates_embed.go  # //go:embed all:templates
-│       │   │   └── templates/          # *.tmpl (text/template sources)
-│       │   └── validate/        # validation logic for oz validate
-│       │       └── validator.go
-│       └── go.mod
-└── tools/
-```
-
----
-
-## Go Implementation Notes
-
-### Convention (internal/convention)
-
-The convention package defines the oz workspace standard as Go types.
-This is the source of truth for what a valid oz workspace looks like.
-
-```go
-// Hierarchy defines source of truth order, highest trust first
-var Hierarchy = []string{"specs", "docs", "context", "notes"}
-
-// Directories defines required/recommended/optional directories
-var Directories = map[string]string{
-    "agents":          "required",
-    "specs/decisions": "required",
-    "docs":            "required",
-    "context":         "required",
-    "skills":          "required",
-    "rules":           "required",
-    "notes":           "required",
-    "code":            "recommended",
-    "tools":           "optional",
-    "scripts":         "optional",
-}
-
-// RootFiles defines required files at workspace root
-var RootFiles = map[string]string{
-    "AGENTS.md": "required",
-    "OZ.md":     "required",
-    "README.md":  "recommended",
-}
-```
-
-### Workspace (internal/workspace)
-
-Detects and represents an oz workspace. Provides:
-- `New(path)` — load workspace from path
-- `Valid()` — check if workspace has required root files
-- `Agents()` — list registered agents
-- `Hierarchy()` — return layers with existence status
-
-### Templates
-
-All generated markdown files follow consistent templates.
-Key outputs: `OZ.md`, `AGENTS.md`, `AGENT.md`, `coding-guidelines.md`,
-`architecture.md`, `open-items.md`, `decisions/_template.md`, `code/README.md`.
-
-Sources live as `*.tmpl` files under `internal/scaffold/templates/` (Go
-`text/template` syntax). They are embedded at build time via
-`internal/scaffold/templates_embed.go` (`//go:embed all:templates`) so the `oz`
-binary has no runtime dependency on those files on disk.
-
-### CLI
-
-Use `github.com/spf13/cobra` for the CLI. Single `oz` binary, subcommands per tool.
-
-```
-oz init [path]      # defaults to current directory
-oz validate [path]  # defaults to current directory
-```
 
 ---
 

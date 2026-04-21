@@ -1,7 +1,7 @@
 # oz context V1 — Sprint Plan
 
-**PRD**: docs/oz-context-v1-prd.md
-**Pre-mortem**: docs/oz-context-v1-premortem.md
+**PRD**: docs/planning/oz-context-v1-prd.md
+**Pre-mortem**: docs/planning/oz-context-v1-premortem.md
 **Test framework**: docs/test-framework.md
 **Format**: 1-week sprints, solo developer
 
@@ -20,7 +20,7 @@ Already completed this session:
 - [x] `oz validate`: new required sections flagged in open-items
 - [x] PRD §6: BM25F scoring algorithm specified (resolves T-01)
 - [x] `docs/test-framework.md`: builder API and golden suites designed (resolves E-02)
-- [x] `docs/oz-context-v1-premortem.md`: risk register complete
+- [x] `docs/planning/oz-context-v1-premortem.md`: risk register complete
 
 **Definition of done**: All docs committed, open-items updated, no blocking pre-mortem items remain.
 
@@ -203,7 +203,7 @@ Already completed this session:
 | S7-04 | oz workspace self-validation | Run `oz context build`, `oz context query`, and `oz validate` against the oz repo itself. All must pass. Fix any issues found. |
 | S7-05 | `docs/architecture.md` — fill in the stub | Document the three-layer architecture, graph schema, query pipeline, and MCP interface. |
 | S7-06 | `specs/oz-project-specification.md` sync | Update the `oz context` section to match the V1 implementation. Remove "coming soon" markers. |
-| S7-07 | All remaining pre-mortem items verified closed | Check every Tiger and Elephant in `docs/oz-context-v1-premortem.md`. Mark resolved or create a tracked follow-up. |
+| S7-07 | All remaining pre-mortem items verified closed | Check every Tiger and Elephant in `docs/planning/oz-context-v1-premortem.md`. Mark resolved or create a tracked follow-up. |
 | S7-08 | `MEMORY.md` context snapshot | Write `context/implementation/summary.md` capturing the oz context V1 implementation state for future agents. |
 
 ### Definition of done

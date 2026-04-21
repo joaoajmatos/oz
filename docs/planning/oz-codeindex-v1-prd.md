@@ -198,4 +198,4 @@ A4 therefore becomes drift orchestration against graph state, not a parallel ind
 
 ---
 
-*This PRD is paired with `docs/oz-codeindex-v1-premortem.md` (risk register) and `docs/oz-codeindex-v1-sprints.md` (sprint plan). Implementation starts after CI-0 go/no-go.*
+*This PRD is paired with `docs/planning/oz-codeindex-v1-premortem.md` (risk register) and `docs/planning/oz-codeindex-v1-sprints.md` (sprint plan). Implementation starts after CI-0 go/no-go.*
