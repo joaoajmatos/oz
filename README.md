@@ -23,14 +23,12 @@
 
 **oz** gives any LLM a predictable workspace: explicit **agents**, **specs-first** truth, a machine-checkable layout, and a small **Go binary** (`oz`) for validate, audit, and context graph workflows — without locking you to one editor or model vendor.
 
-Running `oz` with **no subcommand** prints the banner above with terminal colours (see [`code/oz/cmd/banner.go`](./code/oz/cmd/banner.go)).
-
 | Layer | What you get |
 |--------|----------------|
 | **Convention** | [`AGENTS.md`](./AGENTS.md), [`OZ.md`](./OZ.md), `agents/`, `specs/`, `docs/`, `context/`, `skills/`, `rules/`, `notes/`, optional `code/` |
 | **CLI** | `oz init`, `oz validate`, `oz repair`, `oz context` (build / query / enrich / review / **serve** for MCP), `oz audit`, and more as the project grows |
 
-Canonical vocabulary and behaviour live in **[`specs/oz-project-specification.md`](./specs/oz-project-specification.md)**. This repository is the **reference implementation** (`code/oz`) and a **dogfooding workspace** that follows the same layout.
+Normative spec: **[`specs/oz-project-specification.md`](./specs/oz-project-specification.md)**. This repo ships the CLI in **`code/oz`** and uses the convention itself.
 
 ---
 
@@ -45,7 +43,7 @@ make build          # writes ./bin/oz
 go install .
 ```
 
-Put the binary on your `PATH` as `oz`, or call it by full path.
+Add `oz` to your `PATH`, or invoke the binary by path.
 
 ---
 
@@ -64,7 +62,7 @@ Interactive prompts set the project name, description, code layout (**inline** v
 
 ## Working in an oz workspace
 
-Development is **intent-first**: you describe the outcome, and the **LLM** follows **`AGENTS.md`**, each agent’s read-chain, and **`skills/oz/`** to decide when to run **`oz`** — the same way it chooses `go test` or edits.
+In practice, models use **`AGENTS.md`**, each agent read-chain, and **`skills/oz/`** to decide when to run **`oz`** (alongside `go test`, edits, and the rest).
 
 | Intent | What “done” looks like |
 |--------|-------------------------|
@@ -73,7 +71,7 @@ Development is **intent-first**: you describe the outcome, and the **LLM** follo
 | Workspace health | **`oz audit`** (staleness, drift, orphans, …) |
 | Go implementation | **`go test ./...`** and **`go vet ./...`** clean under **`code/oz`** |
 
-**Routing is for models, not a daily human workflow.** `oz context query` and MCP tools such as **`query_graph`** / **`agent_for_task`** help the assistant pick an agent, open the right read-chain files, and load **context blocks** from the graph instead of reading the whole tree. People use that mainly when debugging routing or MCP wiring. For the full picture, see **[`docs/architecture.md`](./docs/architecture.md)**.
+`oz context query` and MCP (**`query_graph`**, **`agent_for_task`**, …) expose the graph for routing and scoped context. **[`docs/architecture.md`](./docs/architecture.md)** covers graph, query, and audit wiring.
 
 ---
 
@@ -92,7 +90,7 @@ Both install shared hook scripts under `.oz/hooks/`:
 | `oz-after-edit.sh` | Runs `oz validate` + `oz context build` after `.md` / `.go` edits |
 | `oz-pre-commit.sh` | Blocks `git commit` if `oz validate` or `oz audit staleness` fails |
 
-`oz init` can set these up as part of workspace creation.
+`oz init` can install the same hooks during workspace creation.
 
 ---
 
@@ -113,7 +111,7 @@ Example **`.mcp.json`** snippet:
 }
 ```
 
-After agents, specs, docs, or indexed code change, rebuild the graph (`oz context build` or the equivalent via MCP) so audits and routing stay accurate.
+After agents, specs, docs, or indexed code change, run **`oz context build`** so audits and routing match the tree.
 
 ---
 
@@ -130,4 +128,4 @@ After agents, specs, docs, or indexed code change, rebuild the graph (`oz contex
 
 ## Contributing
 
-Issues and PRs are welcome. Before merging: **tests and vet clean for `code/oz`**, and the **workspace validates** from the repo root. Match your change to the agent in **`AGENTS.md`** and follow that agent’s read-chain.
+Issues and PRs are welcome. Before merging: **`go test` / `go vet`** clean under **`code/oz`**, and **`oz validate`** passes from the repo root. Use **`AGENTS.md`** to pick the agent whose read-chain fits your change.
