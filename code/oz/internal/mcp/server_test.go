@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/mcp"
-	"github.com/oz-tools/oz/internal/testws"
+	"github.com/joaoajmatos/oz/internal/mcp"
+	"github.com/joaoajmatos/oz/internal/testws"
 )
 
 // rpcMsg is a minimal JSON-RPC 2.0 message used in tests.

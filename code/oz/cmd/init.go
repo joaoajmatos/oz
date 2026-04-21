@@ -10,8 +10,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
-	"github.com/oz-tools/oz/internal/convention"
-	"github.com/oz-tools/oz/internal/scaffold"
+	"github.com/joaoajmatos/oz/internal/convention"
+	"github.com/joaoajmatos/oz/internal/scaffold"
 )
 
 var (

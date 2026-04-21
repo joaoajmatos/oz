@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/scaffold"
+	"github.com/joaoajmatos/oz/internal/scaffold"
 )
 
 func TestRepair_NothingMissing(t *testing.T) {

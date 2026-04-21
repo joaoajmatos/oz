@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/workspace"
+	"github.com/joaoajmatos/oz/internal/workspace"
 )
 
 func TestNew_ResolvesRelativePath(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/audit/drift/specscan"
+	"github.com/joaoajmatos/oz/internal/audit/drift/specscan"
 )
 
 // testdataPath returns the absolute path to a named testdata fixture.

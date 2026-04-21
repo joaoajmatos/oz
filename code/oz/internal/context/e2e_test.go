@@ -4,13 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/query"
-	"github.com/oz-tools/oz/internal/review"
-	"github.com/oz-tools/oz/internal/semantic"
-	"github.com/oz-tools/oz/internal/testws"
-	"github.com/oz-tools/oz/internal/validate"
-	"github.com/oz-tools/oz/internal/workspace"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/query"
+	"github.com/joaoajmatos/oz/internal/review"
+	"github.com/joaoajmatos/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/testws"
+	"github.com/joaoajmatos/oz/internal/validate"
+	"github.com/joaoajmatos/oz/internal/workspace"
 )
 
 // TestEndToEnd exercises the full oz V1 pipeline in a single test:

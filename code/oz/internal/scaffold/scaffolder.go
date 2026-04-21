@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/oz-tools/oz/internal/convention"
+	"github.com/joaoajmatos/oz/internal/convention"
 )
 
 // Config holds the parameters collected during oz init.

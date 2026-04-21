@@ -7,16 +7,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/audit"
-	"github.com/oz-tools/oz/internal/audit/coverage"
-	"github.com/oz-tools/oz/internal/audit/drift"
-	"github.com/oz-tools/oz/internal/audit/orphans"
-	"github.com/oz-tools/oz/internal/audit/staleness"
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/semantic"
-	"github.com/oz-tools/oz/internal/testws"
-	"github.com/oz-tools/oz/internal/validate"
-	"github.com/oz-tools/oz/internal/workspace"
+	"github.com/joaoajmatos/oz/internal/audit"
+	"github.com/joaoajmatos/oz/internal/audit/coverage"
+	"github.com/joaoajmatos/oz/internal/audit/drift"
+	"github.com/joaoajmatos/oz/internal/audit/orphans"
+	"github.com/joaoajmatos/oz/internal/audit/staleness"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/testws"
+	"github.com/joaoajmatos/oz/internal/validate"
+	"github.com/joaoajmatos/oz/internal/workspace"
 )
 
 // TestAuditE2E builds a real workspace, runs context.Build + Serialize to

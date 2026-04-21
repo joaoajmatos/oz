@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/convention"
-	"github.com/oz-tools/oz/internal/graph"
-	"github.com/oz-tools/oz/internal/testws"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/convention"
+	"github.com/joaoajmatos/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/testws"
 )
 
 // TestBuild_Minimal runs oz context build against the 01_minimal golden fixture
@@ -115,7 +115,7 @@ func TestBuild_CodeNodesAndContainsEdges(t *testing.T) {
 		WithSpec("specs/api.md", testws.Section("Overview", "See `code/oz/pkg/run.go`.")).
 		Build()
 
-	writeCodeFile(t, filepath.Join(ws.Path(), "code", "oz", "go.mod"), "module github.com/oz-tools/oz\n\ngo 1.21\n")
+	writeCodeFile(t, filepath.Join(ws.Path(), "code", "oz", "go.mod"), "module github.com/joaoajmatos/oz\n\ngo 1.21\n")
 	writeCodeFile(t, filepath.Join(ws.Path(), "code", "oz", "pkg", "run.go"), `package pkg
 
 type Runner struct{}

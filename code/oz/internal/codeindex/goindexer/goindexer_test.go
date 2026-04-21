@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/codeindex"
-	"github.com/oz-tools/oz/internal/codeindex/goindexer"
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/codeindex"
+	"github.com/joaoajmatos/oz/internal/codeindex/goindexer"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 func TestIndexFile_ExtractsExportedSymbols(t *testing.T) {

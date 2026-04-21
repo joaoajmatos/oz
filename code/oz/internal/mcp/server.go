@@ -26,10 +26,10 @@ import (
 	"io"
 	"os"
 
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/graph"
-	"github.com/oz-tools/oz/internal/query"
-	"github.com/oz-tools/oz/internal/semantic"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/query"
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 const protocolVersion = "2024-11-05"

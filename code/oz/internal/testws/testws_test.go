@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/testws"
+	"github.com/joaoajmatos/oz/internal/testws"
 )
 
 // TestBuilder_CreatesRequiredOZFiles verifies that Build() produces a

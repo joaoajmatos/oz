@@ -3,8 +3,8 @@ package query_test
 import (
     "fmt"
     "testing"
-    "github.com/oz-tools/oz/internal/query"
-    "github.com/oz-tools/oz/internal/testws"
+    "github.com/joaoajmatos/oz/internal/query"
+    "github.com/joaoajmatos/oz/internal/testws"
 )
 
 func TestDiagnose(t *testing.T) {

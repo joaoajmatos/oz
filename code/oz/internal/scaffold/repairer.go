@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/oz-tools/oz/internal/convention"
+	"github.com/joaoajmatos/oz/internal/convention"
 )
 
 // RepairResult reports which default files were restored vs already present.

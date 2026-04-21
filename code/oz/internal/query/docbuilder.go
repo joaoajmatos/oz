@@ -1,6 +1,6 @@
 package query
 
-import "github.com/oz-tools/oz/internal/graph"
+import "github.com/joaoajmatos/oz/internal/graph"
 
 // AgentDoc holds the tokenized BM25F fields for one agent.
 type AgentDoc struct {

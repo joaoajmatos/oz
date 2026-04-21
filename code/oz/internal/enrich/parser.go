@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 // llmResponse is the raw JSON structure the LLM is asked to return.

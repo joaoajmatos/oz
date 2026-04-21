@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/oz-tools/oz/internal/convention"
-	"github.com/oz-tools/oz/internal/scaffold"
-	"github.com/oz-tools/oz/internal/workspace"
+	"github.com/joaoajmatos/oz/internal/convention"
+	"github.com/joaoajmatos/oz/internal/scaffold"
+	"github.com/joaoajmatos/oz/internal/workspace"
 )
 
 var repairCmd = &cobra.Command{

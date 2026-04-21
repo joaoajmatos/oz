@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/convention"
-	"github.com/oz-tools/oz/internal/semantic"
-	"github.com/oz-tools/oz/internal/workspace"
+	"github.com/joaoajmatos/oz/internal/convention"
+	"github.com/joaoajmatos/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/workspace"
 )
 
 // Severity classifies a finding.

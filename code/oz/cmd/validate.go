@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/validate"
-	"github.com/oz-tools/oz/internal/workspace"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/validate"
+	"github.com/joaoajmatos/oz/internal/workspace"
 )
 
 // errValidationFailed is returned when a workspace fails validation.

@@ -1,4 +1,4 @@
-module github.com/oz-tools/oz
+module github.com/joaoajmatos/oz
 
 go 1.24.2
 

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/scaffold"
+	"github.com/joaoajmatos/oz/internal/scaffold"
 )
 
 var defaultCfg = scaffold.Config{

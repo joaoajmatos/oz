@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/codeindex"
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/codeindex"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // Indexer extracts exported symbols from Go files.

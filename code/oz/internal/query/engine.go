@@ -1,9 +1,9 @@
 package query
 
 import (
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/graph"
-	"github.com/oz-tools/oz/internal/semantic"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 // Options configures a query execution.

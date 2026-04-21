@@ -3,8 +3,8 @@ package query_test
 import (
 	"testing"
 
-	"github.com/oz-tools/oz/internal/query"
-	"github.com/oz-tools/oz/internal/testws"
+	"github.com/joaoajmatos/oz/internal/query"
+	"github.com/joaoajmatos/oz/internal/testws"
 )
 
 // TestRoutingAccuracy runs every golden suite under testdata/golden, measures

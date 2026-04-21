@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/oz-tools/oz/internal/audit"
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/graph"
-	"github.com/oz-tools/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/audit"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 // Check implements audit.Check for staleness detection.

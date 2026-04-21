@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/review"
-	"github.com/oz-tools/oz/internal/semantic"
-	"github.com/oz-tools/oz/internal/testws"
+	"github.com/joaoajmatos/oz/internal/review"
+	"github.com/joaoajmatos/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/testws"
 )
 
 // writeSemanticJSON writes a full semantic.json to the workspace's context/ dir.

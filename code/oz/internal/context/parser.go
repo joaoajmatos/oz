@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // ParsedAgent holds all fields extracted from an AGENT.md file.

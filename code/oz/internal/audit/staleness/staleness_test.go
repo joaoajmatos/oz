@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/audit"
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/graph"
-	"github.com/oz-tools/oz/internal/semantic"
-	"github.com/oz-tools/oz/internal/testws"
+	"github.com/joaoajmatos/oz/internal/audit"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/testws"
 )
 
 // hasCode reports whether any finding in fs has the given code.

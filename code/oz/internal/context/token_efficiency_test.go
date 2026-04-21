@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/query"
-	"github.com/oz-tools/oz/internal/testws"
+	"github.com/joaoajmatos/oz/internal/query"
+	"github.com/joaoajmatos/oz/internal/testws"
 )
 
 // TestTokenEfficiency measures the token efficiency of oz context query output

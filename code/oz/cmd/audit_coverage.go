@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/oz-tools/oz/internal/audit"
-	"github.com/oz-tools/oz/internal/audit/coverage"
+	"github.com/joaoajmatos/oz/internal/audit"
+	"github.com/joaoajmatos/oz/internal/audit/coverage"
 	"github.com/spf13/cobra"
 )
 

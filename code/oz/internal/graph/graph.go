@@ -22,7 +22,7 @@
 //   - contains         — code_file contains code_symbol
 package graph
 
-import "github.com/oz-tools/oz/internal/convention"
+import "github.com/joaoajmatos/oz/internal/convention"
 
 // SchemaVersion is the current graph.json schema version.
 // Increment when the schema changes in a backwards-incompatible way.

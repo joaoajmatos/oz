@@ -3,8 +3,8 @@ package query
 import (
 	"sort"
 
-	"github.com/oz-tools/oz/internal/convention"
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/convention"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // BuildContextBlocks returns the ordered context blocks for the winning agent.

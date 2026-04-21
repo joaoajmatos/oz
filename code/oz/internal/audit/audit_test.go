@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/audit"
+	"github.com/joaoajmatos/oz/internal/audit"
 )
 
 // fakeCheck returns a fixed set of findings.

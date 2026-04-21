@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/testws"
-	"github.com/oz-tools/oz/internal/validate"
-	"github.com/oz-tools/oz/internal/workspace"
+	"github.com/joaoajmatos/oz/internal/testws"
+	"github.com/joaoajmatos/oz/internal/validate"
+	"github.com/joaoajmatos/oz/internal/workspace"
 )
 
 // validWorkspace scaffolds a minimal workspace that passes all checks.

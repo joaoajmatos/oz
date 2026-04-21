@@ -89,7 +89,7 @@ func (c *Client) Complete(messages []Message) (*ChatResponse, error) {
 	}
 	req.Header.Set("Authorization", "Bearer "+c.APIKey)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("HTTP-Referer", "https://github.com/oz-tools/oz")
+	req.Header.Set("HTTP-Referer", "https://github.com/joaoajmatos/oz")
 	req.Header.Set("X-Title", "oz context enrich")
 
 	resp, err := c.HTTP.Do(req)

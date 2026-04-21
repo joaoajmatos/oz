@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/openrouter"
+	"github.com/joaoajmatos/oz/internal/openrouter"
 )
 
 func TestClient_Complete(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/audit"
-	"github.com/oz-tools/oz/internal/audit/drift/specscan"
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/audit"
+	"github.com/joaoajmatos/oz/internal/audit/drift/specscan"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // hasCode reports whether any finding in fs has the given code.
@@ -372,7 +372,7 @@ func TestShortPackageName(t *testing.T) {
 		pkg  string
 		want string
 	}{
-		{"github.com/oz-tools/oz/internal/audit", "audit"},
+		{"github.com/joaoajmatos/oz/internal/audit", "audit"},
 		{"audit", "audit"},
 		{"", ""},
 	}

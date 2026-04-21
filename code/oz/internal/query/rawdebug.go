@@ -3,7 +3,7 @@ package query
 import (
 	"sort"
 
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // RawQueryDebug is the JSON payload for `oz context query --raw` (PRD C-09):

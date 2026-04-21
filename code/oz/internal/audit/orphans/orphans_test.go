@@ -3,8 +3,8 @@ package orphans
 import (
 	"testing"
 
-	"github.com/oz-tools/oz/internal/audit"
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/audit"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // hasCode reports whether any finding in fs has the given code.

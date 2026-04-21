@@ -8,12 +8,12 @@ package drift
 import (
 	"sort"
 
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // Symbol is an exported source symbol extracted from the structural graph.
 type Symbol struct {
-	// Pkg is the fully-qualified import path (e.g. github.com/oz-tools/oz/internal/audit).
+	// Pkg is the fully-qualified import path (e.g. github.com/joaoajmatos/oz/internal/audit).
 	Pkg string
 
 	// Name is the unqualified symbol name (e.g. RunAll).

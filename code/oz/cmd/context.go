@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/enrich"
-	"github.com/oz-tools/oz/internal/mcp"
-	"github.com/oz-tools/oz/internal/query"
-	"github.com/oz-tools/oz/internal/review"
-	"github.com/oz-tools/oz/internal/semantic"
-	"github.com/oz-tools/oz/internal/workspace"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/enrich"
+	"github.com/joaoajmatos/oz/internal/mcp"
+	"github.com/joaoajmatos/oz/internal/query"
+	"github.com/joaoajmatos/oz/internal/review"
+	"github.com/joaoajmatos/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/workspace"
 	"github.com/spf13/cobra"
 )
 

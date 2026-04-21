@@ -15,7 +15,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 // Options controls the review workflow.

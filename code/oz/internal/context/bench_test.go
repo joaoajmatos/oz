@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/scaffold"
-	"github.com/oz-tools/oz/internal/testws"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/scaffold"
+	"github.com/joaoajmatos/oz/internal/testws"
 )
 
 // BenchmarkBuild_50Files benchmarks oz context build against a workspace with

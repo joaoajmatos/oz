@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // promptAgent is the agent representation sent to the LLM.

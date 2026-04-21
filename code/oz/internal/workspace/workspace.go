@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/convention"
+	"github.com/joaoajmatos/oz/internal/convention"
 )
 
 // Workspace represents a detected oz workspace on disk.

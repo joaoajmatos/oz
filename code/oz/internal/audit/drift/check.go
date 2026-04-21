@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/audit"
-	"github.com/oz-tools/oz/internal/audit/drift/specscan"
-	"github.com/oz-tools/oz/internal/codeindex"
-	"github.com/oz-tools/oz/internal/codeindex/goindexer"
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/audit"
+	"github.com/joaoajmatos/oz/internal/audit/drift/specscan"
+	"github.com/joaoajmatos/oz/internal/codeindex"
+	"github.com/joaoajmatos/oz/internal/codeindex/goindexer"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // Check implements audit.Check for spec-code drift detection.
@@ -226,7 +226,7 @@ func buildMentionSet(candidates []specscan.Candidate) map[string]bool {
 }
 
 // shortPackageName returns the last path segment of a Go import path.
-// "github.com/oz-tools/oz/internal/audit" → "audit"
+// "github.com/joaoajmatos/oz/internal/audit" → "audit"
 func shortPackageName(pkg string) string {
 	if i := strings.LastIndex(pkg, "/"); i >= 0 {
 		return pkg[i+1:]

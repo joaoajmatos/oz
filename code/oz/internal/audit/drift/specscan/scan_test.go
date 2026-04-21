@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/audit/drift/specscan"
+	"github.com/joaoajmatos/oz/internal/audit/drift/specscan"
 )
 
 func writeFile(t *testing.T, path, content string) {

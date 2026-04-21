@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/oz-tools/oz/internal/audit"
+	"github.com/joaoajmatos/oz/internal/audit"
 )
 
 // WriteJSON writes r to w as indented JSON followed by a newline.

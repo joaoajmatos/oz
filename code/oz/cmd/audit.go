@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/audit"
-	auditreport "github.com/oz-tools/oz/internal/audit/report"
+	"github.com/joaoajmatos/oz/internal/audit"
+	auditreport "github.com/joaoajmatos/oz/internal/audit/report"
 	"github.com/spf13/cobra"
 )
 

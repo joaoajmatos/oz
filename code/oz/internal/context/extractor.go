@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // extractEdges produces edges by analysing the relationships between nodes.

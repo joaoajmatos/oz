@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 // DiscoveredCodeFile is a code file found under code/.

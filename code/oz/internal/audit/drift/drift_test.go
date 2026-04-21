@@ -3,8 +3,8 @@ package drift_test
 import (
 	"testing"
 
-	"github.com/oz-tools/oz/internal/audit/drift"
-	"github.com/oz-tools/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/audit/drift"
+	"github.com/joaoajmatos/oz/internal/graph"
 )
 
 func TestLoadSymbols_Empty(t *testing.T) {

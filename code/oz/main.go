@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/oz-tools/oz/cmd"
+	"github.com/joaoajmatos/oz/cmd"
 )
 
 func main() {

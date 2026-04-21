@@ -3,7 +3,7 @@ package semantic_test
 import (
 	"testing"
 
-	"github.com/oz-tools/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 // --- IsStale -----------------------------------------------------------------

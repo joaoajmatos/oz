@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/codeindex"
-	"github.com/oz-tools/oz/internal/codeindex/goindexer"
+	"github.com/joaoajmatos/oz/internal/codeindex"
+	"github.com/joaoajmatos/oz/internal/codeindex/goindexer"
 )
 
 func TestWalkCode_SkipsAndFilters(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/query"
+	"github.com/joaoajmatos/oz/internal/query"
 )
 
 // Matches reports whether a QueryCase's expectations are satisfied by result.

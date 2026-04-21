@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	ozcontext "github.com/oz-tools/oz/internal/context"
-	"github.com/oz-tools/oz/internal/graph"
+	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/graph"
 	"github.com/spf13/cobra"
 )
 

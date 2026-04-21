@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/oz-tools/oz/internal/graph"
-	"github.com/oz-tools/oz/internal/openrouter"
-	"github.com/oz-tools/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/openrouter"
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 // Options configures an enrichment run.

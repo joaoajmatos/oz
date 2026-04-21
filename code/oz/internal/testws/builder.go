@@ -24,8 +24,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oz-tools/oz/internal/scaffold"
-	"github.com/oz-tools/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/scaffold"
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 // Builder constructs oz-compliant workspaces for tests.

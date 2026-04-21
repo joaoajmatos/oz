@@ -86,14 +86,14 @@ V1 adds two node types and one edge type in `internal/graph/graph.go`:
 Node ID formats:
 
 - `code_file:code/oz/internal/audit/audit.go`
-- `code_symbol:github.com/oz-tools/oz/internal/audit.RunAll`
+- `code_symbol:github.com/joaoajmatos/oz/internal/audit.RunAll`
 
 `graph.Node` gains optional fields (all `omitempty`):
 
 ```go
 Language   string // "go", "typescript", ...
 SymbolKind string // "func" | "type" | "value"
-Package    string // full import path, e.g. "github.com/oz-tools/oz/internal/audit"
+Package    string // full import path, e.g. "github.com/joaoajmatos/oz/internal/audit"
 Line       int    // source line of symbol declaration
 ```
 
