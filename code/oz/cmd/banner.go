@@ -21,8 +21,8 @@ var bannerLines = []string{
 }
 
 var (
-	styleBannerSolid = lipgloss.NewStyle().Foreground(lipgloss.Color("#7C3AED"))
-	styleBannerShade = lipgloss.NewStyle().Foreground(lipgloss.Color("#A78BFA"))
+	styleBannerSolid = lipgloss.NewStyle().Foreground(ozPurple)
+	styleBannerShade = lipgloss.NewStyle().Foreground(ozLavend)
 )
 
 // renderBannerLine renders a single banner line colouring █ in deep purple

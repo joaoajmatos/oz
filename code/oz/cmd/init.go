@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
 	"github.com/joaoajmatos/oz/internal/convention"
@@ -30,63 +29,6 @@ var initCmd = &cobra.Command{
 func init() {
 	initCmd.Flags().BoolVar(&initClaudeFlag, "claude", false, "generate CLAUDE.md for Claude Code integration")
 	initCmd.Flags().BoolVar(&initNoHooksFlag, "no-hooks", false, "skip IDE hook configuration for Claude Code and Cursor")
-}
-
-// ── Styles ────────────────────────────────────────────────────────────────────
-
-var (
-	ozPurple = lipgloss.Color("#7C3AED")
-	ozFaint  = lipgloss.Color("#6B7280")
-	ozGreen  = lipgloss.Color("#10B981")
-	ozLavend = lipgloss.Color("#A78BFA")
-
-	styleHeader = lipgloss.NewStyle().
-			Bold(true).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(ozPurple).
-			Padding(0, 2)
-
-	styleBrand = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ozPurple)
-
-	styleSubtle = lipgloss.NewStyle().
-			Foreground(ozFaint)
-
-	styleSuccess = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ozGreen)
-
-	styleCmd = lipgloss.NewStyle().
-			Foreground(ozLavend).
-			Bold(true)
-
-	styleTreeRoot = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ozPurple)
-
-	styleTreeDir = lipgloss.NewStyle().
-			Foreground(ozLavend)
-
-	styleTreeFile = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#D1D5DB"))
-
-	styleSectionTitle = lipgloss.NewStyle().
-				Bold(true).
-				Foreground(lipgloss.Color("#F9FAFB"))
-)
-
-// ── Theme ─────────────────────────────────────────────────────────────────────
-
-func ozTheme() *huh.Theme {
-	t := huh.ThemeBase()
-	t.Focused.Base = t.Focused.Base.BorderForeground(ozPurple)
-	t.Focused.Title = t.Focused.Title.Foreground(ozPurple).Bold(true)
-	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(ozPurple)
-	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(ozLavend)
-	t.Focused.FocusedButton = t.Focused.FocusedButton.Background(ozPurple).Foreground(lipgloss.Color("#FFFFFF"))
-	t.Focused.BlurredButton = t.Focused.BlurredButton.Foreground(ozFaint)
-	return t
 }
 
 // ── Command ───────────────────────────────────────────────────────────────────

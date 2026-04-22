@@ -43,16 +43,12 @@ var integrationCatalog = []integrationRow{
 func runAddList(cmd *cobra.Command, _ []string) error {
 	out := cmd.OutOrStdout()
 
-	section := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(ozPurple)
-
 	rule := lipgloss.NewStyle().
 		Foreground(ozFaint).
 		Render(strings.Repeat("─", 56))
 
 	fmt.Fprintln(out)
-	fmt.Fprintln(out, section.Render("Integrations"))
+	printHelpSection(out, "Integrations")
 	fmt.Fprintln(out, styleSubtle.Render("Editor and IDE wiring (separate from optional packages)"))
 	fmt.Fprintln(out, rule)
 
@@ -65,7 +61,7 @@ func runAddList(cmd *cobra.Command, _ []string) error {
 	}
 
 	fmt.Fprintln(out)
-	fmt.Fprintln(out, section.Render("Optional packages"))
+	printHelpSection(out, "Optional packages")
 	fmt.Fprintln(out, styleSubtle.Render("Shipped inside the oz binary — agent + skill trees"))
 	fmt.Fprintln(out, rule)
 

@@ -51,7 +51,7 @@ var (
 	enrichLabelStyle   = lipgloss.NewStyle().Foreground(ozFaint)
 	enrichValueStyle   = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
 	enrichSpinnerStyle = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
-	enrichStageStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#D1D5DB"))
+	enrichStageStyle   = lipgloss.NewStyle().Foreground(ozSoft)
 	enrichDoneStyle    = lipgloss.NewStyle().Bold(true).Foreground(ozGreen)
 	enrichInfoStyle    = lipgloss.NewStyle().Foreground(ozFaint)
 )

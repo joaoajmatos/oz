@@ -80,7 +80,7 @@ func runRepair(cmd *cobra.Command, args []string) error {
 		ClaudeMD: false,
 	}
 
-	fmt.Printf("Repairing workspace at %s ...\n\n", ws.Root)
+	fmt.Printf("%s %s %s\n\n", styleSubtle.Render("Repairing workspace at"), styleCmd.Render(ws.Root), styleSubtle.Render("..."))
 
 	result, err := scaffold.Repair(ws.Root, cfg)
 	if err != nil {
@@ -88,13 +88,13 @@ func runRepair(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(result.Created) == 0 {
-		fmt.Println("ok  all default files present")
+		fmt.Println(styleSuccess.Render("ok  all default files present"))
 		return nil
 	}
 
-	fmt.Printf("%d file(s) restored:\n", len(result.Created))
+	fmt.Printf("%s %d file(s) restored:\n", styleSuccess.Render("✓"), len(result.Created))
 	for _, p := range result.Created {
-		fmt.Printf("  created  %s\n", p)
+		fmt.Printf("  %s  %s\n", styleSubtle.Render("created"), p)
 	}
 	return nil
 }
