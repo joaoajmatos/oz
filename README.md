@@ -122,6 +122,7 @@ After agents, specs, docs, or indexed code change, run **`oz context build`** so
 | [`AGENTS.md`](./AGENTS.md) | LLM entry — roles and agent definitions |
 | [`specs/oz-project-specification.md`](./specs/oz-project-specification.md) | Normative workspace standard |
 | [`docs/architecture.md`](./docs/architecture.md) | Implementation: graph, query, audit |
+| [`docs/guides/README.md`](./docs/guides/README.md) | Practical adoption guides and walkthroughs |
 | [`docs/open-items.md`](./docs/open-items.md) | Gaps and follow-ups |
 
 ---

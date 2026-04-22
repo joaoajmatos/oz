@@ -67,6 +67,11 @@ type packageDef struct {
 
 // packageDefs is the single registry for optional packages (install + list metadata).
 var packageDefs = map[string]packageDef{
+	"maintainer": {
+		install:       installMaintainerPackage,
+		summary:       "oz-maintainer agent + workspace-management skill for agent/skill/rule maintenance",
+		supportsForce: true,
+	},
 	"pm": {
 		install:       installPMPackage,
 		summary:       "PM agent + skills — PRDs, pre-mortems, stories, sprint rituals",
