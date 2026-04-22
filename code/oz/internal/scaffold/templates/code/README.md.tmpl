@@ -1,21 +1,33 @@
-# Code — {{.Name}}
+# Code
 
-Implementation for **{{.Name}}** lives in this directory (inline layout from `oz init`).
+This directory is the source-code layer of the workspace for **{{.Name}}**.
 
-## Layout
+Use this README as an index for code projects that live under `code/`.
 
-Document how packages, services, or apps map to subdirectories so agents and contributors share the same mental model.
+In a meta-repo setup, each project under `code/` can be a git submodule so contributors keep repositories separate while sharing one workspace convention.
 
-## Build & run
+## Projects
 
-Add concrete commands for your stack (for example):
+- Add one bullet per code project in this format:
+  - ``code/<project>/`` (`<language>`): short purpose sentence.
+- Include a project README at `code/<project>/README.md`.
 
-```bash
-# examples — replace with your toolchain
-# go build -o bin/app ./cmd/app
-# npm install && npm run dev
-```
+Example:
 
-## Tests
+- `code/api/` (Go): HTTP API and background jobs.
+- `code/web/` (TypeScript): web frontend.
 
-Describe how to run automated checks (`go test`, `pytest`, CI parity commands, etc.).
+## Working in `code/`
+
+- Keep each project self-contained in its own directory.
+- Build, test, and lint from each project directory.
+- Keep project-specific contributor guidance in each project README.
+- If a project is a submodule, manage it with git submodule commands from the workspace root.
+
+## Add a new project
+
+When adding a new code project under `code/`, update:
+
+1. The projects index in this file.
+2. The project README at `code/<project>/README.md`.
+3. Build, test, and lint commands documented in that project README.

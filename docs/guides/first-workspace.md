@@ -4,12 +4,13 @@ Create a new `oz` workspace and verify the baseline convention flow.
 
 ## Goal
 
-By the end, you have a new workspace that passes `oz validate`, has a fresh graph, and is ready for agent-routed work.
+By the end, you have a new workspace that passes `oz validate`, has a fresh graph, and is ready for agent-routed work as a shared environment for the whole project team.
 
 ## Preconditions
 
 - `oz` is installed and available in your `PATH`.
 - You can run commands in a clean directory.
+- You have decided whether this workspace will hold code directly or act as a meta repo that links project repos via git submodules under `code/`.
 
 ## Steps
 

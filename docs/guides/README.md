@@ -1,6 +1,6 @@
 # Guides
 
-Practical, task-oriented walkthroughs for adopting `oz`.
+Practical, task-oriented walkthroughs for adopting `oz` as a shared workspace environment.
 
 ## Start here
 
@@ -9,6 +9,8 @@ Practical, task-oriented walkthroughs for adopting `oz`.
 3. [`adopt-existing-repo.md`](./adopt-existing-repo.md) — introduce `oz` in an existing repository.
 4. [`first-agent-and-skill.md`](./first-agent-and-skill.md) — customize routing and behavior.
 5. [`team-rollout.md`](./team-rollout.md) — optional guidance for team-level rollout.
+
+Use these guides whether your team works in one repository or a meta-repo model with separate codebases connected as git submodules under `code/`.
 
 ## Guide format
 

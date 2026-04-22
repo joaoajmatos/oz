@@ -24,6 +24,10 @@
 
 **oz** gives any LLM a predictable workspace: explicit **agents**, **specs-first** truth, a machine-checkable layout, and a small **Go binary** (`oz`) for validate, audit, and context graph workflows — without locking you to one editor or model vendor.
 
+It is also a practical **shared workspace environment for teams**: people working at different levels (implementation, maintenance, and specification) operate inside the same conventions, routing model, and validation rules.
+
+For multi-repo teams, `oz` works well as a **meta repository**: keep application repos separate and clean, mount them under `code/` as git submodules, and manage shared docs/agents/rules from one workspace root.
+
 | Layer | What you get |
 |--------|----------------|
 | **Convention** | [`AGENTS.md`](./AGENTS.md), [`OZ.md`](./OZ.md), `agents/`, `specs/`, `docs/`, `context/`, `skills/`, `rules/`, `notes/`, optional `code/` |
