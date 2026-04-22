@@ -291,6 +291,9 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 				enrichDoneStyle.Render("✓"),
 				enrichStageStyle.Render("semantic overlay is already up to date; skipping enrichment"),
 			)
+			cmd.Printf("%s\n", enrichTitleStyle.Render("context enrich skipped"))
+			cmd.Printf("  %s %s\n", enrichLabelStyle.Render("reason   "), enrichValueStyle.Render("semantic overlay is fresh"))
+			cmd.Printf("  %s %s\n", enrichLabelStyle.Render("hint     "), enrichValueStyle.Render("use --force to re-enrich anyway"))
 		}
 		return nil
 	}
