@@ -2,3 +2,4 @@
 .cursor/
 bin/
 context/graph.json
+.oz/crystallize-cache.json

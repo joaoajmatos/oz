@@ -20,6 +20,7 @@ import (
 	crlog "github.com/joaoajmatos/oz/internal/crystallize/log"
 	"github.com/joaoajmatos/oz/internal/crystallize/promote"
 	"github.com/joaoajmatos/oz/internal/crystallize/review"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
 
@@ -81,6 +82,13 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	out := cmd.OutOrStdout()
+	in := cmd.InOrStdin()
+	stderr := cmd.ErrOrStderr()
+
+	fmt.Fprintln(out)
+	fmt.Fprintf(out, "  %s  %s\n\n", styleBrand.Render("oz"), styleSubtle.Render("crystallize"))
+
 	if crForce && !crAcceptAll {
 		fmt.Fprintln(os.Stderr, "warning: --force has no effect without --accept-all")
 	}
@@ -93,10 +101,18 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("stat notes/: %w", err)
 	}
 
-	out := cmd.OutOrStdout()
-	in := cmd.InOrStdin()
+	paths, err := collectNotePaths(notesDir)
+	if err != nil {
+		return err
+	}
+	if len(paths) == 0 {
+		fmt.Fprintln(out, styleSubtle.Render("no notes to crystallize"))
+		return nil
+	}
 
-	items, err := collectCrystallizeItems(root, notesDir, crTopic, classifier.Options{
+	fmt.Fprintf(out, "%s %s\n\n", styleSectionTitle.Render("Scan"), styleSubtle.Render(fmt.Sprintf("(%d file(s))", len(paths))))
+
+	items, err := classifyPaths(root, paths, crTopic, classifier.Options{
 		WorkspaceRoot: root,
 		NoEnrich:      crNoEnrich,
 		NoCache:       crNoCache,
@@ -105,19 +121,18 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 				fmt.Fprintln(os.Stderr, msg)
 			}
 		},
-	})
+	}, stderr, isInteractiveWriter(stderr))
 	if err != nil {
 		return err
 	}
 
 	if len(items) == 0 {
-		fmt.Fprintln(out, "no notes to crystallize")
+		fmt.Fprintln(out, styleSubtle.Render("no notes matched (topic filter may have excluded all files)"))
 		return nil
 	}
 
-	fmt.Fprintf(out, "Scanning notes/ ... %d file(s)\n\n", len(items))
-
 	previewTargets := previewTargetPaths(root, items)
+	fmt.Fprintln(out, styleSectionTitle.Render("Classification"))
 	printClassificationTable(out, items, previewTargets)
 
 	// Separate unknowns (not promotable) from candidates.
@@ -141,6 +156,7 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 		if len(skipped) > 0 && crVerbose {
 			printVerboseSkips(out, skipped)
 		}
+		fmt.Fprintln(out, "\n"+styleSectionTitle.Render("Dry Run"))
 		if err := runCrystallizeDryRun(root, out, in, candidates, previewTargets); err != nil {
 			return err
 		}
@@ -148,7 +164,7 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 	}
 
 	if len(candidates) == 0 {
-		fmt.Fprintln(out, "\nno promotable notes (all classified as unknown)")
+		fmt.Fprintln(out, "\n"+styleSubtle.Render("no promotable notes (all classified as unknown)"))
 		return nil
 	}
 
@@ -163,14 +179,17 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 				Confidence:   string(it.Class.Confidence),
 			})
 		}
-		plan, err := review.BatchSummary(summaryItems, review.Options{Out: out, In: in})
+		fmt.Fprintln(out, "\n"+styleSectionTitle.Render("Batch Plan"))
+		plan, err := review.BatchSummary(summaryItems, review.Options{Out: out, In: in, Theme: ozTheme()})
 		if err != nil {
 			return err
 		}
 		batchPlan = &plan
 	}
 
-	before, err := runCrystallizeAudit(root)
+	before, err := withSpinner(stderr, isInteractiveWriter(stderr), "Auditing (before)", func() (*audit.Report, error) {
+		return runCrystallizeAudit(root)
+	})
 	if err != nil {
 		return err
 	}
@@ -303,7 +322,7 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 				Reason:       it.Class.Reason,
 				Source:       sourceContent,
 				Proposed:     proposed,
-			}, reviewedIdx, total, review.Options{Out: out, In: in})
+			}, reviewedIdx, total, review.Options{Out: out, In: in, Theme: ozTheme()})
 			if err != nil {
 				return err
 			}
@@ -374,10 +393,12 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 		fmt.Fprintln(out)
 		printUndoHint(out, promoted)
 		fmt.Fprintln(out)
-		fmt.Fprintln(out, "Logged to context/crystallize.log")
+		fmt.Fprintln(out, styleSubtle.Render("Logged to context/crystallize.log"))
 	}
 
-	after, err := runCrystallizeAudit(root)
+	after, err := withSpinner(stderr, isInteractiveWriter(stderr), "Auditing (after)", func() (*audit.Report, error) {
+		return runCrystallizeAudit(root)
+	})
 	if err != nil {
 		return err
 	}
@@ -386,9 +407,7 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func collectCrystallizeItems(root, notesDir, topic string, opts classifier.Options) ([]crystallizeItem, error) {
-	c := classifier.New(opts)
-
+func collectNotePaths(notesDir string) ([]string, error) {
 	var paths []string
 	if err := filepath.WalkDir(notesDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -405,31 +424,94 @@ func collectCrystallizeItems(root, notesDir, topic string, opts classifier.Optio
 		return nil, fmt.Errorf("walk notes/: %w", err)
 	}
 	sort.Strings(paths)
+	return paths, nil
+}
+
+func classifyPaths(
+	root string,
+	paths []string,
+	topic string,
+	opts classifier.Options,
+	progress io.Writer,
+	showSpinner bool,
+) ([]crystallizeItem, error) {
+	c := classifier.New(opts)
 
 	topic = strings.ToLower(strings.TrimSpace(topic))
 	var out []crystallizeItem
-	for _, p := range paths {
-		content, err := os.ReadFile(p)
-		if err != nil {
-			return nil, fmt.Errorf("read %s: %w", p, err)
-		}
-		if topic != "" && !strings.Contains(strings.ToLower(string(content)), topic) {
-			continue
-		}
+	_, err := withSpinner(progress, showSpinner, "Classifying notes", func() (struct{}, error) {
+		for i, p := range paths {
+			rel := relFromRoot(root, p)
+			if !showSpinner {
+				fmt.Fprintf(progress, "%s %s\n", styleSubtle.Render(fmt.Sprintf("[%d/%d]", i+1, len(paths))), rel)
+			}
+			content, err := os.ReadFile(p)
+			if err != nil {
+				return struct{}{}, fmt.Errorf("read %s: %w", p, err)
+			}
+			if topic != "" && !strings.Contains(strings.ToLower(string(content)), topic) {
+				continue
+			}
 
-		cl, err := c.Classify(p)
-		if err != nil {
-			return nil, err
+			cl, err := c.Classify(p)
+			if err != nil {
+				return struct{}{}, err
+			}
+			out = append(out, crystallizeItem{
+				AbsPath: p,
+				RelPath: rel,
+				Content: content,
+				Class:   cl,
+			})
 		}
-		rel := relFromRoot(root, p)
-		out = append(out, crystallizeItem{
-			AbsPath: p,
-			RelPath: rel,
-			Content: content,
-			Class:   cl,
-		})
+		return struct{}{}, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
+}
+
+func isInteractiveWriter(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	return isatty.IsTerminal(f.Fd())
+}
+
+func withSpinner[T any](out io.Writer, enabled bool, label string, fn func() (T, error)) (T, error) {
+	if !enabled {
+		return fn()
+	}
+
+	done := make(chan struct{})
+	defer close(done)
+
+	var zero T
+	frames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	go func() {
+		ticker := time.NewTicker(120 * time.Millisecond)
+		defer ticker.Stop()
+		i := 0
+		for {
+			select {
+			case <-done:
+				fmt.Fprintf(out, "\r%s %s\r", strings.Repeat(" ", len(label)+4), "")
+				return
+			case <-ticker.C:
+				fmt.Fprintf(out, "\r%s %s", styleSubtle.Render(frames[i%len(frames)]), styleSubtle.Render(label))
+				i++
+			}
+		}
+	}()
+
+	v, err := fn()
+	if err != nil {
+		return zero, err
+	}
+	fmt.Fprintf(out, "\r%s %s\n", styleSuccess.Render("✓"), styleSubtle.Render(label))
+	return v, nil
 }
 
 func previewTargetPaths(root string, items []crystallizeItem) map[string]string {

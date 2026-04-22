@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 // DefaultBaseURL is the OpenRouter API base URL.
@@ -44,7 +45,7 @@ func New(model string) (*Client, error) {
 		APIKey:  key,
 		BaseURL: DefaultBaseURL,
 		Model:   model,
-		HTTP:    &http.Client{},
+		HTTP:    &http.Client{Timeout: 60 * time.Second},
 	}, nil
 }
 

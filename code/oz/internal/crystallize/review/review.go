@@ -75,6 +75,8 @@ type Options struct {
 	Out io.Writer
 	// In is the source of user input. Defaults to os.Stdin.
 	In io.Reader
+	// Theme is the huh theme used for prompts. Defaults to huh.ThemeCharm().
+	Theme *huh.Theme
 }
 
 func (o *Options) defaults() {
@@ -83,6 +85,9 @@ func (o *Options) defaults() {
 	}
 	if o.In == nil {
 		o.In = os.Stdin
+	}
+	if o.Theme == nil {
+		o.Theme = huh.ThemeCharm()
 	}
 }
 
@@ -123,7 +128,7 @@ func ReviewItem(item Item, idx, total int, opts Options) (Decision, error) {
 				Title("Edit note content (will be re-classified into the proposed artifact)").
 				Value(&edited),
 		),
-	).WithInput(opts.In).WithOutput(opts.Out)
+	).WithInput(opts.In).WithOutput(opts.Out).WithTheme(opts.Theme)
 
 	if err := editForm.Run(); err != nil {
 		return Decision{}, err
@@ -174,7 +179,8 @@ func BatchSummary(items []Item, opts Options) (BatchPlan, error) {
 	}
 	form := huh.NewForm(huh.NewGroup(fields...)).
 		WithInput(opts.In).
-		WithOutput(opts.Out)
+		WithOutput(opts.Out).
+		WithTheme(opts.Theme)
 	if err := form.Run(); err != nil {
 		return BatchPlan{}, err
 	}
@@ -223,7 +229,7 @@ func promptAction(opts Options) (Action, error) {
 				).
 				Value(&action),
 		),
-	).WithInput(opts.In).WithOutput(opts.Out)
+	).WithInput(opts.In).WithOutput(opts.Out).WithTheme(opts.Theme)
 	if err := form.Run(); err != nil {
 		return ActionQuit, err
 	}
