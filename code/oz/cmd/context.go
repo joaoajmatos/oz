@@ -112,7 +112,7 @@ func init() {
 	contextBuildCmd.Flags().BoolVarP(&quietBuild, "quiet", "q", false, "suppress output")
 	contextQueryCmd.Flags().BoolVar(&queryRaw, "raw", false, "output routing debug JSON (scores + query-relevant subgraph) instead of routing packet")
 	contextQueryCmd.Flags().BoolVar(&queryIncludeNotes, "include-notes", false, "include notes/ in context blocks")
-	contextEnrichCmd.Flags().StringVar(&enrichModel, "model", "", "OpenRouter model ID (default: anthropic/claude-haiku-4)")
+	contextEnrichCmd.Flags().StringVar(&enrichModel, "model", "", "OpenRouter model ID (default: openrouter/free)")
 	contextEnrichCmd.Flags().BoolVarP(&enrichQuiet, "quiet", "q", false, "suppress progress and summary output")
 	contextEnrichCmd.Flags().BoolVar(&enrichForce, "force", false, "force enrichment even when semantic overlay is already fresh")
 	contextReviewCmd.Flags().BoolVar(&reviewAcceptAll, "accept-all", false, "mark all unreviewed items as reviewed without prompting")

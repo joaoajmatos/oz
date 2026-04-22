@@ -3,7 +3,7 @@
 // models from multiple providers via a single endpoint.
 //
 // Authentication requires the OPENROUTER_API_KEY environment variable.
-// The default model is anthropic/claude-3.5-haiku.
+// The default model is OpenRouter's free router.
 package openrouter
 
 import (
@@ -19,7 +19,7 @@ import (
 const DefaultBaseURL = "https://openrouter.ai/api/v1"
 
 // DefaultModel is used when no model is specified.
-const DefaultModel = "anthropic/claude-3.5-haiku"
+const DefaultModel = "openrouter/free"
 
 // Client calls the OpenRouter chat completions endpoint.
 type Client struct {

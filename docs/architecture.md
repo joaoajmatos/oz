@@ -214,7 +214,7 @@ Schema version `"1"`. Produced by `oz context enrich`, reviewed via `oz context 
 |-------|-------------|
 | `schema_version` | Always `"1"` |
 | `graph_hash` | SHA-256 of `graph.json` at generation time. Used for staleness detection. |
-| `model` | OpenRouter model ID used for enrichment (default: `anthropic/claude-3.5-haiku`) |
+| `model` | OpenRouter model ID used for enrichment (default: `openrouter/free`; override with `--model`) |
 | `generated_at` | RFC3339 UTC timestamp of last enrichment run |
 | `concepts` | Extracted concept nodes (see below) |
 | `edges` | Typed relationships between concepts and structural nodes |
