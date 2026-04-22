@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
+	"time"
 
 	ozcontext "github.com/joaoajmatos/oz/internal/context"
 	"github.com/joaoajmatos/oz/internal/enrich"
@@ -12,6 +14,7 @@ import (
 	"github.com/joaoajmatos/oz/internal/review"
 	"github.com/joaoajmatos/oz/internal/semantic"
 	"github.com/joaoajmatos/oz/internal/workspace"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
 
@@ -37,8 +40,19 @@ var (
 	queryRaw          bool
 	queryIncludeNotes bool
 	enrichModel       string
+	enrichQuiet       bool
 	reviewAcceptAll   bool
 	quietBuild        bool
+)
+
+var (
+	enrichTitleStyle   = lipgloss.NewStyle().Bold(true).Foreground(ozPurple)
+	enrichLabelStyle   = lipgloss.NewStyle().Foreground(ozFaint)
+	enrichValueStyle   = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
+	enrichSpinnerStyle = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
+	enrichStageStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#D1D5DB"))
+	enrichDoneStyle    = lipgloss.NewStyle().Bold(true).Foreground(ozGreen)
+	enrichInfoStyle    = lipgloss.NewStyle().Foreground(ozFaint)
 )
 
 var contextQueryCmd = &cobra.Command{
@@ -98,6 +112,7 @@ func init() {
 	contextQueryCmd.Flags().BoolVar(&queryRaw, "raw", false, "output routing debug JSON (scores + query-relevant subgraph) instead of routing packet")
 	contextQueryCmd.Flags().BoolVar(&queryIncludeNotes, "include-notes", false, "include notes/ in context blocks")
 	contextEnrichCmd.Flags().StringVar(&enrichModel, "model", "", "OpenRouter model ID (default: anthropic/claude-haiku-4)")
+	contextEnrichCmd.Flags().BoolVarP(&enrichQuiet, "quiet", "q", false, "suppress progress and summary output")
 	contextReviewCmd.Flags().BoolVar(&reviewAcceptAll, "accept-all", false, "mark all unreviewed items as reviewed without prompting")
 }
 
@@ -159,10 +174,101 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	showProgress := !enrichQuiet
+	var (
+		stageMu       sync.RWMutex
+		currentStage  = "starting enrichment"
+		requestedAt   time.Time
+		waitingHints  = []string{
+			"dialing OpenRouter",
+			"model is thinking",
+			"assembling concepts",
+			"validating output shape",
+			"building semantic candidates",
+			"scoring confidence tags",
+			"cross-checking graph nodes",
+			"mapping concept edges",
+			"normalizing identifiers",
+			"checking schema constraints",
+			"deduplicating concept names",
+			"resolving agent ownership",
+			"linking specs to concepts",
+			"verifying edge directions",
+			"cleaning low-signal relations",
+			"preparing merge payload",
+		}
+		stopSpinner   func()
+	)
+	if showProgress {
+		stopCh := make(chan struct{})
+		doneCh := make(chan struct{})
+		frames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		stopSpinner = func() {
+			close(stopCh)
+			<-doneCh
+		}
+		go func() {
+			defer close(doneCh)
+			ticker := time.NewTicker(120 * time.Millisecond)
+			defer ticker.Stop()
+			i := 0
+			for {
+				select {
+				case <-ticker.C:
+					stageMu.RLock()
+					stage := currentStage
+					waitStarted := requestedAt
+					stageMu.RUnlock()
+					waitHint := ""
+					if !waitStarted.IsZero() {
+						elapsed := int(time.Since(waitStarted).Seconds())
+						waitHint = waitingHints[(elapsed/3)%len(waitingHints)]
+					}
+					stageText := enrichStageStyle.Render(stage)
+					if waitHint != "" {
+						stageText = stageText + " " + enrichInfoStyle.Render("("+waitHint+")")
+					}
+					fmt.Fprintf(cmd.ErrOrStderr(), "\r\033[2K%s %s",
+						enrichSpinnerStyle.Render(frames[i%len(frames)]),
+						stageText,
+					)
+					i++
+				case <-stopCh:
+					fmt.Fprintf(cmd.ErrOrStderr(), "\r\033[2K")
+					return
+				}
+			}
+		}()
+		defer stopSpinner()
+	}
+
+	progress := func(format string, args ...interface{}) {
+		if !showProgress {
+			return
+		}
+		nextStage := fmt.Sprintf(format, args...)
+		stageMu.Lock()
+		changed := currentStage != nextStage
+		currentStage = nextStage
+		if nextStage == "requesting model response" {
+			requestedAt = time.Now()
+		} else {
+			requestedAt = time.Time{}
+		}
+		stageMu.Unlock()
+		if changed {
+			fmt.Fprintf(cmd.ErrOrStderr(), "\r\033[2K%s %s\n",
+				enrichInfoStyle.Render("•"),
+				enrichInfoStyle.Render(nextStage),
+			)
+		}
+	}
 
 	// Load (or build) the structural graph.
+	progress("loading context graph")
 	g, loadErr := ozcontext.LoadGraph(root)
 	if loadErr != nil {
+		progress("context graph not found; building it first")
 		result, buildErr := ozcontext.Build(root)
 		if buildErr != nil {
 			return fmt.Errorf("build context graph: %w", buildErr)
@@ -170,25 +276,42 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 		if err := ozcontext.Serialize(root, result.Graph); err != nil {
 			return fmt.Errorf("write graph: %w", err)
 		}
+		progress("context/graph.json written — %d nodes, %d edges", result.NodeCount, result.EdgeCount)
 		g = result.Graph
 	}
 
-	res, err := enrich.Run(root, g, enrich.Options{Model: enrichModel})
+	res, err := enrich.Run(root, g, enrich.Options{
+		Model: enrichModel,
+		Progress: func(stage string) {
+			progress("%s", stage)
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	cmd.Printf("context/semantic.json written\n")
-	cmd.Printf("  model:     %s\n", res.Model)
-	cmd.Printf("  concepts:  %d extracted\n", res.ConceptsAdded)
-	cmd.Printf("  edges:     %d added\n", res.EdgesAdded)
+	if enrichQuiet {
+		return nil
+	}
+	if showProgress {
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s %s\n",
+			enrichDoneStyle.Render("✓"),
+			enrichStageStyle.Render("enrichment completed"),
+		)
+	}
+
+	cmd.Printf("%s\n", enrichTitleStyle.Render("context enrich complete"))
+	cmd.Printf("  %s %s\n", enrichLabelStyle.Render("output   "), enrichValueStyle.Render("context/semantic.json"))
+	cmd.Printf("  %s %s\n", enrichLabelStyle.Render("model    "), enrichValueStyle.Render(res.Model))
+	cmd.Printf("  %s %s\n", enrichLabelStyle.Render("concepts "), enrichValueStyle.Render(fmt.Sprintf("%d extracted", res.ConceptsAdded)))
+	cmd.Printf("  %s %s\n", enrichLabelStyle.Render("edges    "), enrichValueStyle.Render(fmt.Sprintf("%d added", res.EdgesAdded)))
 	if res.Cost > 0 {
-		cmd.Printf("  cost:      $%.4f\n", res.Cost)
+		cmd.Printf("  %s %s\n", enrichLabelStyle.Render("cost     "), enrichValueStyle.Render(fmt.Sprintf("$%.4f", res.Cost)))
 	}
 	if len(res.Skipped) > 0 {
-		cmd.Printf("  skipped:   %d items\n", len(res.Skipped))
+		cmd.Printf("  %s %s\n", enrichLabelStyle.Render("skipped  "), enrichValueStyle.Render(fmt.Sprintf("%d items", len(res.Skipped))))
 		for _, s := range res.Skipped {
-			cmd.Printf("    - %s\n", s)
+			cmd.Printf("    - %s\n", enrichLabelStyle.Render(s))
 		}
 	}
 	return nil

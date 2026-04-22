@@ -1,0 +1,151 @@
+{
+  "schema_version": "1",
+  "graph_hash": "966d827146a839e6a012c35738c4d440e78616744cc6bf2dc66ab6cc3b552baa",
+  "model": "anthropic/claude-3.5-haiku",
+  "generated_at": "2026-04-22T18:27:02Z",
+  "concepts": [
+    {
+      "id": "concept:workspace-convention",
+      "name": "Oz Workspace Convention",
+      "description": "A standardized structure and set of rules for organizing software project workspaces with clear agent roles and responsibilities.",
+      "source_files": [
+        "specs/oz-project-specification.md",
+        "AGENTS.md",
+        "OZ.md"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "id": "concept:semantic-routing",
+      "name": "Semantic Agent Routing",
+      "description": "A mechanism for dynamically selecting the most appropriate agent to handle a given task based on contextual scoring and candidate evaluation.",
+      "source_files": [
+        "specs/routing-packet.md",
+        "specs/semantic-overlay.md"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 0.95,
+      "reviewed": false
+    },
+    {
+      "id": "concept:workspace-auditing",
+      "name": "Workspace Health and Compliance",
+      "description": "Systematic processes for ensuring workspace integrity, agent role adherence, and conformance to defined conventions.",
+      "source_files": [
+        "specs/audit-catalogue.md",
+        "rules/coding-guidelines.md"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 0.9,
+      "reviewed": false
+    },
+    {
+      "id": "concept:specification-management",
+      "name": "Living Specification",
+      "description": "An approach where project specifications are dynamically updated to reflect current implementation, with code taking precedence over existing documentation.",
+      "source_files": [
+        "specs/oz-project-specification.md",
+        "specs/decisions/_template.md"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 0.95,
+      "reviewed": false
+    },
+    {
+      "id": "concept:architectural-decision-tracking",
+      "name": "Architectural Decision Recording",
+      "description": "A systematic method of documenting significant design choices and their rationales to maintain project architectural coherence.",
+      "source_files": [
+        "specs/decisions/0001-audit-v1-symbols-from-graph-codeindex.md",
+        "specs/decisions/_template.md"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 0.9,
+      "reviewed": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "concept:workspace-convention",
+      "to": "agent:oz-maintainer",
+      "type": "agent_owns_concept",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "from": "concept:workspace-convention",
+      "to": "spec_section:specs/oz-project-specification.md:Workspace Structure",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "from": "concept:semantic-routing",
+      "to": "agent:oz-spec",
+      "type": "agent_owns_concept",
+      "tag": "EXTRACTED",
+      "confidence": 0.9,
+      "reviewed": false
+    },
+    {
+      "from": "concept:semantic-routing",
+      "to": "spec_section:specs/routing-packet.md:Routing packet object",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 0.95,
+      "reviewed": false
+    },
+    {
+      "from": "concept:workspace-auditing",
+      "to": "agent:oz-maintainer",
+      "type": "agent_owns_concept",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "from": "concept:workspace-auditing",
+      "to": "spec_section:specs/audit-catalogue.md:Determinism",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 0.9,
+      "reviewed": false
+    },
+    {
+      "from": "concept:specification-management",
+      "to": "agent:oz-spec",
+      "type": "agent_owns_concept",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "from": "concept:specification-management",
+      "to": "spec_section:specs/oz-project-specification.md:Design Principles",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 0.95,
+      "reviewed": false
+    },
+    {
+      "from": "concept:architectural-decision-tracking",
+      "to": "agent:oz-spec",
+      "type": "agent_owns_concept",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "from": "concept:architectural-decision-tracking",
+      "to": "decision:_template",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 0.9,
+      "reviewed": false
+    }
+  ]
+}

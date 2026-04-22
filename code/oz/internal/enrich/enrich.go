@@ -19,6 +19,8 @@ import (
 type Options struct {
 	// Model is the OpenRouter model ID. Defaults to openrouter.DefaultModel.
 	Model string
+	// Progress receives stage updates during enrichment when non-nil.
+	Progress func(stage string)
 }
 
 // Result reports the outcome of an enrichment run.
@@ -38,16 +40,25 @@ type Result struct {
 //  4. Merge with existing semantic.json (preserve reviewed items)
 //  5. Write context/semantic.json
 func Run(workspacePath string, g *graph.Graph, opts Options) (*Result, error) {
+	report := func(stage string) {
+		if opts.Progress != nil {
+			opts.Progress(stage)
+		}
+	}
+
+	report("initializing OpenRouter client")
 	client, err := openrouter.New(opts.Model)
 	if err != nil {
 		return nil, err
 	}
 
+	report("building enrichment prompt")
 	prompt, err := BuildPrompt(g)
 	if err != nil {
 		return nil, fmt.Errorf("build prompt: %w", err)
 	}
 
+	report("requesting model response")
 	resp, err := client.Complete([]openrouter.Message{
 		{Role: "user", Content: prompt},
 	})
@@ -61,8 +72,10 @@ func Run(workspacePath string, g *graph.Graph, opts Options) (*Result, error) {
 		nodeIDs[n.ID] = struct{}{}
 	}
 
+	report("parsing and validating response")
 	concepts, edges, skipped := ParseResponse(resp.Choices[0].Message.Content, nodeIDs)
 
+	report("loading existing semantic overlay")
 	existing, err := semantic.Load(workspacePath)
 	if err != nil {
 		return nil, fmt.Errorf("load existing overlay: %w", err)
@@ -77,6 +90,7 @@ func Run(workspacePath string, g *graph.Graph, opts Options) (*Result, error) {
 		Edges:         edges,
 	}
 
+	report("merging and writing semantic overlay")
 	merged := semantic.Merge(existing, incoming)
 
 	if err := semantic.Write(workspacePath, merged); err != nil {
