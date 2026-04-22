@@ -1,36 +1,12 @@
 package classifier_test
 
 import (
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/joaoajmatos/oz/internal/crystallize/classifier"
 )
-
-// mockLLMResponse returns a test HTTP server that always returns the given
-// classification JSON, mimicking the OpenRouter chat completions format.
-func mockLLMResponse(t *testing.T, payload map[string]any) *httptest.Server {
-	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"choices": []map[string]any{
-				{"message": map[string]any{"content": mustJSON(payload)}},
-			},
-		})
-	}))
-	t.Cleanup(srv.Close)
-	return srv
-}
-
-func mustJSON(v any) string {
-	b, _ := json.Marshal(v)
-	return string(b)
-}
 
 func writeNote(t *testing.T, dir, name, content string) string {
 	t.Helper()
@@ -69,30 +45,7 @@ func TestClassify_FrontmatterOverride(t *testing.T) {
 // TestClassify_LLMResult checks that the LLM classifier path is used when a
 // valid OpenRouter response is returned, and the result is cached.
 func TestClassify_LLMResult(t *testing.T) {
-	t.Setenv("OPENROUTER_API_KEY", "test-key")
-
-	srv := mockLLMResponse(t, map[string]any{
-		"type":       "spec",
-		"confidence": "high",
-		"title":      "Convention Rules",
-		"reason":     "contains MUST/SHOULD language",
-	})
-
-	dir := t.TempDir()
-	path := writeNote(t, dir, "convention.md", "All agents MUST read AGENTS.md. The workspace SHOULD be valid.")
-
-	c := classifier.New(classifier.Options{
-		WorkspaceRoot: dir,
-		Model:         srv.URL, // abuse Model field as base URL via test shim
-	})
-
-	// Use the exported test helper to point the LLM at our mock server.
-	// For integration without modifying the openrouter client, we use NoEnrich
-	// and test LLM indirectly via heuristic instead. The LLM path is covered by
-	// the llm_test.go unit tests with an httptest server.
-	_ = c
-	_ = path
-	t.Skip("LLM path tested directly in llm_test.go via httptest")
+	t.Skip("LLM path tested in llm_test.go with a stubbed RoundTripper (no sockets)")
 }
 
 // TestClassify_HeuristicFallback checks that when no API key is present the

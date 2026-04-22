@@ -2,46 +2,61 @@ package classifier
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/joaoajmatos/oz/internal/openrouter"
 )
 
-// newTestLLMClassifier creates an llmClassifier pointed at a test HTTP server.
-func newTestLLMClassifier(t *testing.T, srv *httptest.Server) *llmClassifier {
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+// newTestLLMClassifier creates an llmClassifier with a stubbed HTTP transport.
+func newTestLLMClassifier(t *testing.T, responses ...string) (*llmClassifier, *int) {
 	t.Helper()
+	call := 0
+	rt := roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if !strings.HasSuffix(r.URL.Path, "/chat/completions") {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if call >= len(responses) {
+			t.Fatalf("unexpected extra request (call %d)", call+1)
+		}
+		payload := map[string]any{
+			"choices": []map[string]any{
+				{"message": map[string]any{"content": responses[call]}},
+			},
+		}
+		call++
+		b, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatalf("marshal stub payload: %v", err)
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(string(b))),
+			Header:     make(http.Header),
+			Request:    r,
+		}, nil
+	})
 	return &llmClassifier{
 		client: &openrouter.Client{
 			APIKey:  "test-key",
-			BaseURL: srv.URL,
+			BaseURL: "http://example.test",
 			Model:   "test-model",
-			HTTP:    &http.Client{},
+			HTTP:    &http.Client{Transport: rt},
 		},
 		model:   "test-model",
 		context: minimalContext,
-	}
-}
-
-func mockSrv(t *testing.T, responseJSON string) *httptest.Server {
-	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"choices": []map[string]any{
-				{"message": map[string]any{"content": responseJSON}},
-			},
-		})
-	}))
-	t.Cleanup(srv.Close)
-	return srv
+	}, &call
 }
 
 func TestLLMClassifier_ParseValidResponse(t *testing.T) {
 	payload := `{"type":"adr","confidence":"high","title":"Auth Rewrite","reason":"contains decision language"}`
-	srv := mockSrv(t, payload)
-	llm := newTestLLMClassifier(t, srv)
+	llm, _ := newTestLLMClassifier(t, payload)
 
 	got, err := llm.classify("notes/auth.md", []byte("We decided to rewrite auth."))
 	if err != nil {
@@ -64,8 +79,7 @@ func TestLLMClassifier_ParseValidResponse(t *testing.T) {
 func TestLLMClassifier_StripMarkdownFences(t *testing.T) {
 	// LLM wraps JSON in code fences despite instructions.
 	payload := "```json\n{\"type\":\"spec\",\"confidence\":\"medium\",\"title\":\"My Spec\",\"reason\":\"has must language\"}\n```"
-	srv := mockSrv(t, payload)
-	llm := newTestLLMClassifier(t, srv)
+	llm, _ := newTestLLMClassifier(t, payload)
 
 	got, err := llm.classify("notes/spec.md", []byte("All agents MUST..."))
 	if err != nil {
@@ -77,24 +91,10 @@ func TestLLMClassifier_StripMarkdownFences(t *testing.T) {
 }
 
 func TestLLMClassifier_RetryOnBadJSON(t *testing.T) {
-	call := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		call++
-		w.Header().Set("Content-Type", "application/json")
-		var content string
-		if call == 1 {
-			content = "not json at all"
-		} else {
-			content = `{"type":"guide","confidence":"high","title":"Setup","reason":"has steps"}`
-		}
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"choices": []map[string]any{
-				{"message": map[string]any{"content": content}},
-			},
-		})
-	}))
-	defer srv.Close()
-	llm := newTestLLMClassifier(t, srv)
+	llm, calls := newTestLLMClassifier(t,
+		"not json at all",
+		`{"type":"guide","confidence":"high","title":"Setup","reason":"has steps"}`,
+	)
 
 	got, err := llm.classify("notes/setup.md", []byte("Step 1: install. Step 2: run."))
 	if err != nil {
@@ -103,15 +103,14 @@ func TestLLMClassifier_RetryOnBadJSON(t *testing.T) {
 	if got.Type != TypeGuide {
 		t.Errorf("type = %q, want %q", got.Type, TypeGuide)
 	}
-	if call != 2 {
-		t.Errorf("expected 2 LLM calls (1 fail + 1 retry), got %d", call)
+	if *calls != 2 {
+		t.Errorf("expected 2 LLM calls (1 fail + 1 retry), got %d", *calls)
 	}
 }
 
 func TestLLMClassifier_UnknownType(t *testing.T) {
 	payload := `{"type":"unknown","confidence":"low","title":"Scratch","reason":"too vague"}`
-	srv := mockSrv(t, payload)
-	llm := newTestLLMClassifier(t, srv)
+	llm, _ := newTestLLMClassifier(t, payload)
 
 	got, err := llm.classify("notes/scratch.md", []byte("quick note"))
 	if err != nil {

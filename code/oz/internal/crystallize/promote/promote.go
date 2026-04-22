@@ -55,6 +55,13 @@ type Options struct {
 	// Today is used for ADR frontmatter date injection.
 	// Defaults to time.Now() when zero.
 	Today time.Time
+
+	// ADRNumberOverride, when >0, forces ProposeContent to use the provided ADR
+	// number instead of scanning the decisions directory. This is used to render
+	// stable diffs when previewing multiple ADRs in a single run.
+	//
+	// Promote ignores this field and always allocates the next available number.
+	ADRNumberOverride int
 }
 
 // Promote writes content to its canonical location for the given artifact type.
@@ -131,6 +138,12 @@ func ADRNumber(decisionsDir string) (int, error) {
 		}
 	}
 	return max + 1, nil
+}
+
+// ADRTargetPath returns the canonical target path for ADR number n with the
+// given title.
+func ADRTargetPath(root string, n int, title string) string {
+	return adrPath(root, n, title)
 }
 
 // promoteADR promotes content as an ADR to specs/decisions/NNNN-<slug>.md.
@@ -232,6 +245,41 @@ func atomicWrite(path string, content []byte) error {
 
 // afterWriteHook is called between tmp write and rename, used only in tests.
 var afterWriteHook func()
+
+// ProposeContent returns the content that Promote would write for the given
+// artifact type without performing any writes. Used to display diffs during
+// interactive review.
+//
+// For open-item, returns only the new section that would be appended (not the
+// full open-items.md file). For all other types, returns the content that would
+// be written to the new file.
+func ProposeContent(root string, content []byte, artifactType, title string, opts Options) ([]byte, error) {
+	if opts.Today.IsZero() {
+		opts.Today = time.Now()
+	}
+	switch artifactType {
+	case TypeADR:
+		n := opts.ADRNumberOverride
+		if n <= 0 {
+			var err error
+			n, err = ADRNumber(filepath.Join(root, "specs", "decisions"))
+			if err != nil {
+				return nil, err
+			}
+		}
+		return injectADRTemplate(content, n, title, opts.Today), nil
+	case TypeOpenItem:
+		var buf strings.Builder
+		fmt.Fprintf(&buf, "## %s\n\n", title)
+		buf.Write(content)
+		if !strings.HasSuffix(string(content), "\n") {
+			buf.WriteByte('\n')
+		}
+		return []byte(buf.String()), nil
+	default:
+		return content, nil
+	}
+}
 
 // injectADRTemplate prepends ADR frontmatter and an H1 title to content.
 func injectADRTemplate(content []byte, n int, title string, today time.Time) []byte {

@@ -2,17 +2,22 @@ package openrouter_test
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/joaoajmatos/oz/internal/openrouter"
 )
 
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
 func TestClient_Complete(t *testing.T) {
 	wantContent := "extracted concepts JSON here"
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	rt := roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		if r.Method != "POST" {
 			t.Errorf("unexpected method: %s", r.Method)
 		}
@@ -35,21 +40,25 @@ func TestClient_Complete(t *testing.T) {
 			t.Errorf("model = %q, want %q", req.Model, "test-model")
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		respBody, _ := json.Marshal(map[string]any{
 			"choices": []map[string]any{
 				{"message": map[string]any{"content": wantContent}},
 			},
 			"usage": map[string]any{"cost": 0.0012},
 		})
-	}))
-	defer srv.Close()
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(string(respBody))),
+			Header:     make(http.Header),
+			Request:    r,
+		}, nil
+	})
 
 	c := &openrouter.Client{
 		APIKey:  "test-key",
-		BaseURL: srv.URL,
+		BaseURL: "http://example.test",
 		Model:   "test-model",
-		HTTP:    &http.Client{},
+		HTTP:    &http.Client{Transport: rt},
 	}
 
 	resp, err := c.Complete([]openrouter.Message{{Role: "user", Content: "hello"}})
@@ -65,17 +74,20 @@ func TestClient_Complete(t *testing.T) {
 }
 
 func TestClient_APIError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`{"error":"invalid api key"}`))
-	}))
-	defer srv.Close()
+	rt := roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusUnauthorized,
+			Body:       io.NopCloser(strings.NewReader(`{"error":"invalid api key"}`)),
+			Header:     make(http.Header),
+			Request:    r,
+		}, nil
+	})
 
 	c := &openrouter.Client{
 		APIKey:  "bad-key",
-		BaseURL: srv.URL,
+		BaseURL: "http://example.test",
 		Model:   "test-model",
-		HTTP:    &http.Client{},
+		HTTP:    &http.Client{Transport: rt},
 	}
 
 	_, err := c.Complete([]openrouter.Message{{Role: "user", Content: "hello"}})
