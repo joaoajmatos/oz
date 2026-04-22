@@ -13,6 +13,7 @@
 
 <p align="center">
   <a href="./AGENTS.md">AGENTS.md</a> ·
+  <a href="./docs/guides/README.md">Guides</a> ·
   <a href="./specs/oz-project-specification.md">Specification</a> ·
   <a href="./docs/architecture.md">Architecture</a>
 </p>
@@ -57,6 +58,22 @@ oz init
 Interactive prompts set the project name, description, code layout (**inline** vs **submodule**), and agents. That scaffolds `AGENTS.md`, `OZ.md`, a starter **README.md**, `agents/*/AGENT.md`, `skills/workspace-management/`, stubs under `docs/`, and (in **inline** mode) `code/README.md`.
 
 **`oz repair`** recreates any missing default files from the same templates **without overwriting** files you already changed.
+
+---
+
+## Learn by doing
+
+If you are evaluating oz for adoption, start with the practical guides:
+
+- **Start here:** [`docs/guides/README.md`](./docs/guides/README.md)
+- **First walkthrough:** [`docs/guides/first-workspace.md`](./docs/guides/first-workspace.md)
+- **Existing repo migration:** [`docs/guides/adopt-existing-repo.md`](./docs/guides/adopt-existing-repo.md)
+
+For convention maintenance work (creating/updating agents, skills, and rules), use a maintainer agent. You can include one at `oz init` time, or add it later:
+
+```bash
+oz add maintainer
+```
 
 ---
 
