@@ -41,6 +41,7 @@ var (
 	queryIncludeNotes bool
 	enrichModel       string
 	enrichQuiet       bool
+	enrichForce       bool
 	reviewAcceptAll   bool
 	quietBuild        bool
 )
@@ -113,6 +114,7 @@ func init() {
 	contextQueryCmd.Flags().BoolVar(&queryIncludeNotes, "include-notes", false, "include notes/ in context blocks")
 	contextEnrichCmd.Flags().StringVar(&enrichModel, "model", "", "OpenRouter model ID (default: anthropic/claude-haiku-4)")
 	contextEnrichCmd.Flags().BoolVarP(&enrichQuiet, "quiet", "q", false, "suppress progress and summary output")
+	contextEnrichCmd.Flags().BoolVar(&enrichForce, "force", false, "force enrichment even when semantic overlay is already fresh")
 	contextReviewCmd.Flags().BoolVar(&reviewAcceptAll, "accept-all", false, "mark all unreviewed items as reviewed without prompting")
 }
 
@@ -279,6 +281,19 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 		progress("context/graph.json written — %d nodes, %d edges", result.NodeCount, result.EdgeCount)
 		g = result.Graph
 	}
+	existingOverlay, err := semantic.Load(root)
+	if err != nil {
+		return fmt.Errorf("load existing overlay: %w", err)
+	}
+	if shouldSkipEnrich(existingOverlay, g.ContentHash, enrichModel, enrichForce) {
+		if showProgress {
+			fmt.Fprintf(cmd.ErrOrStderr(), "%s %s\n",
+				enrichDoneStyle.Render("✓"),
+				enrichStageStyle.Render("semantic overlay is already up to date; skipping enrichment"),
+			)
+		}
+		return nil
+	}
 
 	res, err := enrich.Run(root, g, enrich.Options{
 		Model: enrichModel,
@@ -355,4 +370,14 @@ func findWorkspaceRoot() (string, error) {
 		return "", fmt.Errorf("%s is not an oz workspace (missing AGENTS.md or OZ.md)", ws.Root)
 	}
 	return ws.Root, nil
+}
+
+func shouldSkipEnrich(existing *semantic.Overlay, graphHash, requestedModel string, force bool) bool {
+	if force || existing == nil || semantic.IsStale(existing, graphHash) {
+		return false
+	}
+	if requestedModel != "" && existing.Model != requestedModel {
+		return false
+	}
+	return true
 }

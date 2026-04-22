@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 func TestFindWorkspaceRoot_FromNestedDirectory(t *testing.T) {
@@ -47,5 +49,65 @@ func TestFindWorkspaceRoot_FromNestedDirectory(t *testing.T) {
 	}
 	if gotResolved != wantResolved {
 		t.Fatalf("expected workspace root %q, got %q", wantResolved, gotResolved)
+	}
+}
+
+func TestShouldSkipEnrich(t *testing.T) {
+	cases := []struct {
+		name           string
+		existing       *semantic.Overlay
+		graphHash      string
+		requestedModel string
+		force          bool
+		want           bool
+	}{
+		{
+			name:      "skip when fresh and no model override",
+			existing:  &semantic.Overlay{GraphHash: "abc", Model: "m1"},
+			graphHash: "abc",
+			want:      true,
+		},
+		{
+			name:           "do not skip when model override differs",
+			existing:       &semantic.Overlay{GraphHash: "abc", Model: "m1"},
+			graphHash:      "abc",
+			requestedModel: "m2",
+			want:           false,
+		},
+		{
+			name:           "skip when requested model matches",
+			existing:       &semantic.Overlay{GraphHash: "abc", Model: "m1"},
+			graphHash:      "abc",
+			requestedModel: "m1",
+			want:           true,
+		},
+		{
+			name:      "do not skip when stale",
+			existing:  &semantic.Overlay{GraphHash: "old", Model: "m1"},
+			graphHash: "new",
+			want:      false,
+		},
+		{
+			name:      "do not skip when no overlay",
+			existing:  nil,
+			graphHash: "abc",
+			want:      false,
+		},
+		{
+			name:      "do not skip when forced",
+			existing:  &semantic.Overlay{GraphHash: "abc", Model: "m1"},
+			graphHash: "abc",
+			force:     true,
+			want:      false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := shouldSkipEnrich(tc.existing, tc.graphHash, tc.requestedModel, tc.force)
+			if got != tc.want {
+				t.Fatalf("shouldSkipEnrich() = %v, want %v", got, tc.want)
+			}
+		})
 	}
 }
