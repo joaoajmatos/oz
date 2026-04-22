@@ -191,7 +191,7 @@ flowchart TB
   binary --> validateCmd["oz validate convention lint"]
   binary --> auditCmd["oz audit structure and drift"]
   binary --> contextCmd["oz context graph and query"]
-  binary --> crystallizeCmd["oz crystallize planned"]
+  binary --> crystallizeCmd["oz crystallize report-first"]
 ```
 
 ### oz init (priority — build this first)
@@ -268,10 +268,11 @@ Performance: `oz context build` completes in < 500ms on a 50-file workspace (ben
 `go test -bench=BenchmarkBuild_50Files ./internal/context/`). Query output averages ≤ 10%
 of full workspace token size on the 10-agent test fixture.
 
-### oz crystallize (planned)
+### oz crystallize (V1 report-first)
 
-Promotes content from `notes/` up the hierarchy into the correct canonical location based
-on convention. Notes become specs, docs, or context entries. Not yet implemented.
+`oz crystallize` classifies markdown notes under `notes/` and reports likely canonical targets
+(`specs/`, `docs/`, or ADRs). By default it is report-only and does not write, move, or delete
+files. With `--dry-run`, it also prints proposed diffs to support manual promotion decisions.
 
 ---
 
@@ -304,6 +305,6 @@ on convention. Notes become specs, docs, or context entries. Not yet implemented
 - **oz validate**: complete — enforces all 7 required AGENT.md sections, checks required files/directories, warns on unreviewed semantic nodes.
 - **oz audit**: V1 complete — orphans, coverage, staleness, drift, JSON report, deterministic ordering, `graph-summary` stub preserved. Multi-language / tree-sitter drift is deferred.
 - **oz context**: V1 complete — `build`, `query`, `enrich`, `review`, and `serve` all ship. MCP server validated. BM25F scoring with Porter stemming and softmax routing.
-- **oz crystallize**: planned — not yet implemented.
+- **oz crystallize**: V1 report-first complete — classification table + dry-run diffs; no direct promotion writes.
 
 See `docs/architecture.md` for the full system design and `context/implementation/summary.md` for the V1 implementation snapshot.

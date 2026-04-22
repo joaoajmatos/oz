@@ -20,6 +20,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-isatty"
 )
 
 // Action is the user's decision for a single note.
@@ -77,6 +79,8 @@ type Options struct {
 	In io.Reader
 	// Theme is the huh theme used for prompts. Defaults to huh.ThemeCharm().
 	Theme *huh.Theme
+	// Color enables ANSI color output for diffs. Defaults to true when Out is a TTY.
+	Color bool
 }
 
 func (o *Options) defaults() {
@@ -88,6 +92,10 @@ func (o *Options) defaults() {
 	}
 	if o.Theme == nil {
 		o.Theme = huh.ThemeCharm()
+	}
+	// Default to color when writing to an interactive terminal.
+	if f, ok := o.Out.(*os.File); ok && isatty.IsTerminal(f.Fd()) {
+		o.Color = true
 	}
 }
 
@@ -104,7 +112,7 @@ func ReviewItem(item Item, idx, total int, opts Options) (Decision, error) {
 		fmt.Fprintf(w, "      reason: %s\n", item.Reason)
 	}
 	fmt.Fprintln(w)
-	printDiff(w, item.SourcePath, item.TargetPath, item.Source, item.Proposed)
+	printDiff(w, item.SourcePath, item.TargetPath, item.Source, item.Proposed, opts.Color)
 
 	if opts.DryRun {
 		return Decision{Action: ActionSkip, Source: item.Source}, nil
@@ -195,9 +203,14 @@ func PrintTable(w io.Writer, items []Item) {
 	printTable(w, items)
 }
 
-// printDiff renders a unified diff between old (source note) and new (proposed artifact).
-func printDiff(w io.Writer, source, target string, old, new []byte) {
-	fmt.Fprint(w, unifiedDiff(source, target, old, new))
+// printDiff renders a unified diff, optionally colorized.
+func printDiff(w io.Writer, source, target string, old, new []byte, color bool) {
+	diff := unifiedDiff(source, target, old, new)
+	if color {
+		fmt.Fprint(w, colorizeUnifiedDiff(diff))
+	} else {
+		fmt.Fprint(w, diff)
+	}
 	fmt.Fprintln(w)
 }
 
@@ -262,6 +275,37 @@ func splitLines(b []byte) []string {
 		return nil
 	}
 	return strings.Split(s, "\n")
+}
+
+func colorizeUnifiedDiff(diff string) string {
+	// Keep styling local to this package so we don't depend on cmd/.
+	ozFaint := lipgloss.Color("#6B7280")
+	ozGreen := lipgloss.Color("#10B981")
+	ozRed := lipgloss.Color("#EF4444")
+	ozPurple := lipgloss.Color("#7C3AED")
+
+	header := lipgloss.NewStyle().Foreground(ozFaint)
+	hunk := lipgloss.NewStyle().Foreground(ozPurple)
+	add := lipgloss.NewStyle().Foreground(ozGreen)
+	del := lipgloss.NewStyle().Foreground(ozRed)
+
+	var b strings.Builder
+	for _, line := range strings.Split(strings.TrimRight(diff, "\n"), "\n") {
+		switch {
+		case strings.HasPrefix(line, "--- ") || strings.HasPrefix(line, "+++ "):
+			b.WriteString(header.Render(line))
+		case strings.HasPrefix(line, "@@ "):
+			b.WriteString(hunk.Render(line))
+		case strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++ "):
+			b.WriteString(add.Render(line))
+		case strings.HasPrefix(line, "-") && !strings.HasPrefix(line, "--- "):
+			b.WriteString(del.Render(line))
+		default:
+			b.WriteString(line)
+		}
+		b.WriteByte('\n')
+	}
+	return b.String()
 }
 
 func typesPresent(items []Item) map[string]int {
