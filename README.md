@@ -69,7 +69,7 @@ If you are evaluating oz for adoption, start with the practical guides:
 - **First walkthrough:** [`docs/guides/first-workspace.md`](./docs/guides/first-workspace.md)
 - **Existing repo migration:** [`docs/guides/adopt-existing-repo.md`](./docs/guides/adopt-existing-repo.md)
 
-For convention maintenance work (creating/updating agents, skills, and rules), use a maintainer agent. You can include one at `oz init` time, or add it later:
+For convention maintenance work (creating/updating agents, skills, and rules), use the maintainer role in agentic sessions (or follow the same conventions directly if you are editing manually). You can include a maintainer at `oz init` time, or add it later:
 
 ```bash
 oz add maintainer
@@ -79,7 +79,7 @@ oz add maintainer
 
 ## Working in an oz workspace
 
-In practice, models use **`AGENTS.md`**, each agent read-chain, and **`skills/oz/`** to decide when to run **`oz`** (alongside `go test`, edits, and the rest).
+In practice, agentic sessions use **`AGENTS.md`**, each agent read-chain, and **`skills/oz/`** to decide when to run **`oz`** (alongside `go test`, edits, and the rest). Manual human edits can skip the read-chain and apply the same conventions directly.
 
 | Intent | What “done” looks like |
 |--------|-------------------------|
@@ -146,4 +146,4 @@ After agents, specs, docs, or indexed code change, run **`oz context build`** so
 
 ## Contributing
 
-Issues and PRs are welcome. Before merging: **`go test` / `go vet`** clean under **`code/oz`**, and **`oz validate`** passes from the repo root. Use **`AGENTS.md`** to pick the agent whose read-chain fits your change.
+Issues and PRs are welcome. Before merging: **`go test` / `go vet`** clean under **`code/oz`**, and **`oz validate`** passes from the repo root. In agentic sessions, use **`AGENTS.md`** for intent-based routing; for manual edits, follow the same conventions directly.

@@ -20,6 +20,7 @@ mkdir my-workspace && cd my-workspace
 oz init
 ```
 
+1. Work intent-first: start from your task outcome (feature, fix, docs update, or convention maintenance).
 1. If you selected a maintainer agent during init, use it for convention work (creating/updating agents, skills, and rules).
 1. If your workspace does not include a maintainer agent, add it:
 
@@ -27,8 +28,8 @@ oz init
 oz add maintainer
 ```
 
-1. Open `AGENTS.md` and identify the agent that matches your task.
-1. Open that agent's `AGENT.md` and follow its read-chain before making edits.
+1. If you are running an agentic session, route by intent through `AGENTS.md`; the selected agent follows its own read-chain automatically.
+1. If you are editing manually as a human, apply the same conventions directly (you do not need to follow an agent read-chain).
 1. Validate convention health.
 
 ```bash
@@ -50,6 +51,6 @@ oz context build
 
 ## Common pitfalls
 
-- Skipping the agent read-chain and starting edits immediately.
+- Treating agent read-chains as a required manual workflow for humans.
 - Forgetting to rebuild context after changing `docs/`, `specs/`, `agents/`, or indexed code.
 - Treating `notes/` as authoritative instead of crystallizing important decisions into `specs/` or `docs/`.
