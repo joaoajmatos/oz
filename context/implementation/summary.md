@@ -53,7 +53,7 @@ Configuration lives in `context/scoring.toml`. All parameters overridable withou
 ### Semantic overlay (`context/semantic.json`)
 
 - Schema version: `"1"`
-- Produced by `oz context enrich` via OpenRouter (default model: `anthropic/claude-haiku-4`)
+- Produced by `oz context enrich` via OpenRouter (default model: `anthropic/claude-3.5-haiku`)
 - Human-reviewed via `oz context review` (tabular diff + accept/reject + `--accept-all`)
 - Staleness detection: `graph_hash` in `semantic.json` compared against current `graph.json` hash at startup
 - `oz validate` warns on unreviewed items; `reviewed: true` preserved across re-enrichment
@@ -109,7 +109,7 @@ Key resolutions:
 - **T-03** (unreviewable semantic.json): `oz context review` ships with tabular diff view
 - **T-04** (MCP conformance): integration test validates all four tools; MCP client tested
 - **T-05** (staleness): graph_hash comparison implemented and tested
-- **T-06** (undefined enrich model): `anthropic/claude-haiku-4` selected and documented
+- **T-06** (undefined enrich model): `anthropic/claude-3.5-haiku` selected and documented
 - **E-01** (scoring algorithm unnamed): named BM25F and designed explicitly in Sprint 0
 - **E-02** (oz workspace too small): five golden suites with 3–25 agents validate accuracy
 - **E-03** (commit as acceptance): `oz context review` + `oz validate` warnings enforce it

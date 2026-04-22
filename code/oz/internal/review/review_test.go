@@ -214,7 +214,7 @@ func TestReview_AcceptAll_PreservesMetadata(t *testing.T) {
 		WithAgent("backend", testws.Role("Builds REST endpoints")).
 		Build()
 	o := unreviewedOverlay()
-	o.Model = "anthropic/claude-haiku-4"
+	o.Model = "anthropic/claude-3.5-haiku"
 	writeSemanticJSON(t, ws.Path(), o)
 
 	var out bytes.Buffer
@@ -229,7 +229,7 @@ func TestReview_AcceptAll_PreservesMetadata(t *testing.T) {
 	if reloaded.GraphHash != "hash1" {
 		t.Errorf("graph_hash changed after review, got %q", reloaded.GraphHash)
 	}
-	if reloaded.Model != "anthropic/claude-haiku-4" {
+	if reloaded.Model != "anthropic/claude-3.5-haiku" {
 		t.Errorf("model changed after review, got %q", reloaded.Model)
 	}
 }

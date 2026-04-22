@@ -249,7 +249,7 @@ from the semantic overlay when present. Supports `--raw` for debug output and `-
 
 **`oz context enrich`** — sends the structural graph to an LLM via OpenRouter and writes
 `context/semantic.json` with extracted concept nodes and typed relationships. Requires
-`OPENROUTER_API_KEY`. Default model: `anthropic/claude-haiku-4`. Supports `--model`.
+`OPENROUTER_API_KEY`. Default model: `anthropic/claude-3.5-haiku`. Supports `--model`.
 
 **`oz context review`** — presents unreviewed concepts and edges from `semantic.json` in a
 human-readable table, then prompts accept or reject for each item. Supports `--accept-all`
