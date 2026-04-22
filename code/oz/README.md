@@ -57,6 +57,35 @@ Or install using the Makefile target:
 make install
 ```
 
+## Shell completion
+
+Shell completion is optional. It enables tab-completion for `oz` commands, subcommands, and flags.
+
+Optional install targets:
+
+```bash
+make install-completion-zsh
+make install-completion-bash
+make install-completion-fish
+make install-completion-powershell
+```
+
+What each target does:
+
+- `install-completion-zsh`: writes `_oz` to `~/.zsh/completions/`
+- `install-completion-bash`: writes `oz` to `~/.local/share/bash-completion/completions/`
+- `install-completion-fish`: writes `oz.fish` to `~/.config/fish/completions/`
+- `install-completion-powershell`: writes `oz.ps1` to the current directory
+
+Manual one-shot generation is also available:
+
+```bash
+oz completion zsh
+oz completion bash
+oz completion fish
+oz completion powershell
+```
+
 ## Command surface
 
 The binary exposes:

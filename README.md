@@ -50,6 +50,28 @@ go install .
 
 Add `oz` to your `PATH`, or invoke the binary by path.
 
+### Shell completion
+
+Shell completion is optional. It enables tab-completion for `oz` commands, subcommands, and flags.
+
+From `code/oz`, optional install targets are:
+
+```bash
+make install-completion-zsh
+make install-completion-bash
+make install-completion-fish
+make install-completion-powershell
+```
+
+What each target does:
+
+- `install-completion-zsh`: writes `_oz` to `~/.zsh/completions/`
+- `install-completion-bash`: writes `oz` to `~/.local/share/bash-completion/completions/`
+- `install-completion-fish`: writes `oz.fish` to `~/.config/fish/completions/`
+- `install-completion-powershell`: writes `oz.ps1` to the current directory
+
+`make install` installs only the binary and does not modify shell startup files.
+
 ---
 
 ## Quick start: new workspace
