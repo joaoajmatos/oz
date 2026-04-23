@@ -380,14 +380,12 @@ func printContextServeBanner(w io.Writer, root string) {
 		fmt.Fprintf(w, "  %s %s\n", enrichLabelStyle.Render("workspace"), enrichValueStyle.Render(root))
 		fmt.Fprintf(w, "  %s %s\n", enrichLabelStyle.Render("protocol "), enrichStageStyle.Render("JSON-RPC on stdin/stdout"))
 		fmt.Fprintf(w, "  %s %s\n", enrichLabelStyle.Render("stop     "), enrichValueStyle.Render("Ctrl+C, or close stdin (EOF)"))
-		fmt.Fprintln(w, enrichInfoStyle.Render("  (this banner is on stderr; MCP responses use stdout)"))
 		return
 	}
 	fmt.Fprintln(w, "context serve — MCP stdio server")
 	fmt.Fprintf(w, "  workspace: %s\n", root)
 	fmt.Fprintln(w, "  protocol: JSON-RPC on stdin/stdout")
 	fmt.Fprintln(w, "  stop: Ctrl+C, or close stdin (EOF)")
-	fmt.Fprintln(w, "  (this message is on stderr; MCP responses use stdout)")
 }
 
 func shouldUseContextServeTTY(w io.Writer) bool {

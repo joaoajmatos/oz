@@ -126,7 +126,6 @@ func TestPrintContextServeBanner_PlainWhenWriterNotTTY(t *testing.T) {
 		"workspace: /tmp/ws",
 		"JSON-RPC on stdin/stdout",
 		"Ctrl+C, or close stdin (EOF)",
-		"stderr",
 	} {
 		if !strings.Contains(out, sub) {
 			t.Fatalf("banner should contain %q, got:\n%s", sub, out)
