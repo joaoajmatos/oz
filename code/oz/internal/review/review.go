@@ -14,14 +14,31 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/joaoajmatos/oz/internal/semantic"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-isatty"
+)
+
+// --- Oz CLI palette (aligned with cmd/ui.go and internal/audit/report) -----
+
+var (
+	ozPurple = lipgloss.Color("#7C3AED")
+	ozFaint  = lipgloss.Color("#6B7280")
+	ozGreen  = lipgloss.Color("#10B981")
+	ozLavend = lipgloss.Color("#A78BFA")
+	ozSoft   = lipgloss.Color("#D1D5DB")
+	ozOrange = lipgloss.Color("#F59E0B")
 )
 
 // Options controls the review workflow.
 type Options struct {
 	// AcceptAll marks every unreviewed item as reviewed without prompting.
 	AcceptAll bool
+
+	// NoColor forces plain text with no ANSI sequences, even on a TTY.
+	NoColor bool
 
 	// Out is where the review UI is written. Defaults to os.Stdout.
 	Out io.Writer
@@ -48,6 +65,7 @@ func Run(workspacePath string, opts Options) (Summary, error) {
 	if opts.In == nil {
 		opts.In = os.Stdin
 	}
+	ui := newUI(opts)
 
 	overlay, err := semantic.Load(workspacePath)
 	if err != nil {
@@ -73,13 +91,17 @@ func Run(workspacePath string, opts Options) (Summary, error) {
 
 	total := len(pendingConcepts) + len(pendingEdges)
 	if total == 0 {
-		fmt.Fprintln(opts.Out, "nothing to review — all items already reviewed")
+		fmt.Fprintln(opts.Out, ui.render(ui.styleOK, "✓")+" "+ui.render(ui.styleSubtle, "nothing to review — all items already marked reviewed"))
 		return Summary{NothingToReview: true}, nil
 	}
 
-	// Print the diff table.
-	printConceptTable(opts.Out, overlay, pendingConcepts)
-	printEdgeTable(opts.Out, overlay, pendingEdges)
+	// Lead-in title (match enrich / audit tone).
+	fmt.Fprintln(opts.Out)
+	fmt.Fprintln(opts.Out, ui.render(ui.styleTitle, "context review")+"  "+ui.render(ui.styleSubtle, "unreviewed semantic items"))
+	fmt.Fprintln(opts.Out, "  "+ui.render(ui.styleRule, strings.Repeat("─", 58)))
+
+	printConceptTable(ui, overlay, pendingConcepts)
+	printEdgeTable(ui, overlay, pendingEdges)
 
 	if opts.AcceptAll {
 		for _, i := range pendingConcepts {
@@ -91,14 +113,15 @@ func Run(workspacePath string, opts Options) (Summary, error) {
 		if err := semantic.Write(workspacePath, overlay); err != nil {
 			return Summary{}, fmt.Errorf("write semantic.json: %w", err)
 		}
-		fmt.Fprintf(opts.Out, "\naccepted %d item(s) (--accept-all)\n", total)
+		fmt.Fprintln(opts.Out)
+		fmt.Fprintf(opts.Out, "%s %s\n", ui.render(ui.styleOK, "✓"), ui.render(ui.styleSubtle, fmt.Sprintf("marked %d item(s) as reviewed (--accept-all)", total)))
 		return Summary{Accepted: total}, nil
 	}
 
 	// Interactive mode uses a staged copy. Changes are only written when the
 	// review completes, so quitting mid-run cannot persist partial decisions.
 	staged := cloneOverlay(overlay)
-	accepted, rejected, completed, err := interactiveReview(opts, staged, pendingConcepts, pendingEdges)
+	accepted, rejected, completed, err := interactiveReview(opts, ui, staged, pendingConcepts, pendingEdges, total)
 	if err != nil {
 		return Summary{}, err
 	}
@@ -111,66 +134,159 @@ func Run(workspacePath string, opts Options) (Summary, error) {
 		}
 	}
 	if !completed {
-		fmt.Fprintln(opts.Out, "\nreview aborted; discarded in-session changes")
+		fmt.Fprintln(opts.Out)
+		fmt.Fprintln(opts.Out, ui.render(ui.styleWarn, "aborted")+" — "+ui.render(ui.styleSubtle, "in-session changes were not saved"))
 	}
 
-	fmt.Fprintf(opts.Out, "\naccepted %d, rejected %d\n", accepted, rejected)
+	fmt.Fprintln(opts.Out)
+	fmt.Fprintln(opts.Out, ui.render(ui.styleSubtle, "—"))
+	fmt.Fprintf(opts.Out, "  %s  %s  %s  %s\n",
+		ui.render(ui.styleSubtle, "result"),
+		ui.render(ui.styleOK, fmt.Sprintf("accepted %d", accepted)),
+		ui.render(ui.styleSubtle, "·"),
+		ui.render(ui.styleSubtle, fmt.Sprintf("rejected %d", rejected)))
 	return Summary{Accepted: accepted, Rejected: rejected}, nil
 }
 
+// ui holds lipgloss styles and whether to apply color.
+type ui struct {
+	w     io.Writer
+	color bool
+	// Pre-built styles
+	styleTitle, styleSubtle, styleHeader, styleDim, styleValue, styleTag, styleTableText lipgloss.Style
+	styleOK, styleWarn, stylePrompt, styleDesc, styleRule, styleAccent lipgloss.Style
+}
+
+func newUI(opts Options) *ui {
+	color := !opts.NoColor && os.Getenv("NO_COLOR") == "" && useColor(opts.Out)
+	u := &ui{w: opts.Out, color: color}
+	plain := lipgloss.NewStyle()
+
+	u.styleTitle = lipgloss.NewStyle().Bold(true).Foreground(ozPurple)
+	u.styleSubtle = lipgloss.NewStyle().Foreground(ozFaint)
+	u.styleHeader = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
+	u.styleDim = lipgloss.NewStyle().Foreground(ozFaint)
+	u.styleValue = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
+	u.styleTag = lipgloss.NewStyle().Foreground(ozSoft)
+	u.styleTableText = lipgloss.NewStyle().Foreground(ozSoft)
+	u.styleOK = lipgloss.NewStyle().Bold(true).Foreground(ozGreen)
+	u.styleWarn = lipgloss.NewStyle().Foreground(ozOrange)
+	u.stylePrompt = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
+	u.styleDesc = lipgloss.NewStyle().Foreground(ozSoft)
+	u.styleRule = lipgloss.NewStyle().Foreground(ozFaint)
+	u.styleAccent = lipgloss.NewStyle().Foreground(ozPurple).Bold(true)
+
+	if !color {
+		for _, s := range []*lipgloss.Style{&u.styleTitle, &u.styleSubtle, &u.styleHeader, &u.styleDim, &u.styleValue, &u.styleTag, &u.styleTableText, &u.styleOK, &u.styleWarn, &u.stylePrompt, &u.styleDesc, &u.styleRule, &u.styleAccent} {
+			*s = plain
+		}
+	}
+	_ = plain
+	return u
+}
+
+func (u *ui) render(st lipgloss.Style, s string) string {
+	if u.color {
+		return st.Render(s)
+	}
+	return s
+}
+
+func useColor(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	return isatty.IsTerminal(f.Fd())
+}
+
 // printConceptTable prints unreviewed concepts in a formatted table.
-func printConceptTable(w io.Writer, o *semantic.Overlay, indices []int) {
+func printConceptTable(u *ui, o *semantic.Overlay, indices []int) {
 	if len(indices) == 0 {
 		return
 	}
-	fmt.Fprintf(w, "\nUnreviewed concepts (%d):\n", len(indices))
-	fmt.Fprintf(w, "  %-28s  %-10s  %-4s  %s\n", "NAME", "TAG", "CONF", "SOURCE")
-	fmt.Fprintln(w, "  "+strings.Repeat("─", 72))
+	fmt.Fprintln(u.w)
+	fmt.Fprintln(u.w, "  "+u.render(u.styleAccent, fmt.Sprintf("Unreviewed concepts (%d)", len(indices))))
+	fmt.Fprintf(u.w, "  %s  %s  %s  %s\n",
+		u.render(u.styleHeader, padRunes("name", 28)),
+		u.render(u.styleHeader, "tag       "),
+		u.render(u.styleHeader, "conf "),
+		u.render(u.styleHeader, "source"))
+	fmt.Fprintln(u.w, "  "+u.render(u.styleRule, strings.Repeat("─", 72)))
 	for _, i := range indices {
 		c := o.Concepts[i]
 		sources := strings.Join(c.SourceFiles, ", ")
-		if len(sources) > 36 {
-			sources = sources[:33] + "..."
+		if runewidth(sources) > 36 {
+			sources = truncateRunes(sources, 36)
 		}
-		fmt.Fprintf(w, "  %-28s  %-10s  %.2f  %s\n",
-			truncate(c.Name, 28), c.Tag, c.Confidence, sources)
+		fmt.Fprintf(u.w, "  %s  %s  %s  %s\n",
+			u.render(u.styleValue, padRunes(truncateRunes(c.Name, 28), 28)),
+			u.render(u.styleTag, padRunes(c.Tag, 9)),
+			u.render(u.styleTableText, fmt.Sprintf("%4.2f", c.Confidence)),
+			u.render(u.styleDim, sources),
+		)
 	}
 }
 
 // printEdgeTable prints unreviewed edges in a formatted table.
-func printEdgeTable(w io.Writer, o *semantic.Overlay, indices []int) {
+func printEdgeTable(u *ui, o *semantic.Overlay, indices []int) {
 	if len(indices) == 0 {
 		return
 	}
-	fmt.Fprintf(w, "\nUnreviewed edges (%d):\n", len(indices))
-	fmt.Fprintf(w, "  %-28s  %-26s  %-28s  %-4s\n", "FROM", "TYPE", "TO", "CONF")
-	fmt.Fprintln(w, "  "+strings.Repeat("─", 90))
+	fmt.Fprintln(u.w)
+	fmt.Fprintln(u.w, "  "+u.render(u.styleAccent, fmt.Sprintf("Unreviewed edges (%d)", len(indices))))
+	fmt.Fprintf(u.w, "  %s  %s  %s  %s\n",
+		u.render(u.styleHeader, padRunes("from", 28)),
+		u.render(u.styleHeader, padRunes("type", 26)),
+		u.render(u.styleHeader, padRunes("to", 28)),
+		u.render(u.styleHeader, "conf "),
+	)
+	fmt.Fprintln(u.w, "  "+u.render(u.styleRule, strings.Repeat("─", 90)))
 	for _, i := range indices {
 		e := o.Edges[i]
-		fmt.Fprintf(w, "  %-28s  %-26s  %-28s  %.2f\n",
-			truncate(e.From, 28), truncate(e.Type, 26), truncate(e.To, 28), e.Confidence)
+		fmt.Fprintf(u.w, "  %s  %s  %s  %s\n",
+			u.render(u.styleValue, padRunes(truncateRunes(e.From, 28), 28)),
+			u.render(u.styleTableText, padRunes(truncateRunes(e.Type, 26), 26)),
+			u.render(u.styleValue, padRunes(truncateRunes(e.To, 28), 28)),
+			u.render(u.styleTableText, fmt.Sprintf("%4.2f", e.Confidence)),
+		)
 	}
 }
 
 // interactiveReview prompts the user to accept or reject each unreviewed item.
-// Returns the number accepted and rejected.
+// totalItems is concepts + edges for progress display.
 func interactiveReview(
 	opts Options,
+	ui *ui,
 	overlay *semantic.Overlay,
 	pendingConcepts, pendingEdges []int,
+	totalItems int,
 ) (accepted, rejected int, completed bool, err error) {
 	scanner := bufio.NewScanner(opts.In)
 
-	fmt.Fprintln(opts.Out, "\nReview each item: [y]es / [n]o / [q]uit")
+	fmt.Fprintln(opts.Out)
+	fmt.Fprintln(opts.Out, "  "+ui.render(ui.styleAccent, "Review each item")+"  "+ui.render(ui.styleSubtle, "[y]es  [n]o  [q]uit"))
+	fmt.Fprintln(opts.Out, "  "+ui.render(ui.styleRule, strings.Repeat("─", 58)))
+
 	completed = true
+	step := 0
 
 	// Track which concept indices are rejected so we can remove them.
 	rejectedConceptSet := make(map[int]bool)
 
 	for _, i := range pendingConcepts {
+		step++
 		c := overlay.Concepts[i]
-		fmt.Fprintf(opts.Out, "\nconcept: %s (%s, %.2f)\n  %s\n  accept? [y/N/q] ",
-			c.Name, c.Tag, c.Confidence, c.Description)
+		fmt.Fprintln(opts.Out)
+		fmt.Fprintf(opts.Out, "  %s\n", ui.render(ui.styleSubtle, fmt.Sprintf("%d / %d — concept", step, totalItems)))
+		fmt.Fprintf(opts.Out, "  %s  %s  %s\n",
+			ui.render(ui.styleTitle, c.Name),
+			ui.render(ui.styleSubtle, "·"),
+			ui.render(ui.styleTag, fmt.Sprintf("%s · %.2f", c.Tag, c.Confidence)))
+		for _, line := range wrapText(c.Description, 78, "    ") {
+			fmt.Fprintln(opts.Out, ui.render(ui.styleDesc, line))
+		}
+		fmt.Fprint(opts.Out, "  "+ui.render(ui.stylePrompt, "accept?")+" "+ui.render(ui.styleSubtle, "[y/N/q] "))
 
 		ans, quit := prompt(scanner)
 		if quit {
@@ -198,9 +314,13 @@ func interactiveReview(
 	}
 
 	for _, i := range pendingEdges {
+		step++
 		e := overlay.Edges[i]
-		fmt.Fprintf(opts.Out, "\nedge: %s -[%s]-> %s (%.2f)\n  accept? [y/N/q] ",
-			e.From, e.Type, e.To, e.Confidence)
+		fmt.Fprintln(opts.Out)
+		fmt.Fprintf(opts.Out, "  %s\n", ui.render(ui.styleSubtle, fmt.Sprintf("%d / %d — edge", step, totalItems)))
+		edgeLine := ui.render(ui.styleValue, e.From) + ui.render(ui.styleDim, "  —[") + ui.render(ui.styleTableText, e.Type) + ui.render(ui.styleDim, "]→  ") + ui.render(ui.styleValue, e.To) + ui.render(ui.styleSubtle, "  ·  ") + ui.render(ui.styleTableText, fmt.Sprintf("%.2f", e.Confidence))
+		fmt.Fprintln(opts.Out, "  "+edgeLine)
+		fmt.Fprint(opts.Out, "  "+ui.render(ui.stylePrompt, "accept?")+" "+ui.render(ui.styleSubtle, "[y/N/q] "))
 
 		ans, quit := prompt(scanner)
 		if quit {
@@ -249,11 +369,56 @@ func prompt(scanner *bufio.Scanner) (accepted bool, quit bool) {
 	}
 }
 
-func truncate(s string, n int) string {
-	if len(s) <= n {
+func runewidth(s string) int { return utf8.RuneCountInString(s) }
+
+func truncateRunes(s string, max int) string {
+	if utf8.RuneCountInString(s) <= max {
 		return s
 	}
-	return s[:n-3] + "..."
+	r := []rune(s)
+	if max <= 3 {
+		return string(r[:max])
+	}
+	return string(r[:max-3]) + "..."
+}
+
+func padRunes(s string, w int) string {
+	n := utf8.RuneCountInString(s)
+	if n >= w {
+		return s
+	}
+	return s + strings.Repeat(" ", w-n)
+}
+
+// wrapText wraps space-separated text to lines at most maxLine runes, each prefixed with indent.
+func wrapText(s string, maxLine int, indent string) []string {
+	words := strings.Fields(strings.TrimSpace(s))
+	if len(words) == 0 {
+		return nil
+	}
+	var lines []string
+	var b strings.Builder
+	for _, word := range words {
+		if b.Len() == 0 {
+			b.WriteString(indent)
+			b.WriteString(word)
+			continue
+		}
+		candidate := b.String() + " " + word
+		if utf8.RuneCountInString(candidate) > maxLine {
+			lines = append(lines, b.String())
+			b.Reset()
+			b.WriteString(indent)
+			b.WriteString(word)
+		} else {
+			b.WriteString(" ")
+			b.WriteString(word)
+		}
+	}
+	if b.Len() > 0 {
+		lines = append(lines, b.String())
+	}
+	return lines
 }
 
 func cloneOverlay(in *semantic.Overlay) *semantic.Overlay {

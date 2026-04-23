@@ -209,8 +209,8 @@ func TestReview_Interactive_Quit(t *testing.T) {
 	if summary.Accepted != 1 {
 		t.Errorf("accepted = %d, want 1 (accepted first concept then quit)", summary.Accepted)
 	}
-	if !strings.Contains(out.String(), "review aborted; discarded in-session changes") {
-		t.Errorf("expected abort/discard message, got: %q", out.String())
+	if !strings.Contains(out.String(), "in-session changes were not saved") {
+		t.Errorf("expected abort message, got: %q", out.String())
 	}
 
 	after, err := semantic.Load(ws.Path())

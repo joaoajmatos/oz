@@ -42,6 +42,7 @@ var (
 	enrichQuiet       bool
 	enrichForce       bool
 	reviewAcceptAll   bool
+	reviewNoColor     bool
 	quietBuild        bool
 )
 
@@ -116,6 +117,7 @@ func init() {
 	contextEnrichCmd.Flags().BoolVarP(&enrichQuiet, "quiet", "q", false, "suppress progress and summary output")
 	contextEnrichCmd.Flags().BoolVar(&enrichForce, "force", false, "force enrichment even when semantic overlay is already fresh")
 	contextReviewCmd.Flags().BoolVar(&reviewAcceptAll, "accept-all", false, "mark all unreviewed items as reviewed without prompting")
+	contextReviewCmd.Flags().BoolVar(&reviewNoColor, "no-color", false, "force plain text (no ANSI); also when stdout is not a TTY or NO_COLOR is set")
 }
 
 func runContextBuild(cmd *cobra.Command, _ []string) error {
@@ -353,7 +355,10 @@ func runContextReview(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	_, err = review.Run(root, review.Options{AcceptAll: reviewAcceptAll})
+	_, err = review.Run(root, review.Options{
+		AcceptAll: reviewAcceptAll,
+		NoColor:   reviewNoColor,
+	})
 	return err
 }
 
