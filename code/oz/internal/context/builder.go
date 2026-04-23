@@ -3,6 +3,8 @@ package context
 import (
 	"fmt"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/joaoajmatos/oz/internal/codeindex"
 	"github.com/joaoajmatos/oz/internal/codeindex/goindexer"
@@ -61,6 +63,8 @@ func Build(root string) (*BuildResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("walk code files: %w", err)
 	}
+	// pkgDocs collects the first non-empty package doc comment seen per import path.
+	pkgDocs := map[string]string{}
 	for _, cf := range codeFiles {
 		if cf.Lang != goIdx.Language() {
 			continue
@@ -72,6 +76,29 @@ func Build(root string) (*BuildResult, error) {
 		nodes = append(nodes, res.FileNode)
 		nodes = append(nodes, res.Symbols...)
 		edges = append(edges, res.Edges...)
+		if res.FileNode.Package != "" {
+			if _, seen := pkgDocs[res.FileNode.Package]; !seen && res.FileNode.DocComment != "" {
+				pkgDocs[res.FileNode.Package] = res.FileNode.DocComment
+			} else if _, seen := pkgDocs[res.FileNode.Package]; !seen {
+				pkgDocs[res.FileNode.Package] = ""
+			}
+		}
+	}
+	// Emit one code_package node per unique Go package, sorted for determinism.
+	pkgPaths := make([]string, 0, len(pkgDocs))
+	for pkg := range pkgDocs {
+		pkgPaths = append(pkgPaths, pkg)
+	}
+	slices.Sort(pkgPaths)
+	for _, pkg := range pkgPaths {
+		nodes = append(nodes, graph.Node{
+			ID:         "code_package:" + pkg,
+			Type:       graph.NodeTypeCodePackage,
+			Name:       lastPathSegment(pkg),
+			Package:    pkg,
+			Language:   goIdx.Language(),
+			DocComment: pkgDocs[pkg],
+		})
 	}
 
 	// 5. Extract cross-reference and ownership edges now that code_file nodes exist.
@@ -93,4 +120,12 @@ func Build(root string) (*BuildResult, error) {
 // readFile is a thin wrapper around os.ReadFile used by extractor.go.
 func readFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
+}
+
+// lastPathSegment returns the last slash-delimited segment of a path or import path.
+func lastPathSegment(p string) string {
+	if i := strings.LastIndex(p, "/"); i >= 0 {
+		return p[i+1:]
+	}
+	return p
 }

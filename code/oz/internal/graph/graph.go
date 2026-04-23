@@ -78,11 +78,14 @@ type Node struct {
 	// Section is the markdown heading for section nodes (spec_section, doc).
 	Section string `json:"section,omitempty"`
 
-	// Code-specific fields (Type == NodeTypeCodeFile / NodeTypeCodeSymbol).
+	// Code-specific fields (Type == NodeTypeCodeFile / NodeTypeCodeSymbol / NodeTypeCodePackage).
 	Language   string `json:"language,omitempty"`
 	SymbolKind string `json:"symbol_kind,omitempty"`
 	Package    string `json:"package,omitempty"`
 	Line       int    `json:"line,omitempty"`
+	// DocComment is the package-level doc comment, populated on code_package nodes.
+	// Sourced from the first file in the package that carries a package doc.
+	DocComment string `json:"doc_comment,omitempty"`
 
 	// Agent-specific fields (Type == NodeTypeAgent).
 	Role             string   `json:"role,omitempty"`

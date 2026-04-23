@@ -37,6 +37,9 @@ func (i *Indexer) IndexFile(f codeindex.DiscoveredCodeFile) (*codeindex.Result, 
 		return nil, err
 	}
 
+	fset := token.NewFileSet()
+	parsed, parseErr := parser.ParseFile(fset, f.AbsPath, nil, parser.ParseComments)
+
 	fileNode := graph.Node{
 		ID:       "code_file:" + f.Path,
 		Type:     graph.NodeTypeCodeFile,
@@ -45,9 +48,10 @@ func (i *Indexer) IndexFile(f codeindex.DiscoveredCodeFile) (*codeindex.Result, 
 		Language: i.Language(),
 		Package:  pkgPath,
 	}
+	if parseErr == nil && parsed.Doc != nil {
+		fileNode.DocComment = strings.TrimSpace(parsed.Doc.Text())
+	}
 
-	fset := token.NewFileSet()
-	parsed, parseErr := parser.ParseFile(fset, f.AbsPath, nil, parser.ParseComments)
 	if parseErr != nil {
 		log.Printf("warning: goindexer parse failed for %s: %v", f.Path, parseErr)
 		return &codeindex.Result{FileNode: fileNode}, nil
