@@ -11,6 +11,7 @@
 //   - note            — a file under notes/
 //   - code_file       — a source file under code/
 //   - code_symbol     — an exported symbol declared in source code
+//   - code_package    — a Go package under code/; the semantic unit for concept mapping
 //
 // # Edge types
 //
@@ -20,13 +21,14 @@
 //   - supports         — a doc references a spec/decision (doc supports the spec)
 //   - crystallized_from — a spec section was crystallized from a note
 //   - contains         — code_file contains code_symbol
+//   - implements       — code_package implements a concept (semantic overlay only)
 package graph
 
 import "github.com/joaoajmatos/oz/internal/convention"
 
 // SchemaVersion is the current graph.json schema version.
 // Increment when the schema changes in a backwards-incompatible way.
-const SchemaVersion = "2"
+const SchemaVersion = "3"
 
 // Node types.
 const (
@@ -38,6 +40,7 @@ const (
 	NodeTypeNote            = "note"
 	NodeTypeCodeFile        = "code_file"
 	NodeTypeCodeSymbol      = "code_symbol"
+	NodeTypeCodePackage     = "code_package"
 )
 
 // Edge types.
@@ -48,6 +51,7 @@ const (
 	EdgeTypeSupports         = "supports"
 	EdgeTypeCrystallizedFrom = "crystallized_from"
 	EdgeTypeContains         = "contains"
+	EdgeTypeImplements       = "implements"
 )
 
 // Node is a vertex in the structural graph.
