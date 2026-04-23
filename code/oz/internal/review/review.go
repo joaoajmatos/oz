@@ -95,18 +95,23 @@ func Run(workspacePath string, opts Options) (Summary, error) {
 		return Summary{Accepted: total}, nil
 	}
 
-	// Interactive mode.
-	accepted, rejected, err := interactiveReview(opts, overlay, pendingConcepts, pendingEdges)
+	// Interactive mode uses a staged copy. Changes are only written when the
+	// review completes, so quitting mid-run cannot persist partial decisions.
+	staged := cloneOverlay(overlay)
+	accepted, rejected, completed, err := interactiveReview(opts, staged, pendingConcepts, pendingEdges)
 	if err != nil {
 		return Summary{}, err
 	}
 
-	if accepted+rejected > 0 {
+	if completed && accepted+rejected > 0 {
 		// Compact: remove rejected edges (rejected concepts are already removed).
-		overlay.Edges = removeRejectedEdges(overlay.Edges)
-		if err := semantic.Write(workspacePath, overlay); err != nil {
+		staged.Edges = removeRejectedEdges(staged.Edges)
+		if err := semantic.Write(workspacePath, staged); err != nil {
 			return Summary{}, fmt.Errorf("write semantic.json: %w", err)
 		}
+	}
+	if !completed {
+		fmt.Fprintln(opts.Out, "\nreview aborted; discarded in-session changes")
 	}
 
 	fmt.Fprintf(opts.Out, "\naccepted %d, rejected %d\n", accepted, rejected)
@@ -153,10 +158,11 @@ func interactiveReview(
 	opts Options,
 	overlay *semantic.Overlay,
 	pendingConcepts, pendingEdges []int,
-) (accepted, rejected int, err error) {
+) (accepted, rejected int, completed bool, err error) {
 	scanner := bufio.NewScanner(opts.In)
 
 	fmt.Fprintln(opts.Out, "\nReview each item: [y]es / [n]o / [q]uit")
+	completed = true
 
 	// Track which concept indices are rejected so we can remove them.
 	rejectedConceptSet := make(map[int]bool)
@@ -168,6 +174,7 @@ func interactiveReview(
 
 		ans, quit := prompt(scanner)
 		if quit {
+			completed = false
 			break
 		}
 		if ans {
@@ -197,6 +204,7 @@ func interactiveReview(
 
 		ans, quit := prompt(scanner)
 		if quit {
+			completed = false
 			break
 		}
 		if ans {
@@ -210,7 +218,7 @@ func interactiveReview(
 		}
 	}
 
-	return accepted, rejected, nil
+	return accepted, rejected, completed, nil
 }
 
 // removeRejectedEdges removes edges that were marked for rejection (Type == "").
@@ -246,4 +254,28 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return s[:n-3] + "..."
+}
+
+func cloneOverlay(in *semantic.Overlay) *semantic.Overlay {
+	if in == nil {
+		return nil
+	}
+
+	out := &semantic.Overlay{
+		SchemaVersion: in.SchemaVersion,
+		GraphHash:     in.GraphHash,
+		Model:         in.Model,
+		GeneratedAt:   in.GeneratedAt,
+		Concepts:      make([]semantic.Concept, len(in.Concepts)),
+		Edges:         make([]semantic.ConceptEdge, len(in.Edges)),
+	}
+	for i, c := range in.Concepts {
+		cCopy := c
+		if c.SourceFiles != nil {
+			cCopy.SourceFiles = append([]string(nil), c.SourceFiles...)
+		}
+		out.Concepts[i] = cCopy
+	}
+	copy(out.Edges, in.Edges)
+	return out
 }

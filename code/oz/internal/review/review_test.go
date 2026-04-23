@@ -189,6 +189,10 @@ func TestReview_Interactive_Quit(t *testing.T) {
 		WithAgent("backend", testws.Role("Builds REST endpoints")).
 		Build()
 	writeSemanticJSON(t, ws.Path(), unreviewedOverlay())
+	before, err := semantic.Load(ws.Path())
+	if err != nil {
+		t.Fatalf("load before review: %v", err)
+	}
 
 	// Accept first, then quit — only first item should be accepted.
 	input := strings.NewReader("y\nq\n")
@@ -204,6 +208,25 @@ func TestReview_Interactive_Quit(t *testing.T) {
 	}
 	if summary.Accepted != 1 {
 		t.Errorf("accepted = %d, want 1 (accepted first concept then quit)", summary.Accepted)
+	}
+	if !strings.Contains(out.String(), "review aborted; discarded in-session changes") {
+		t.Errorf("expected abort/discard message, got: %q", out.String())
+	}
+
+	after, err := semantic.Load(ws.Path())
+	if err != nil {
+		t.Fatalf("load after review: %v", err)
+	}
+	beforeJSON, err := json.Marshal(before)
+	if err != nil {
+		t.Fatalf("marshal before overlay: %v", err)
+	}
+	afterJSON, err := json.Marshal(after)
+	if err != nil {
+		t.Fatalf("marshal after overlay: %v", err)
+	}
+	if string(afterJSON) != string(beforeJSON) {
+		t.Errorf("semantic.json changed after quit; before=%s after=%s", beforeJSON, afterJSON)
 	}
 }
 
