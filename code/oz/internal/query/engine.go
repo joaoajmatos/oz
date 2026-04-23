@@ -80,7 +80,7 @@ func runRouting(workspacePath, queryText string, opts Options) routingState {
 		st.Result.CandidateAgents = st.Route.Candidates
 	}
 	st.Result.RelevantConcepts = loadRelevantConcepts(workspacePath, st.Route.Agent, g)
-	st.Result.ImplementingPackages = loadImplementingPackages(workspacePath, st.Route.Agent)
+	st.Result.ImplementingPackages = loadImplementingPackages(workspacePath, st.Terms)
 	return st
 }
 
@@ -135,33 +135,51 @@ func loadRelevantConcepts(workspacePath, agentName string, _ *graph.Graph) []str
 }
 
 // loadImplementingPackages returns the import paths of code_package nodes that
-// implement concepts owned by agentName, via reviewed implements edges.
-// Returns nil when no overlay exists or no reviewed implements edges are found.
-func loadImplementingPackages(workspacePath, agentName string) []string {
+// implement concepts relevant to the query terms, via reviewed implements edges.
+// Relevance is determined by token overlap between query terms and concept
+// name+description — so "how is drift detection implemented?" returns audit/drift
+// rather than packages owned by the routed agent.
+func loadImplementingPackages(workspacePath string, queryTerms []string) []string {
 	o, err := semantic.Load(workspacePath)
 	if err != nil || o == nil {
 		return nil
 	}
-	agentNodeID := "agent:" + agentName
-	// Collect concept IDs owned by this agent (reviewed edges only).
-	ownedConcepts := make(map[string]struct{})
-	for _, e := range o.Edges {
-		if e.Type == semantic.EdgeTypeAgentOwnsConcept && e.To == agentNodeID && e.Reviewed {
-			ownedConcepts[e.From] = struct{}{}
-		}
-	}
-	if len(ownedConcepts) == 0 {
+	if len(queryTerms) == 0 {
 		return nil
 	}
-	// Collect packages implementing any owned concept.
+	termSet := make(map[string]struct{}, len(queryTerms))
+	for _, t := range queryTerms {
+		termSet[t] = struct{}{}
+	}
+
+	// Find concepts whose name/description shares tokens with the query.
+	relevant := make(map[string]struct{})
+	for _, c := range o.Concepts {
+		conceptTokens := TokenizeMulti(c.Name+" "+c.Description, false)
+		for _, t := range conceptTokens {
+			if _, ok := termSet[t]; ok {
+				relevant[c.ID] = struct{}{}
+				break
+			}
+		}
+	}
+	if len(relevant) == 0 {
+		return nil
+	}
+
+	// Collect packages for relevant concepts via reviewed implements edges.
 	seen := make(map[string]struct{})
 	var pkgs []string
-	for conceptID := range ownedConcepts {
-		for _, pkg := range semantic.PackagesForConcept(o, conceptID) {
-			if _, ok := seen[pkg]; !ok {
-				seen[pkg] = struct{}{}
-				pkgs = append(pkgs, pkg)
-			}
+	for _, e := range o.Edges {
+		if e.Type != semantic.EdgeTypeImplements || !e.Reviewed {
+			continue
+		}
+		if _, ok := relevant[e.From]; !ok {
+			continue
+		}
+		if _, ok := seen[e.To]; !ok {
+			seen[e.To] = struct{}{}
+			pkgs = append(pkgs, e.To)
 		}
 	}
 	if len(pkgs) == 0 {
