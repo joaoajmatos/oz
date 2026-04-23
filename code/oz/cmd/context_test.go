@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/joaoajmatos/oz/internal/semantic"
@@ -109,5 +111,25 @@ func TestShouldSkipEnrich(t *testing.T) {
 				t.Fatalf("shouldSkipEnrich() = %v, want %v", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestPrintContextServeBanner_PlainWhenWriterNotTTY(t *testing.T) {
+	var buf bytes.Buffer
+	printContextServeBanner(&buf, "/tmp/ws")
+	out := buf.String()
+	if strings.Contains(out, "\x1b[") {
+		t.Fatalf("expected plain text when writer is not an os.File TTY, got ANSI: %q", out)
+	}
+	for _, sub := range []string{
+		"context serve — MCP stdio server",
+		"workspace: /tmp/ws",
+		"JSON-RPC on stdin/stdout",
+		"Ctrl+C, or close stdin (EOF)",
+		"stderr",
+	} {
+		if !strings.Contains(out, sub) {
+			t.Fatalf("banner should contain %q, got:\n%s", sub, out)
+		}
 	}
 }

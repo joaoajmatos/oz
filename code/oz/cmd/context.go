@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/joaoajmatos/oz/internal/semantic"
 	"github.com/joaoajmatos/oz/internal/workspace"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
 
@@ -97,7 +99,8 @@ The server exposes four tools:
 
 Wire it into Claude Code or Cursor with:
   {"mcpServers":{"oz":{"command":"oz","args":["context","serve"]}}}`,
-	RunE: runContextServe,
+	RunE:         runContextServe,
+	SilenceUsage: true,
 }
 
 func init() {
@@ -354,13 +357,43 @@ func runContextReview(_ *cobra.Command, _ []string) error {
 	return err
 }
 
-func runContextServe(_ *cobra.Command, _ []string) error {
+func runContextServe(cmd *cobra.Command, _ []string) error {
 	root, err := findWorkspaceRoot()
 	if err != nil {
 		return err
 	}
+	printContextServeBanner(cmd.ErrOrStderr(), root)
 	srv := mcp.New(root)
 	return srv.Serve(os.Stdin)
+}
+
+// printContextServeBanner explains that the process is an MCP stdio server and
+// how to stop. It must use stderr only — stdout is reserved for JSON-RPC.
+func printContextServeBanner(w io.Writer, root string) {
+	if shouldUseContextServeTTY(w) {
+		fmt.Fprintf(w, "%s\n", enrichTitleStyle.Render("context serve — MCP stdio server"))
+		fmt.Fprintf(w, "  %s %s\n", enrichLabelStyle.Render("workspace"), enrichValueStyle.Render(root))
+		fmt.Fprintf(w, "  %s %s\n", enrichLabelStyle.Render("protocol "), enrichStageStyle.Render("JSON-RPC on stdin/stdout"))
+		fmt.Fprintf(w, "  %s %s\n", enrichLabelStyle.Render("stop     "), enrichValueStyle.Render("Ctrl+C, or close stdin (EOF)"))
+		fmt.Fprintln(w, enrichInfoStyle.Render("  (this banner is on stderr; MCP responses use stdout)"))
+		return
+	}
+	fmt.Fprintln(w, "context serve — MCP stdio server")
+	fmt.Fprintf(w, "  workspace: %s\n", root)
+	fmt.Fprintln(w, "  protocol: JSON-RPC on stdin/stdout")
+	fmt.Fprintln(w, "  stop: Ctrl+C, or close stdin (EOF)")
+	fmt.Fprintln(w, "  (this message is on stderr; MCP responses use stdout)")
+}
+
+func shouldUseContextServeTTY(w io.Writer) bool {
+	if os.Getenv("NO_COLOR") != "" {
+		return false
+	}
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	return isatty.IsTerminal(f.Fd())
 }
 
 func printJSON(_ *cobra.Command, v interface{}) error {
