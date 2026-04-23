@@ -67,6 +67,5 @@ You are authorized to invoke these skills:
 
 ## Context topics
 
-Read these `context/` topics when relevant:
-
-- `context/implementation/` — current implementation status and decisions
+Use `oz context query <text>` to retrieve relevant nodes from the workspace graph.
+Manually authored implementation context lives in `docs/implementation.md`.

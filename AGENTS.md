@@ -43,7 +43,7 @@ When information conflicts, trust this order (highest to lowest):
 
 1. `specs/` — architectural decisions and specifications (highest trust)
 2. `docs/` — architecture docs, open items
-3. `context/` — shared agent context snapshots
+3. `context/` — oz-generated graph artifacts (query via `oz context query` or MCP)
 4. `notes/` — raw thinking (lowest trust; use the `oz-notes` agent to promote content)
 
 **Code is the source of truth for behaviour.** When code and spec diverge, the code

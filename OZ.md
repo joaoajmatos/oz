@@ -21,7 +21,7 @@ description: Open workspace convention and toolset for LLM-first development
 
 1. `specs/` — highest trust. Architectural decisions and specifications.
 2. `docs/` — architecture docs, open items.
-3. `context/` — shared agent context snapshots.
+3. `context/` — oz-generated graph artifacts (query via `oz context query` or MCP).
 4. `notes/` — lowest trust. Raw thinking; use the `oz-notes` agent to promote content.
 
 ---
@@ -44,7 +44,7 @@ oz/
 ├── docs/
 │   ├── architecture.md          # High-level architecture
 │   └── open-items.md            # Open questions, known issues, pending decisions
-├── context/                     # Shared agent context snapshots (organized by topic)
+├── context/                     # oz-generated only: graph.json, semantic.json, scoring.toml
 ├── skills/
 │   └── <name>/
 │       ├── SKILL.md             # Entry point: when to invoke and steps to follow

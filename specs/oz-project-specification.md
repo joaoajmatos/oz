@@ -54,7 +54,7 @@ When information conflicts, oz defines a strict trust order (highest to lowest):
 
 1. `specs/` — architectural decisions and specifications (highest trust)
 2. `docs/` — architecture docs, open items
-3. `context/` — shared agent context snapshots
+3. `context/` — oz-generated graph artifacts (query via `oz context query` or MCP)
 4. `notes/` — raw thinking, uncrystallized ideas (lowest trust)
 
 Code is the source of truth for behaviour. When code and spec diverge, the code
@@ -173,7 +173,7 @@ flowchart TB
 - `AGENTS.md` is the single entry point for any LLM. It always exists at root and MUST route
   agents using the `## Agents` markdown table defined above.
 - `OZ.md` is the workspace manifest. It declares the oz standard version and registered agents.
-- `context/` is shared across all agents — organized by topic, not by agent.
+- `context/` holds oz-generated artifacts only: `graph.json` (from `oz context build`), `semantic.json` (from `oz context enrich`), and `scoring.toml` (BM25F tuning config). Do not write manually authored content here. Query the graph via `oz context query` or the MCP server.
 - `code/` holds actual project code. May contain git submodules.
 - `notes/` is the only low-trust layer. Everything else should be considered authoritative.
   Optional convention: `notes/planning/` for product-management artifacts (PRDs, pre-mortems, sprint plans) that inform work but are not normative until promoted to `specs/` or `docs/`.
@@ -348,4 +348,4 @@ All `oz add` subcommands resolve the workspace root by walking ancestor director
 - **oz repair**: complete — restores missing default workspace files without overwriting existing ones; idempotent; excludes `CLAUDE.md` (opt-in only).
 - **oz add**: complete — `oz add claude`, `oz add cursor` for editor integrations; `oz add <package-id>` for optional bundled agent+skill packages; `oz add list` enumerates available packages.
 
-See `docs/architecture.md` for the full system design and `context/implementation/summary.md` for the V1 implementation snapshot.
+See `docs/architecture.md` for the full system design and `docs/implementation.md` for the V1 implementation snapshot.
