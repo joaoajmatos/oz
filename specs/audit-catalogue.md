@@ -111,6 +111,7 @@ The shipped JSON renderer uses Go's `encoding/json`; object keys are serialized 
 
 - An exported symbol exists in the known symbol set but is never mentioned by any scanned identifier candidate.
 - Demoted from `warn` to `info` — not every exported symbol warrants documentation. Use COV005 to detect concepts with no implementing code instead.
+- Review gate design for concept–code edges: see [`specs/decisions/0003-implements-edge-review-gate.md`](decisions/0003-implements-edge-review-gate.md).
 
 ## Out of scope for the shipped contract
 

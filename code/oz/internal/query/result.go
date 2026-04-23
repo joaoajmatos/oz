@@ -24,6 +24,12 @@ type Result struct {
 	// that are relevant to this task. Omitted when no overlay is present.
 	RelevantConcepts []string `json:"relevant_concepts,omitempty"`
 
+	// ImplementingPackages lists code_package import paths that implement
+	// concepts owned by the routing agent. Only reviewed implements edges
+	// are included. Omitted when no semantic overlay is present or no
+	// implements edges exist.
+	ImplementingPackages []string `json:"implementing_packages,omitempty"`
+
 	// Excluded lists path prefixes that were filtered from context blocks.
 	// notes/ is excluded by default unless --include-notes is set.
 	Excluded []string `json:"excluded,omitempty"`

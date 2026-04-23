@@ -1,6 +1,8 @@
 package query
 
 import (
+	"sort"
+
 	ozcontext "github.com/joaoajmatos/oz/internal/context"
 	"github.com/joaoajmatos/oz/internal/graph"
 	"github.com/joaoajmatos/oz/internal/semantic"
@@ -78,6 +80,7 @@ func runRouting(workspacePath, queryText string, opts Options) routingState {
 		st.Result.CandidateAgents = st.Route.Candidates
 	}
 	st.Result.RelevantConcepts = loadRelevantConcepts(workspacePath, st.Route.Agent, g)
+	st.Result.ImplementingPackages = loadImplementingPackages(workspacePath, st.Route.Agent)
 	return st
 }
 
@@ -129,4 +132,41 @@ func loadRelevantConcepts(workspacePath, agentName string, _ *graph.Graph) []str
 		return nil
 	}
 	return semantic.ConceptsForAgent(o, agentName)
+}
+
+// loadImplementingPackages returns the import paths of code_package nodes that
+// implement concepts owned by agentName, via reviewed implements edges.
+// Returns nil when no overlay exists or no reviewed implements edges are found.
+func loadImplementingPackages(workspacePath, agentName string) []string {
+	o, err := semantic.Load(workspacePath)
+	if err != nil || o == nil {
+		return nil
+	}
+	agentNodeID := "agent:" + agentName
+	// Collect concept IDs owned by this agent (reviewed edges only).
+	ownedConcepts := make(map[string]struct{})
+	for _, e := range o.Edges {
+		if e.Type == semantic.EdgeTypeAgentOwnsConcept && e.To == agentNodeID && e.Reviewed {
+			ownedConcepts[e.From] = struct{}{}
+		}
+	}
+	if len(ownedConcepts) == 0 {
+		return nil
+	}
+	// Collect packages implementing any owned concept.
+	seen := make(map[string]struct{})
+	var pkgs []string
+	for conceptID := range ownedConcepts {
+		for _, pkg := range semantic.PackagesForConcept(o, conceptID) {
+			if _, ok := seen[pkg]; !ok {
+				seen[pkg] = struct{}{}
+				pkgs = append(pkgs, pkg)
+			}
+		}
+	}
+	if len(pkgs) == 0 {
+		return nil
+	}
+	sort.Strings(pkgs)
+	return pkgs
 }
