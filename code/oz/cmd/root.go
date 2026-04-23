@@ -16,6 +16,8 @@ understand — with clean integrations for Claude Code, Cursor, and any other ed
 		PrintBanner()
 		fmt.Println("  " + styleBrand.Render("oz") + "  " + styleSubtle.Render("workspace convention and toolset for LLM-first development"))
 		fmt.Println()
+		fmt.Println("  " + styleCmd.Render("oz tipz") + "  " + styleSubtle.Render(randomOzTip()))
+		fmt.Println()
 		fmt.Println(styleSubtle.Render("  Run") + " " + styleCmd.Render("oz --help") + " " + styleSubtle.Render("for available commands."))
 		fmt.Println()
 		return nil
