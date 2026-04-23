@@ -172,4 +172,4 @@ After agents, specs, docs, or indexed code change, run **`oz context build`** so
 
 ## Contributing
 
-Issues and PRs are welcome. Before merging: **`go test` / `go vet`** clean under **`code/oz`**, and **`oz validate`** passes from the repo root. In agentic sessions, use **`AGENTS.md`** for intent-based routing; for manual edits, follow the same conventions directly.
+See **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** (public-domain spirit, practical checklist). In short: **`go test` / `go vet`** clean under **`code/oz`**, and **`oz validate`** passes from the repo root. In agentic sessions, use **`AGENTS.md`** for intent-based routing; for manual edits, follow the same conventions directly.
