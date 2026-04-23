@@ -59,17 +59,4 @@ AT-03 is considered **not triggered** (3 warnings ≤ threshold of 3).
 
 ## Pending Decisions
 
-### Reframe `oz crystallize` as report-first (2026-04-22)
-
-The current `oz crystallize` implementation can promote a large set of `notes/` into new
-`specs/`/`docs/` files, which risks creating more orphans and elevating historical planning
-notes (especially `notes/planning/`) into canonical tiers.
-
-Decision direction:
-
-- `oz crystallize` should stay **report-first** (no writes/deletes in command execution).
-- `--dry-run` should remain the explicit "show proposed diffs" mode for human review.
-- Promotion should happen manually (outside the command), with `crystallize: <type>` tags used
-  as an optional intent signal for notes that are candidates for promotion.
-- Align `specs/oz-project-specification.md` (currently says crystallize is "planned") to the
-  shipped report-first behaviour.
+<!-- No pending decisions. -->

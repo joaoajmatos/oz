@@ -71,4 +71,4 @@ You are authorized to invoke these skills:
 
 Read these `context/` topics when relevant:
 
-- `context/convention/` — convention notes and historical decisions
+- `context/implementation/` — current implementation status and decisions

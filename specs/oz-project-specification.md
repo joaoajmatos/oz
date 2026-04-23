@@ -192,6 +192,8 @@ flowchart TB
   binary --> auditCmd["oz audit structure and drift"]
   binary --> contextCmd["oz context graph and query"]
   binary --> crystallizeCmd["oz crystallize report-first"]
+  binary --> repairCmd["oz repair restore missing files"]
+  binary --> addCmd["oz add integrations and packages"]
 ```
 
 ### oz init (priority — build this first)
@@ -274,6 +276,43 @@ of full workspace token size on the 10-agent test fixture.
 (`specs/`, `docs/`, or ADRs). By default it is report-only and does not write, move, or delete
 files. With `--dry-run`, it also prints proposed diffs to support manual promotion decisions.
 
+Promotion is a deliberate human decision. Use `oz crystallize` to identify candidates, then
+manually move or promote content — or use the `oz-notes` agent for interactive guidance
+through the promotion workflow.
+
+### oz repair
+
+`oz repair [path]` restores missing default workspace files without overwriting anything that
+already exists. Reads `OZ.md` to discover the project name and registered agents, then
+re-scaffolds any absent files from the same embedded templates used by `oz init`.
+
+Useful when: a workspace was partially deleted, a git merge dropped scaffolded files, or a
+manual edit removed required structure. Safe to run repeatedly — idempotent on any complete
+workspace.
+
+Note: `CLAUDE.md` is opt-in only (`oz init --claude` / `oz add claude`) and is never restored
+by `oz repair`.
+
+### oz add
+
+`oz add` installs integrations and optional packages into an existing oz workspace.
+
+**Integrations:**
+
+- `oz add claude [path]` — writes `CLAUDE.md` (loaded automatically by Claude Code) and
+  installs `.claude/settings.json` hook configuration plus shared hook scripts under
+  `.cursor/hooks/`. Use `--force` to overwrite an existing `CLAUDE.md`.
+- `oz add cursor [path]` — writes `.cursor/hooks.json` and installs the shared hook scripts
+  under `.cursor/hooks/`. Hooks enforce oz convention on every edit and gate git commits.
+
+**Optional packages:**
+
+- `oz add <package-id> [path]` — installs a bundled agent + skill tree from embedded templates.
+  Use `oz add list` (alias: `oz add ls`) for a formatted table of available packages.
+
+All `oz add` subcommands resolve the workspace root by walking ancestor directories for
+`AGENTS.md` and `OZ.md`, so they can be run from any subdirectory.
+
 ---
 
 ## Design Principles
@@ -306,5 +345,7 @@ files. With `--dry-run`, it also prints proposed diffs to support manual promoti
 - **oz audit**: V1 complete — orphans, coverage, staleness, drift, JSON report, deterministic ordering, `graph-summary` stub preserved. Multi-language / tree-sitter drift is deferred.
 - **oz context**: V1 complete — `build`, `query`, `enrich`, `review`, and `serve` all ship. MCP server validated. BM25F scoring with Porter stemming and softmax routing.
 - **oz crystallize**: V1 report-first complete — classification table + dry-run diffs; no direct promotion writes.
+- **oz repair**: complete — restores missing default workspace files without overwriting existing ones; idempotent; excludes `CLAUDE.md` (opt-in only).
+- **oz add**: complete — `oz add claude`, `oz add cursor` for editor integrations; `oz add <package-id>` for optional bundled agent+skill packages; `oz add list` enumerates available packages.
 
 See `docs/architecture.md` for the full system design and `context/implementation/summary.md` for the V1 implementation snapshot.

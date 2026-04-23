@@ -70,4 +70,4 @@ You are authorized to invoke these skills:
 
 Read these `context/` topics when relevant:
 
-- `context/convention/` — workspace convention notes and drift history
+- `context/implementation/` — current implementation status and decisions

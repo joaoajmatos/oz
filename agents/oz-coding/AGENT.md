@@ -47,7 +47,7 @@ You are authorized to invoke these skills:
 
 ## Responsibilities
 
-- Implement and extend `oz` subcommands: `init`, `validate`, `audit`, `context`, `crystallize`
+- Implement and extend `oz` subcommands: `init`, `validate`, `audit`, `context`, `crystallize`, `repair`, `add`
 - Write and maintain Go packages under `code/oz/internal/` and `code/oz/cmd/`
 - Keep `code/oz/internal/convention/convention.go` as the Go-typed source of truth for the oz workspace convention
 - Write tests for all non-trivial logic
