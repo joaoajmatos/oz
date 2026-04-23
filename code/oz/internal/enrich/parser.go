@@ -63,11 +63,16 @@ func ParseResponse(content string, graphNodeIDs map[string]struct{}) ([]semantic
 		validConceptIDs[c.ID] = struct{}{}
 	}
 
+	// autoReviewThreshold is the minimum confidence for an edge to be auto-promoted
+	// to reviewed:true without human approval. See ADR-0003.
+	const autoReviewThreshold = 0.85
+
 	validEdgeTypes := map[string]bool{
 		semantic.EdgeTypeAgentOwnsConcept:      true,
 		semantic.EdgeTypeImplementsSpec:        true,
 		semantic.EdgeTypeDriftedFrom:           true,
 		semantic.EdgeTypeSemanticallySimilarTo: true,
+		semantic.EdgeTypeImplements:            true,
 	}
 
 	var edges []semantic.ConceptEdge
@@ -94,7 +99,8 @@ func ParseResponse(content string, graphNodeIDs map[string]struct{}) ([]semantic
 		if e.Confidence <= 0 || e.Confidence > 1 {
 			e.Confidence = 1.0
 		}
-		e.Reviewed = false
+		// Auto-promote high-confidence edges per ADR-0003.
+		e.Reviewed = e.Confidence >= autoReviewThreshold
 		edges = append(edges, e)
 	}
 

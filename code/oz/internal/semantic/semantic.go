@@ -13,6 +13,7 @@
 //   - implements_spec          — a concept is implemented by a spec section or decision
 //   - drifted_from             — code has diverged from the concept's spec
 //   - semantically_similar_to  — two concepts are closely related
+//   - implements               — a code_package implements a concept (concept → code_package)
 //
 // # Human review
 //
@@ -36,6 +37,10 @@ const (
 	EdgeTypeImplementsSpec        = "implements_spec"
 	EdgeTypeDriftedFrom           = "drifted_from"
 	EdgeTypeSemanticallySimilarTo = "semantically_similar_to"
+	// EdgeTypeImplements links a concept to a code_package that implements it.
+	// Direction: concept:<slug> → code_package:<import-path>.
+	// Stored in semantic.json; traversed by oz context query.
+	EdgeTypeImplements = "implements"
 )
 
 // Overlay is the full contents of context/semantic.json.
