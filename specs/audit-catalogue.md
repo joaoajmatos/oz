@@ -107,9 +107,10 @@ The shipped JSON renderer uses Go's `encoding/json`; object keys are serialized 
 
 - A scanned markdown file references an identifier candidate that is not present in the known symbol set.
 
-`DRIFT003` (`warn`)
+`DRIFT003` (`info`)
 
 - An exported symbol exists in the known symbol set but is never mentioned by any scanned identifier candidate.
+- Demoted from `warn` to `info` — not every exported symbol warrants documentation. Use COV005 to detect concepts with no implementing code instead.
 
 ## Out of scope for the shipped contract
 

@@ -166,11 +166,11 @@ func checkUnmentionedSymbols(symbols []Symbol, candidates []specscan.Candidate) 
 		findings = append(findings, audit.Finding{
 			Check:    "drift",
 			Code:     "DRIFT003",
-			Severity: audit.SeverityWarn,
+			Severity: audit.SeverityInfo,
 			Message:  fmt.Sprintf("exported symbol %s.%s is never mentioned in specs or docs", shortPackageName(s.Pkg), s.Name),
 			File:     s.File,
 			Line:     s.Line,
-			Hint:     "document this symbol in specs/ or consider whether it should be exported",
+			Hint:     "not every symbol needs documentation; use 'oz audit drift' if you want to review undocumented exports",
 			Refs:     []string{s.Pkg + "." + s.Name},
 		})
 	}

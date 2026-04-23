@@ -1,7 +1,8 @@
 // Package coverage implements the oz audit coverage check.
 // It reports dangling scope paths (COV001), unowned code directories (COV002),
-// overlapping agent scope paths (COV003), and agents with scope but no
-// responsibilities description (COV004).
+// overlapping agent scope paths (COV003), agents with scope but no
+// responsibilities description (COV004), and concepts with no implementing
+// code packages (COV005).
 package coverage
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/joaoajmatos/oz/internal/audit"
 	ozcontext "github.com/joaoajmatos/oz/internal/context"
 	"github.com/joaoajmatos/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
 // Check implements audit.Check for coverage checks.
@@ -23,7 +25,9 @@ type Check struct{}
 func (c *Check) Name() string { return "coverage" }
 
 // Codes returns the finding codes this check may produce.
-func (c *Check) Codes() []string { return []string{"COV001", "COV002", "COV003", "COV004"} }
+func (c *Check) Codes() []string {
+	return []string{"COV001", "COV002", "COV003", "COV004", "COV005"}
+}
 
 // Run loads the graph from root and returns coverage findings.
 func (c *Check) Run(root string, _ audit.Options) ([]audit.Finding, error) {
@@ -34,12 +38,14 @@ func (c *Check) Run(root string, _ audit.Options) ([]audit.Finding, error) {
 		}
 		return nil, fmt.Errorf("coverage: load graph: %w", err)
 	}
-	return runCheck(root, g)
+	// Semantic overlay is optional — COV005 is silently skipped when absent.
+	o, _ := semantic.Load(root)
+	return runCheck(root, g, o)
 }
 
 // runCheck runs all coverage sub-checks against a pre-loaded graph.
 // Separated from Run for testability.
-func runCheck(root string, g *graph.Graph) ([]audit.Finding, error) {
+func runCheck(root string, g *graph.Graph, o *semantic.Overlay) ([]audit.Finding, error) {
 	agentNodes := buildAgentIndex(g)
 
 	var findings []audit.Finding
@@ -54,8 +60,42 @@ func runCheck(root string, g *graph.Graph) ([]audit.Finding, error) {
 
 	findings = append(findings, checkOverlappingScopes(g)...)
 	findings = append(findings, checkScopeWithoutResponsibilities(g)...)
+	findings = append(findings, checkUnimplementedConcepts(o)...)
 
 	return findings, nil
+}
+
+// checkUnimplementedConcepts emits COV005 for each concept in the semantic
+// overlay that has no inbound implements edge from any code_package.
+// Concepts describe things the workspace intends to build — if nothing
+// implements them, the spec is ahead of the code.
+// Skipped silently when overlay is nil (enrichment not yet run).
+func checkUnimplementedConcepts(o *semantic.Overlay) []audit.Finding {
+	if o == nil || len(o.Concepts) == 0 {
+		return nil
+	}
+	// Build set of concept IDs that have at least one implements edge.
+	implemented := make(map[string]struct{})
+	for _, e := range o.Edges {
+		if e.Type == semantic.EdgeTypeImplements {
+			implemented[e.From] = struct{}{}
+		}
+	}
+	var findings []audit.Finding
+	for _, c := range o.Concepts {
+		if _, ok := implemented[c.ID]; ok {
+			continue
+		}
+		findings = append(findings, audit.Finding{
+			Check:    "coverage",
+			Code:     "COV005",
+			Severity: audit.SeverityWarn,
+			Message:  fmt.Sprintf("concept %q (%s) has no implementing code package", c.Name, c.ID),
+			Hint:     "run 'oz context enrich' after adding code, or remove the concept if it is no longer relevant",
+			Refs:     []string{c.ID},
+		})
+	}
+	return findings
 }
 
 // buildAgentIndex returns a map from agent node ID to node.

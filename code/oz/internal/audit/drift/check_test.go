@@ -256,7 +256,7 @@ func TestRunCheck_DRIFT003_MentionedQualified_NoFinding(t *testing.T) {
 	}
 }
 
-func TestRunCheck_DRIFT003_Severity_IsWarn(t *testing.T) {
+func TestRunCheck_DRIFT003_Severity_IsInfo(t *testing.T) {
 	root := t.TempDir()
 
 	symbols := []Symbol{
@@ -266,8 +266,8 @@ func TestRunCheck_DRIFT003_Severity_IsWarn(t *testing.T) {
 	fs := runCheck(root, symbols, nil)
 
 	for _, f := range fs {
-		if f.Code == "DRIFT003" && f.Severity != audit.SeverityWarn {
-			t.Errorf("DRIFT003 severity = %q, want warn", f.Severity)
+		if f.Code == "DRIFT003" && f.Severity != audit.SeverityInfo {
+			t.Errorf("DRIFT003 severity = %q, want info", f.Severity)
 		}
 	}
 }

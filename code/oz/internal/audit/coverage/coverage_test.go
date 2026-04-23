@@ -33,7 +33,7 @@ func countCode(fs []audit.Finding, code string) int {
 // run is a test helper that calls runCheck and panics on error.
 func run(t *testing.T, root string, g *graph.Graph) []audit.Finding {
 	t.Helper()
-	fs, err := runCheck(root, g)
+	fs, err := runCheck(root, g, nil)
 	if err != nil {
 		t.Fatalf("runCheck: %v", err)
 	}
@@ -203,7 +203,7 @@ func TestCOV003_OverlappingPaths(t *testing.T) {
 			{ID: "agent:frontend", Type: graph.NodeTypeAgent, Scope: []string{"code/api/handlers"}},
 		},
 	}
-	fs, _ := runCheck("", g)
+	fs, _ := runCheck("", g, nil)
 	if !hasCode(fs, "COV003") {
 		t.Error("expected COV003 for overlapping scope paths")
 	}
@@ -216,7 +216,7 @@ func TestCOV003_IdenticalPaths(t *testing.T) {
 			{ID: "agent:frontend", Type: graph.NodeTypeAgent, Scope: []string{"code/api"}},
 		},
 	}
-	fs, _ := runCheck("", g)
+	fs, _ := runCheck("", g, nil)
 	if !hasCode(fs, "COV003") {
 		t.Error("expected COV003 for identical scope paths")
 	}
@@ -229,7 +229,7 @@ func TestCOV003_DisjointPaths_NoFinding(t *testing.T) {
 			{ID: "agent:frontend", Type: graph.NodeTypeAgent, Scope: []string{"code/ui"}},
 		},
 	}
-	fs, _ := runCheck("", g)
+	fs, _ := runCheck("", g, nil)
 	if hasCode(fs, "COV003") {
 		t.Error("expected no COV003 for disjoint paths")
 	}
@@ -243,7 +243,7 @@ func TestCOV003_GlobPathsSkipped(t *testing.T) {
 			{ID: "agent:frontend", Type: graph.NodeTypeAgent, Scope: []string{"code/api/handlers"}},
 		},
 	}
-	fs, _ := runCheck("", g)
+	fs, _ := runCheck("", g, nil)
 	if hasCode(fs, "COV003") {
 		t.Error("expected no COV003 when glob paths are involved")
 	}
@@ -256,7 +256,7 @@ func TestCOV003_SameAgent_NoFinding(t *testing.T) {
 			{ID: "agent:backend", Type: graph.NodeTypeAgent, Scope: []string{"code/api", "code/api/handlers"}},
 		},
 	}
-	fs, _ := runCheck("", g)
+	fs, _ := runCheck("", g, nil)
 	if hasCode(fs, "COV003") {
 		t.Error("expected no COV003 for overlapping paths within the same agent")
 	}
@@ -270,7 +270,7 @@ func TestCOV004_ScopeWithEmptyResponsibilities(t *testing.T) {
 			{ID: "agent:coding", Type: graph.NodeTypeAgent, Scope: []string{"code/oz/**"}, Responsibilities: ""},
 		},
 	}
-	fs, _ := runCheck("", g)
+	fs, _ := runCheck("", g, nil)
 	if !hasCode(fs, "COV004") {
 		t.Error("expected COV004 for agent with scope but empty responsibilities")
 	}
@@ -282,7 +282,7 @@ func TestCOV004_ScopeWithResponsibilities_NoFinding(t *testing.T) {
 			{ID: "agent:coding", Type: graph.NodeTypeAgent, Scope: []string{"code/oz/**"}, Responsibilities: "Builds the oz toolset."},
 		},
 	}
-	fs, _ := runCheck("", g)
+	fs, _ := runCheck("", g, nil)
 	if hasCode(fs, "COV004") {
 		t.Error("expected no COV004 when responsibilities are set")
 	}
@@ -295,7 +295,7 @@ func TestCOV004_NoScope_NoFinding(t *testing.T) {
 			{ID: "agent:coding", Type: graph.NodeTypeAgent, Scope: nil, Responsibilities: ""},
 		},
 	}
-	fs, _ := runCheck("", g)
+	fs, _ := runCheck("", g, nil)
 	if hasCode(fs, "COV004") {
 		t.Error("expected no COV004 when agent has no scope")
 	}

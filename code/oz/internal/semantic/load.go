@@ -34,10 +34,11 @@ func Load(workspacePath string) (*Overlay, error) {
 	return &o, nil
 }
 
-// ConceptsForAgent returns the names of all concepts owned by agentName.
-// An agent "owns" a concept when an agent_owns_concept edge exists with
+// ConceptsForAgent returns the names of all reviewed concepts owned by agentName.
+// An agent "owns" a concept when a reviewed agent_owns_concept edge exists with
 // From=concept:<slug> and To=agent:<name>.
-// Returns nil when the overlay is nil or the agent owns no concepts.
+// Unreviewed edges are excluded — they must be accepted via 'oz context review' first.
+// Returns nil when the overlay is nil or the agent owns no reviewed concepts.
 func ConceptsForAgent(o *Overlay, agentName string) []string {
 	if o == nil {
 		return nil
@@ -45,7 +46,7 @@ func ConceptsForAgent(o *Overlay, agentName string) []string {
 	agentNodeID := "agent:" + agentName
 	ownedIDs := make(map[string]struct{})
 	for _, e := range o.Edges {
-		if e.Type == EdgeTypeAgentOwnsConcept && e.To == agentNodeID {
+		if e.Type == EdgeTypeAgentOwnsConcept && e.To == agentNodeID && e.Reviewed {
 			ownedIDs[e.From] = struct{}{}
 		}
 	}
@@ -54,10 +55,27 @@ func ConceptsForAgent(o *Overlay, agentName string) []string {
 	}
 	var names []string
 	for _, c := range o.Concepts {
-		if _, ok := ownedIDs[c.ID]; ok {
+		if _, ok := ownedIDs[c.ID]; ok && c.Reviewed {
 			names = append(names, c.Name)
 		}
 	}
 	sort.Strings(names)
 	return names
+}
+
+// PackagesForConcept returns the code_package node IDs that implement conceptID,
+// restricted to reviewed implements edges. Unreviewed edges are never traversed
+// by query — they are only visible to 'oz audit'. See ADR-0003.
+func PackagesForConcept(o *Overlay, conceptID string) []string {
+	if o == nil {
+		return nil
+	}
+	var pkgs []string
+	for _, e := range o.Edges {
+		if e.Type == EdgeTypeImplements && e.From == conceptID && e.Reviewed {
+			pkgs = append(pkgs, e.To)
+		}
+	}
+	sort.Strings(pkgs)
+	return pkgs
 }

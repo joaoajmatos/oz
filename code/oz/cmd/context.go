@@ -298,6 +298,19 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
+	// Pre-flight: warn when a prior enrichment exists but produced a sparse concept
+	// graph — implements edges will have little to map to. Does not block fresh
+	// workspaces (existingOverlay.Concepts == nil). Use --force to suppress.
+	const minConceptsForCodeMapping = 10
+	if !enrichForce && existingOverlay != nil && len(existingOverlay.Concepts) > 0 &&
+		len(existingOverlay.Concepts) < minConceptsForCodeMapping {
+		fmt.Fprintf(cmd.ErrOrStderr(),
+			"warning: concept graph is sparse (%d concepts) — implements edges may not map well.\n"+
+				"  Run 'oz context enrich' on specs/docs first, or use --force to skip this check.\n",
+			len(existingOverlay.Concepts),
+		)
+	}
+
 	res, err := enrich.Run(root, g, enrich.Options{
 		Model: enrichModel,
 		Progress: func(stage string) {
