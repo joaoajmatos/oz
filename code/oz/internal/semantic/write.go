@@ -41,6 +41,9 @@ func Write(workspacePath string, o *Overlay) error {
 //   - All incoming concepts and edges are included.
 //   - Reviewed concepts/edges from existing that are NOT present in incoming
 //     are appended (human-accepted knowledge survives re-enrichment).
+//   - After merging, edges whose from-concept no longer exists in the merged
+//     concept set are pruned — this prevents dangling edges when a concept is
+//     renamed or dropped across re-enrichment runs.
 func Merge(existing, incoming *Overlay) *Overlay {
 	result := &Overlay{
 		SchemaVersion: incoming.SchemaVersion,
@@ -79,6 +82,20 @@ func Merge(existing, incoming *Overlay) *Overlay {
 			}
 		}
 	}
+
+	// Prune edges whose from-concept no longer exists in the merged concept set.
+	// This prevents dangling edges when concepts are renamed or dropped.
+	mergedConceptIDs := make(map[string]struct{}, len(result.Concepts))
+	for _, c := range result.Concepts {
+		mergedConceptIDs[c.ID] = struct{}{}
+	}
+	live := result.Edges[:0:0] // new slice, same backing array not reused
+	for _, e := range result.Edges {
+		if _, ok := mergedConceptIDs[e.From]; ok {
+			live = append(live, e)
+		}
+	}
+	result.Edges = live
 
 	return result
 }
