@@ -12,7 +12,6 @@
 <p align="center"><strong>oz</strong> — open workspace convention and Go CLI for LLM-first development</p>
 
 <p align="center">
-  <a href="./AGENTS.md">AGENTS.md</a> ·
   <a href="./docs/guides/README.md">Guides</a> ·
   <a href="./specs/oz-project-specification.md">Specification</a> ·
   <a href="./docs/architecture.md">Architecture</a>
@@ -31,9 +30,22 @@ For multi-repo teams, `oz` works well as a **meta repository**: keep application
 | Layer | What you get |
 |--------|----------------|
 | **Convention** | [`AGENTS.md`](./AGENTS.md), [`OZ.md`](./OZ.md), `agents/`, `specs/`, `docs/`, `context/`, `skills/`, `rules/`, `notes/`, optional `code/` |
-| **CLI** | `oz init`, `oz validate`, `oz repair`, `oz context` (build / query / enrich / review / **serve** for MCP), `oz audit`, and more as the project grows |
+| **CLI** | Single `oz` binary — see **CLI surface** below |
 
 Normative spec: **[`specs/oz-project-specification.md`](./specs/oz-project-specification.md)**. This repo ships the CLI in **`code/oz`** and uses the convention itself.
+
+### CLI surface
+
+| Area | Commands |
+|------|----------|
+| **Scaffold & health** | `oz init` · `oz validate` · `oz repair` (restore missing defaults without overwriting) |
+| **`oz add`** | **Integrations:** `claude`, `cursor` (editor hooks). **Optional packages** (bundled agent + skills in the binary): `maintainer`, `pm` — use **`oz add list`** for the full, current catalog |
+| **`oz context`** | `build` (structural `context/graph.json`) · `query` (BM25F routing) · `scoring` + `describe` (tune **`context/scoring.toml`**) · `enrich` / `review` (optional semantic overlay `context/semantic.json`, needs `OPENROUTER_API_KEY`) · **`serve`** (MCP stdio) |
+| **`oz audit`** | All checks by default, or `orphans`, `coverage`, `staleness`, `drift`, `graph-summary` |
+| **Notes** | `oz crystallize` — classify `notes/` for promotion to `specs/`, `docs/`, or ADRs (optional LLM classifier; can use heuristics only) |
+| **Shell** | `oz completion` — generate completion scripts (see **Shell completion** below) |
+
+Run `oz` with no subcommand to print the banner. `oz --help` lists top-level commands; `oz <cmd> --help` for subcommands and flags.
 
 ---
 
@@ -95,10 +107,16 @@ If you are evaluating oz for adoption, start with the practical guides:
 - **First walkthrough:** [`docs/guides/first-workspace.md`](./docs/guides/first-workspace.md)
 - **Existing repo migration:** [`docs/guides/adopt-existing-repo.md`](./docs/guides/adopt-existing-repo.md)
 
-For convention maintenance work (creating/updating agents, skills, and rules), use the maintainer role in agentic sessions (or follow the same conventions directly if you are editing manually). You can include a maintainer at `oz init` time, or add it later:
+For convention maintenance work (creating/updating agents, skills, and rules), use the **oz-maintainer** agent in agentic sessions (or follow the same conventions manually). You can add the **maintainer** optional package at any time (also available at `oz init`):
 
 ```bash
 oz add maintainer
+```
+
+**Optional packages** are small template bundles (extra `agents/`, `skills/`, and related files) shipped inside the `oz` binary. Besides **maintainer**, the **pm** package adds product-management skills and an agent for PRDs, rituals, and discovery workflows. To see every ID and one-line description:
+
+```bash
+oz add list
 ```
 
 ---
@@ -111,21 +129,24 @@ In practice, agentic sessions use **`AGENTS.md`**, each agent read-chain, and **
 |--------|-------------------------|
 | Convention health | **`oz validate`** passes |
 | Graph matches the tree | **`context/graph.json`** rebuilt after meaningful edits (`oz context build`) |
-| Workspace health | **`oz audit`** (staleness, drift, orphans, …) |
+| Query / routing config | Optional **`context/scoring.toml`** in sync; use **`oz context scoring validate`** when tuning |
+| Workspace health | **`oz audit`** (staleness, drift, orphans, coverage, …) |
 | Go implementation | **`go test ./...`** and **`go vet ./...`** clean under **`code/oz`** |
 
-`oz context query` and MCP (**`query_graph`**, **`agent_for_task`**, …) expose the graph for routing and scoped context. **[`docs/architecture.md`](./docs/architecture.md)** covers graph, query, and audit wiring.
+`oz context query` and MCP (**`query_graph`**, **`agent_for_task`**, …) expose the graph for routing and scoped context. ADR: **[`specs/decisions/0004-context-retrieval-ranking.md`](./specs/decisions/0004-context-retrieval-ranking.md)**. **[`docs/architecture.md`](./docs/architecture.md)** covers graph, query, and audit wiring.
 
 ---
 
-## Editor integrations
+## Integrations (editors)
+
+These are **not** optional packages — they wire Claude Code or Cursor to shared hook scripts:
 
 ```bash
 oz add claude   # CLAUDE.md + Claude Code hooks (.claude/settings.json)
 oz add cursor   # Cursor hooks (.cursor/hooks.json)
 ```
 
-Both install shared hook scripts under `.oz/hooks/`:
+Both install the same three hook scripts under **`.oz/hooks/`**; Cursor also writes **`.cursor/hooks.json`**, and Claude adds **`.claude/settings.json`** and **`CLAUDE.md`**:
 
 | Hook | Role |
 |------|------|
@@ -133,13 +154,13 @@ Both install shared hook scripts under `.oz/hooks/`:
 | `oz-after-edit.sh` | Runs `oz validate` + `oz context build` after `.md` / `.go` edits |
 | `oz-pre-commit.sh` | Blocks `git commit` if `oz validate` or `oz audit staleness` fails |
 
-`oz init` can install the same hooks during workspace creation.
+`oz init` can install the same hooks during workspace creation. Optional **maintainer** / **pm** packages are installed with **`oz add maintainer`** / **`oz add pm`** (see above).
 
 ---
 
 ## MCP (Model Context Protocol)
 
-`oz context serve` is a stdio MCP server so clients can call **`query_graph`**, **`get_node`**, **`get_neighbors`**, and **`agent_for_task`** against the current workspace.
+`oz context serve` is a stdio MCP server so clients can call **`query_graph`** (full routing packet), **`get_node`**, **`get_neighbors`**, and **`agent_for_task`** (task → agent + confidence) against the current workspace. See **[`specs/routing-packet.md`](./specs/routing-packet.md)** for the packet shape.
 
 Example **`.mcp.json`** snippet:
 
