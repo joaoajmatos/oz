@@ -15,7 +15,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:structural-context-graph",
@@ -29,7 +29,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:semantic-overlay",
@@ -43,7 +43,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:crystallize-workflow",
@@ -56,7 +56,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 0.95,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:audit-framework",
@@ -69,7 +69,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:spec-code-drift-detection",
@@ -82,7 +82,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:routing-packet",
@@ -94,7 +94,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 0.95,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:three-layer-architecture",
@@ -106,7 +106,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:agent-definition",
@@ -118,7 +118,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 0.9,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:concept-object",
@@ -130,7 +130,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:implements-edge",
@@ -144,7 +144,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 0.95,
-      "reviewed": false
+      "reviewed": true
     },
     {
       "id": "concept:workspace-validation",
@@ -157,7 +157,7 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 0.9,
-      "reviewed": false
+      "reviewed": true
     }
   ],
   "edges": [
