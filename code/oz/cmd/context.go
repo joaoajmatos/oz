@@ -14,8 +14,8 @@ import (
 	"github.com/joaoajmatos/oz/internal/query"
 	"github.com/joaoajmatos/oz/internal/review"
 	"github.com/joaoajmatos/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 	"github.com/joaoajmatos/oz/internal/workspace"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
@@ -44,16 +44,6 @@ var (
 	reviewAcceptAll   bool
 	reviewNoColor     bool
 	quietBuild        bool
-)
-
-var (
-	enrichTitleStyle   = lipgloss.NewStyle().Bold(true).Foreground(ozPurple)
-	enrichLabelStyle   = lipgloss.NewStyle().Foreground(ozFaint)
-	enrichValueStyle   = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
-	enrichSpinnerStyle = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
-	enrichStageStyle   = lipgloss.NewStyle().Foreground(ozSoft)
-	enrichDoneStyle    = lipgloss.NewStyle().Bold(true).Foreground(ozGreen)
-	enrichInfoStyle    = lipgloss.NewStyle().Foreground(ozFaint)
 )
 
 var contextQueryCmd = &cobra.Command{
@@ -180,10 +170,10 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 	}
 	showProgress := !enrichQuiet
 	var (
-		stageMu       sync.RWMutex
-		currentStage  = "starting enrichment"
-		requestedAt   time.Time
-		waitingHints  = []string{
+		stageMu      sync.RWMutex
+		currentStage = "starting enrichment"
+		requestedAt  time.Time
+		waitingHints = []string{
 			"dialing OpenRouter",
 			"model is thinking",
 			"assembling concepts",
@@ -201,7 +191,7 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 			"cleaning low-signal relations",
 			"preparing merge payload",
 		}
-		stopSpinner   func()
+		stopSpinner func()
 	)
 	if showProgress {
 		stopCh := make(chan struct{})
@@ -228,12 +218,12 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 						elapsed := int(time.Since(waitStarted).Seconds())
 						waitHint = waitingHints[(elapsed/3)%len(waitingHints)]
 					}
-					stageText := enrichStageStyle.Render(stage)
+					stageText := termstyle.Muted.Render(stage)
 					if waitHint != "" {
-						stageText = stageText + " " + enrichInfoStyle.Render("("+waitHint+")")
+						stageText = stageText + " " + termstyle.Subtle.Render("("+waitHint+")")
 					}
 					fmt.Fprintf(cmd.ErrOrStderr(), "\r\033[2K%s %s",
-						enrichSpinnerStyle.Render(frames[i%len(frames)]),
+						termstyle.AccentBold.Render(frames[i%len(frames)]),
 						stageText,
 					)
 					i++
@@ -262,8 +252,8 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 		stageMu.Unlock()
 		if changed {
 			fmt.Fprintf(cmd.ErrOrStderr(), "\r\033[2K%s %s\n",
-				enrichInfoStyle.Render("•"),
-				enrichInfoStyle.Render(nextStage),
+				termstyle.Subtle.Render("•"),
+				termstyle.Subtle.Render(nextStage),
 			)
 		}
 	}
@@ -290,12 +280,12 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 	if shouldSkipEnrich(existingOverlay, g.ContentHash, enrichModel, enrichForce) {
 		if showProgress {
 			fmt.Fprintf(cmd.ErrOrStderr(), "%s %s\n",
-				enrichDoneStyle.Render("✓"),
-				enrichStageStyle.Render("semantic overlay is already up to date; skipping enrichment"),
+				termstyle.OK.Render("✓"),
+				termstyle.Muted.Render("semantic overlay is already up to date; skipping enrichment"),
 			)
-			cmd.Printf("%s\n", enrichTitleStyle.Render("context enrich skipped"))
-			cmd.Printf("  %s %s\n", enrichLabelStyle.Render("reason   "), enrichValueStyle.Render("semantic overlay is fresh"))
-			cmd.Printf("  %s %s\n", enrichLabelStyle.Render("hint     "), enrichValueStyle.Render("use --force to re-enrich anyway"))
+			cmd.Printf("%s\n", termstyle.Brand.Render("context enrich skipped"))
+			cmd.Printf("  %s %s\n", termstyle.Subtle.Render("reason   "), termstyle.AccentBold.Render("semantic overlay is fresh"))
+			cmd.Printf("  %s %s\n", termstyle.Subtle.Render("hint     "), termstyle.AccentBold.Render("use --force to re-enrich anyway"))
 		}
 		return nil
 	}
@@ -328,23 +318,23 @@ func runContextEnrich(cmd *cobra.Command, _ []string) error {
 	}
 	if showProgress {
 		fmt.Fprintf(cmd.ErrOrStderr(), "%s %s\n",
-			enrichDoneStyle.Render("✓"),
-			enrichStageStyle.Render("enrichment completed"),
+			termstyle.OK.Render("✓"),
+			termstyle.Muted.Render("enrichment completed"),
 		)
 	}
 
-	cmd.Printf("%s\n", enrichTitleStyle.Render("context enrich complete"))
-	cmd.Printf("  %s %s\n", enrichLabelStyle.Render("output   "), enrichValueStyle.Render("context/semantic.json"))
-	cmd.Printf("  %s %s\n", enrichLabelStyle.Render("model    "), enrichValueStyle.Render(res.Model))
-	cmd.Printf("  %s %s\n", enrichLabelStyle.Render("concepts "), enrichValueStyle.Render(fmt.Sprintf("%d extracted", res.ConceptsAdded)))
-	cmd.Printf("  %s %s\n", enrichLabelStyle.Render("edges    "), enrichValueStyle.Render(fmt.Sprintf("%d added", res.EdgesAdded)))
+	cmd.Printf("%s\n", termstyle.Brand.Render("context enrich complete"))
+	cmd.Printf("  %s %s\n", termstyle.Subtle.Render("output   "), termstyle.AccentBold.Render("context/semantic.json"))
+	cmd.Printf("  %s %s\n", termstyle.Subtle.Render("model    "), termstyle.AccentBold.Render(res.Model))
+	cmd.Printf("  %s %s\n", termstyle.Subtle.Render("concepts "), termstyle.AccentBold.Render(fmt.Sprintf("%d extracted", res.ConceptsAdded)))
+	cmd.Printf("  %s %s\n", termstyle.Subtle.Render("edges    "), termstyle.AccentBold.Render(fmt.Sprintf("%d added", res.EdgesAdded)))
 	if res.Cost > 0 {
-		cmd.Printf("  %s %s\n", enrichLabelStyle.Render("cost     "), enrichValueStyle.Render(fmt.Sprintf("$%.4f", res.Cost)))
+		cmd.Printf("  %s %s\n", termstyle.Subtle.Render("cost     "), termstyle.AccentBold.Render(fmt.Sprintf("$%.4f", res.Cost)))
 	}
 	if len(res.Skipped) > 0 {
-		cmd.Printf("  %s %s\n", enrichLabelStyle.Render("skipped  "), enrichValueStyle.Render(fmt.Sprintf("%d items", len(res.Skipped))))
+		cmd.Printf("  %s %s\n", termstyle.Subtle.Render("skipped  "), termstyle.AccentBold.Render(fmt.Sprintf("%d items", len(res.Skipped))))
 		for _, s := range res.Skipped {
-			cmd.Printf("    - %s\n", enrichLabelStyle.Render(s))
+			cmd.Printf("    - %s\n", termstyle.Subtle.Render(s))
 		}
 	}
 	return nil
@@ -376,10 +366,10 @@ func runContextServe(cmd *cobra.Command, _ []string) error {
 // how to stop. It must use stderr only — stdout is reserved for JSON-RPC.
 func printContextServeBanner(w io.Writer, root string) {
 	if shouldUseContextServeTTY(w) {
-		fmt.Fprintf(w, "%s\n", enrichTitleStyle.Render("context serve — MCP stdio server"))
-		fmt.Fprintf(w, "  %s %s\n", enrichLabelStyle.Render("workspace"), enrichValueStyle.Render(root))
-		fmt.Fprintf(w, "  %s %s\n", enrichLabelStyle.Render("protocol "), enrichStageStyle.Render("JSON-RPC on stdin/stdout"))
-		fmt.Fprintf(w, "  %s %s\n", enrichLabelStyle.Render("stop     "), enrichValueStyle.Render("Ctrl+C, or close stdin (EOF)"))
+		fmt.Fprintf(w, "%s\n", termstyle.Brand.Render("context serve — MCP stdio server"))
+		fmt.Fprintf(w, "  %s %s\n", termstyle.Subtle.Render("workspace"), termstyle.AccentBold.Render(root))
+		fmt.Fprintf(w, "  %s %s\n", termstyle.Subtle.Render("protocol "), termstyle.Muted.Render("JSON-RPC on stdin/stdout"))
+		fmt.Fprintf(w, "  %s %s\n", termstyle.Subtle.Render("stop     "), termstyle.AccentBold.Render("Ctrl+C, or close stdin (EOF)"))
 		return
 	}
 	fmt.Fprintln(w, "context serve — MCP stdio server")

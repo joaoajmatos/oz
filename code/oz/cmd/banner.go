@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 )
 
 // bannerLines is the oz ASCII art logo split by line so that solid (█) and
@@ -20,11 +20,6 @@ var bannerLines = []string{
 	`   ▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒▒ `,
 }
 
-var (
-	styleBannerSolid = lipgloss.NewStyle().Foreground(ozPurple)
-	styleBannerShade = lipgloss.NewStyle().Foreground(ozLavend)
-)
-
 // renderBannerLine renders a single banner line colouring █ in deep purple
 // and ▒ in lavender so the shadow effect reads clearly in terminal.
 func renderBannerLine(line string) string {
@@ -32,9 +27,9 @@ func renderBannerLine(line string) string {
 	for _, r := range line {
 		switch r {
 		case '█':
-			sb.WriteString(styleBannerSolid.Render(string(r)))
+			sb.WriteString(termstyle.BannerSolid.Render(string(r)))
 		case '▒':
-			sb.WriteString(styleBannerShade.Render(string(r)))
+			sb.WriteString(termstyle.BannerShade.Render(string(r)))
 		default:
 			sb.WriteRune(r)
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/joaoajmatos/oz/internal/scaffold"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 	"github.com/joaoajmatos/oz/internal/workspace"
 )
 
@@ -103,8 +104,8 @@ func runAddPackage(cmd *cobra.Command, args []string, id string) error {
 		return err
 	}
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "%s %s %s\n", styleSuccess.Render("✓"), styleSubtle.Render("Added package"), styleCmd.Render(id))
-	fmt.Fprintf(out, "  %s %s\n", styleSubtle.Render("workspace"), root)
+	fmt.Fprintf(out, "%s %s %s\n", termstyle.OK.Render("✓"), termstyle.Subtle.Render("Added package"), termstyle.Command.Render(id))
+	fmt.Fprintf(out, "  %s %s\n", termstyle.Subtle.Render("workspace"), root)
 	for _, p := range paths {
 		fmt.Fprintf(out, "  %s\n", p)
 	}
@@ -138,8 +139,8 @@ func runAddClaude(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("writing Claude Code hooks: %w", err)
 	}
 
-	fmt.Printf("%s %s\n", styleSuccess.Render("✓"), styleSubtle.Render("Added Claude Code integration"))
-	fmt.Printf("  %s %s\n", styleSubtle.Render("workspace"), root)
+	fmt.Printf("%s %s\n", termstyle.OK.Render("✓"), termstyle.Subtle.Render("Added Claude Code integration"))
+	fmt.Printf("  %s %s\n", termstyle.Subtle.Render("workspace"), root)
 	fmt.Println("  CLAUDE.md")
 	fmt.Println("  .claude/settings.json")
 	fmt.Println("  .cursor/hooks/oz-session-init.sh")
@@ -158,8 +159,8 @@ func runAddCursor(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("writing Cursor hooks: %w", err)
 	}
 
-	fmt.Printf("%s %s\n", styleSuccess.Render("✓"), styleSubtle.Render("Added Cursor integration"))
-	fmt.Printf("  %s %s\n", styleSubtle.Render("workspace"), root)
+	fmt.Printf("%s %s\n", termstyle.OK.Render("✓"), termstyle.Subtle.Render("Added Cursor integration"))
+	fmt.Printf("  %s %s\n", termstyle.Subtle.Render("workspace"), root)
 	fmt.Println("  .cursor/hooks.json")
 	fmt.Println("  .cursor/hooks/oz-session-init.sh")
 	fmt.Println("  .cursor/hooks/oz-after-edit.sh")

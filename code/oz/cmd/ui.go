@@ -7,55 +7,19 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
-)
 
-var (
-	ozPurple = lipgloss.Color("#7C3AED")
-	ozFaint  = lipgloss.Color("#6B7280")
-	ozGreen  = lipgloss.Color("#10B981")
-	ozLavend = lipgloss.Color("#A78BFA")
-	ozSoft   = lipgloss.Color("#D1D5DB")
-
-	styleBrand = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ozPurple)
-
-	styleSubtle = lipgloss.NewStyle().
-			Foreground(ozFaint)
-
-	styleSuccess = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ozGreen)
-
-	styleCmd = lipgloss.NewStyle().
-			Foreground(ozLavend).
-			Bold(true)
-
-	styleTreeRoot = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ozPurple)
-
-	styleTreeDir = lipgloss.NewStyle().
-			Foreground(ozLavend)
-
-	styleTreeFile = lipgloss.NewStyle().
-			Foreground(ozSoft)
-
-	styleSectionTitle = lipgloss.NewStyle().
-				Bold(true).
-				Foreground(ozSoft)
+	"github.com/joaoajmatos/oz/internal/termstyle"
 )
 
 func ozTheme() *huh.Theme {
 	t := huh.ThemeBase()
-	t.Focused.Base = t.Focused.Base.BorderForeground(ozPurple)
-	t.Focused.Title = t.Focused.Title.Foreground(ozPurple).Bold(true)
-	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(ozPurple)
-	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(ozLavend)
-	t.Focused.FocusedButton = t.Focused.FocusedButton.Background(ozPurple).Foreground(lipgloss.Color("#FFFFFF"))
-	t.Focused.BlurredButton = t.Focused.BlurredButton.Foreground(ozFaint)
+	t.Focused.Base = t.Focused.Base.BorderForeground(termstyle.Purple)
+	t.Focused.Title = t.Focused.Title.Foreground(termstyle.Purple).Bold(true)
+	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(termstyle.Purple)
+	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(termstyle.Lavend)
+	t.Focused.FocusedButton = t.Focused.FocusedButton.Background(termstyle.Purple).Foreground(termstyle.White)
+	t.Focused.BlurredButton = t.Focused.BlurredButton.Foreground(termstyle.Faint)
 	return t
 }
 
@@ -67,7 +31,7 @@ func installBrandedHelp(root *cobra.Command) {
 
 func renderBrandedHelp(out io.Writer, c *cobra.Command) {
 	fmt.Fprintln(out)
-	fmt.Fprintf(out, "  %s  %s\n", styleBrand.Render("oz"), styleSubtle.Render(c.CommandPath()))
+	fmt.Fprintf(out, "  %s  %s\n", termstyle.Brand.Render("oz"), termstyle.Subtle.Render(c.CommandPath()))
 	fmt.Fprintln(out)
 
 	desc := strings.TrimSpace(c.Long)
@@ -75,19 +39,19 @@ func renderBrandedHelp(out io.Writer, c *cobra.Command) {
 		desc = strings.TrimSpace(c.Short)
 	}
 	if desc != "" {
-		fmt.Fprintln(out, styleSubtle.Render(indentLines(desc, "  ")))
+		fmt.Fprintln(out, termstyle.Subtle.Render(indentLines(desc, "  ")))
 		fmt.Fprintln(out)
 	}
 
 	printHelpSection(out, "Usage")
-	fmt.Fprintf(out, "  %s\n", styleCmd.Render(c.UseLine()))
+	fmt.Fprintf(out, "  %s\n", termstyle.Command.Render(c.UseLine()))
 
 	subcommands := availableSubcommands(c)
 	if len(subcommands) > 0 {
 		fmt.Fprintln(out)
 		printHelpSection(out, "Commands")
 		for _, sub := range subcommands {
-			fmt.Fprintf(out, "  %-24s %s\n", styleCmd.Render(sub.Name()), sub.Short)
+			fmt.Fprintf(out, "  %-24s %s\n", termstyle.Command.Render(sub.Name()), sub.Short)
 		}
 	}
 
@@ -107,13 +71,13 @@ func renderBrandedHelp(out io.Writer, c *cobra.Command) {
 
 	if c.HasHelpSubCommands() {
 		fmt.Fprintln(out)
-		fmt.Fprintf(out, "  %s %s\n", styleSubtle.Render("Use"), styleCmd.Render(c.CommandPath()+" [command] --help"))
+		fmt.Fprintf(out, "  %s %s\n", termstyle.Subtle.Render("Use"), termstyle.Command.Render(c.CommandPath()+" [command] --help"))
 	}
 	fmt.Fprintln(out)
 }
 
 func printHelpSection(out io.Writer, title string) {
-	fmt.Fprintf(out, "  %s\n", styleSectionTitle.Render(title))
+	fmt.Fprintf(out, "  %s\n", termstyle.Section.Render(title))
 }
 
 func indentLines(s, prefix string) string {

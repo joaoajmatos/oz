@@ -11,6 +11,7 @@ import (
 
 	"github.com/joaoajmatos/oz/internal/convention"
 	"github.com/joaoajmatos/oz/internal/scaffold"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 )
 
 var (
@@ -149,7 +150,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// ── Step 4: success output ───────────────────────────────────────────────
 	fmt.Println()
-	fmt.Println(styleSuccess.Render("  ✓ Workspace ready"))
+	fmt.Println(termstyle.OK.Render("  ✓ Workspace ready"))
 	fmt.Println()
 	printTree(path, initClaudeFlag, setupHooks, agents)
 	fmt.Println()
@@ -191,7 +192,7 @@ func collectAgents(useDefaults bool) ([]scaffold.AgentConfig, error) {
 	}
 
 	fmt.Println()
-	fmt.Println(styleSubtle.Render("  Define your agents — press Enter with an empty name when done."))
+	fmt.Println(termstyle.Subtle.Render("  Define your agents — press Enter with an empty name when done."))
 	fmt.Println()
 
 	var agents []scaffold.AgentConfig
@@ -201,7 +202,7 @@ func collectAgents(useDefaults bool) ([]scaffold.AgentConfig, error) {
 		nameForm := huh.NewForm(
 			huh.NewGroup(
 				huh.NewInput().
-					Title(fmt.Sprintf("Agent name %s", styleSubtle.Render(fmt.Sprintf("(%d defined so far — leave empty to finish)", len(agents))))).
+					Title(fmt.Sprintf("Agent name %s", termstyle.Subtle.Render(fmt.Sprintf("(%d defined so far — leave empty to finish)", len(agents))))).
 					Placeholder("e.g. coding, reviewer, devops").
 					Value(&agentName),
 			),
@@ -290,7 +291,7 @@ func collectAgents(useDefaults bool) ([]scaffold.AgentConfig, error) {
 
 func printInitHeader() {
 	PrintBanner()
-	subtitle := styleSubtle.Render("scaffold a new oz workspace")
+	subtitle := termstyle.Subtle.Render("scaffold a new oz workspace")
 	fmt.Println("  " + subtitle)
 	fmt.Println()
 }
@@ -334,22 +335,22 @@ func printTree(root string, claudeMD bool, hooks bool, agents []scaffold.AgentCo
 		)
 	}
 
-	fmt.Println("  " + styleTreeRoot.Render(root+"/"))
+	fmt.Println("  " + termstyle.TreeRoot.Render(root+"/"))
 	for i, e := range entries {
 		connector := "├── "
 		if i == len(entries)-1 {
 			connector = "└── "
 		}
 		if e.dir {
-			fmt.Printf("  %s%s\n", connector, styleTreeDir.Render(e.name))
+			fmt.Printf("  %s%s\n", connector, termstyle.TreeDir.Render(e.name))
 		} else {
-			fmt.Printf("  %s%s\n", connector, styleTreeFile.Render(e.name))
+			fmt.Printf("  %s%s\n", connector, termstyle.TreeFile.Render(e.name))
 		}
 	}
 }
 
 func printNextSteps(hooks bool) {
-	fmt.Println("  " + styleSectionTitle.Render("Next steps"))
+	fmt.Println("  " + termstyle.Section.Render("Next steps"))
 	fmt.Println()
 
 	steps := []struct{ cmd, desc string }{
@@ -359,11 +360,11 @@ func printNextSteps(hooks bool) {
 		{"oz add cursor   ", "add Cursor integration (hooks)"},
 	}
 	for _, s := range steps {
-		fmt.Printf("  %s  %s\n", styleCmd.Render(s.cmd), styleSubtle.Render(s.desc))
+		fmt.Printf("  %s  %s\n", termstyle.Command.Render(s.cmd), termstyle.Subtle.Render(s.desc))
 	}
 	if hooks {
 		fmt.Println()
-		fmt.Println("  " + styleSubtle.Render("IDE hooks configured — oz convention is enforced on every edit and commit."))
+		fmt.Println("  " + termstyle.Subtle.Render("IDE hooks configured — oz convention is enforced on every edit and commit."))
 	}
 	fmt.Println()
 }

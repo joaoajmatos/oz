@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	ozcontext "github.com/joaoajmatos/oz/internal/context"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 	"github.com/joaoajmatos/oz/internal/validate"
 	"github.com/joaoajmatos/oz/internal/workspace"
 )
@@ -54,16 +55,16 @@ func runValidate(cmd *cobra.Command, args []string) error {
 	for _, f := range result.Findings {
 		switch f.Severity {
 		case validate.Error:
-			fmt.Fprintf(os.Stderr, "  %s   %s\n", styleCmd.Render("error"), f.Message)
+			fmt.Fprintf(os.Stderr, "  %s   %s\n", termstyle.Command.Render("error"), f.Message)
 		case validate.Warning:
-			fmt.Fprintf(os.Stderr, "  %s %s\n", styleSubtle.Render("warning"), f.Message)
+			fmt.Fprintf(os.Stderr, "  %s %s\n", termstyle.Subtle.Render("warning"), f.Message)
 		}
 	}
 
 	if result.Valid() {
-		fmt.Printf("%s  %s\n", styleSuccess.Render("ok"), ws.Root)
+		fmt.Printf("%s  %s\n", termstyle.OK.Render("ok"), ws.Root)
 	} else {
-		fmt.Fprintf(os.Stderr, "%s %s\n", styleCmd.Render("FAIL"), ws.Root)
+		fmt.Fprintf(os.Stderr, "%s %s\n", termstyle.Command.Render("FAIL"), ws.Root)
 	}
 
 	if withContext {

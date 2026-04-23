@@ -16,20 +16,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/joaoajmatos/oz/internal/semantic"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/joaoajmatos/oz/internal/semantic"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 	"github.com/mattn/go-isatty"
-)
-
-// --- Oz CLI palette (aligned with cmd/ui.go and internal/audit/report) -----
-
-var (
-	ozPurple = lipgloss.Color("#7C3AED")
-	ozFaint  = lipgloss.Color("#6B7280")
-	ozGreen  = lipgloss.Color("#10B981")
-	ozLavend = lipgloss.Color("#A78BFA")
-	ozSoft   = lipgloss.Color("#D1D5DB")
-	ozOrange = lipgloss.Color("#F59E0B")
 )
 
 // Options controls the review workflow.
@@ -91,14 +81,14 @@ func Run(workspacePath string, opts Options) (Summary, error) {
 
 	total := len(pendingConcepts) + len(pendingEdges)
 	if total == 0 {
-		fmt.Fprintln(opts.Out, ui.render(ui.styleOK, "✓")+" "+ui.render(ui.styleSubtle, "nothing to review — all items already marked reviewed"))
+		fmt.Fprintln(opts.Out, ui.render(termstyle.OK, "✓")+" "+ui.render(termstyle.Subtle, "nothing to review — all items already marked reviewed"))
 		return Summary{NothingToReview: true}, nil
 	}
 
 	// Lead-in title (match enrich / audit tone).
 	fmt.Fprintln(opts.Out)
-	fmt.Fprintln(opts.Out, ui.render(ui.styleTitle, "context review")+"  "+ui.render(ui.styleSubtle, "unreviewed semantic items"))
-	fmt.Fprintln(opts.Out, "  "+ui.render(ui.styleRule, strings.Repeat("─", 58)))
+	fmt.Fprintln(opts.Out, ui.render(termstyle.Brand, "context review")+"  "+ui.render(termstyle.Subtle, "unreviewed semantic items"))
+	fmt.Fprintln(opts.Out, "  "+ui.render(termstyle.Subtle, strings.Repeat("─", 58)))
 
 	printConceptTable(ui, overlay, pendingConcepts)
 	printEdgeTable(ui, overlay, pendingEdges)
@@ -114,7 +104,7 @@ func Run(workspacePath string, opts Options) (Summary, error) {
 			return Summary{}, fmt.Errorf("write semantic.json: %w", err)
 		}
 		fmt.Fprintln(opts.Out)
-		fmt.Fprintf(opts.Out, "%s %s\n", ui.render(ui.styleOK, "✓"), ui.render(ui.styleSubtle, fmt.Sprintf("marked %d item(s) as reviewed (--accept-all)", total)))
+		fmt.Fprintf(opts.Out, "%s %s\n", ui.render(termstyle.OK, "✓"), ui.render(termstyle.Subtle, fmt.Sprintf("marked %d item(s) as reviewed (--accept-all)", total)))
 		return Summary{Accepted: total}, nil
 	}
 
@@ -135,54 +125,28 @@ func Run(workspacePath string, opts Options) (Summary, error) {
 	}
 	if !completed {
 		fmt.Fprintln(opts.Out)
-		fmt.Fprintln(opts.Out, ui.render(ui.styleWarn, "aborted")+" — "+ui.render(ui.styleSubtle, "in-session changes were not saved"))
+		fmt.Fprintln(opts.Out, ui.render(termstyle.Warn, "aborted")+" — "+ui.render(termstyle.Subtle, "in-session changes were not saved"))
 	}
 
 	fmt.Fprintln(opts.Out)
-	fmt.Fprintln(opts.Out, ui.render(ui.styleSubtle, "—"))
+	fmt.Fprintln(opts.Out, ui.render(termstyle.Subtle, "—"))
 	fmt.Fprintf(opts.Out, "  %s  %s  %s  %s\n",
-		ui.render(ui.styleSubtle, "result"),
-		ui.render(ui.styleOK, fmt.Sprintf("accepted %d", accepted)),
-		ui.render(ui.styleSubtle, "·"),
-		ui.render(ui.styleSubtle, fmt.Sprintf("rejected %d", rejected)))
+		ui.render(termstyle.Subtle, "result"),
+		ui.render(termstyle.OK, fmt.Sprintf("accepted %d", accepted)),
+		ui.render(termstyle.Subtle, "·"),
+		ui.render(termstyle.Subtle, fmt.Sprintf("rejected %d", rejected)))
 	return Summary{Accepted: accepted, Rejected: rejected}, nil
 }
 
-// ui holds lipgloss styles and whether to apply color.
+// ui is TTY output and whether ANSI color is active (from opts, env, and writer type).
 type ui struct {
 	w     io.Writer
 	color bool
-	// Pre-built styles
-	styleTitle, styleSubtle, styleHeader, styleDim, styleValue, styleTag, styleTableText lipgloss.Style
-	styleOK, styleWarn, stylePrompt, styleDesc, styleRule, styleAccent lipgloss.Style
 }
 
 func newUI(opts Options) *ui {
 	color := !opts.NoColor && os.Getenv("NO_COLOR") == "" && useColor(opts.Out)
-	u := &ui{w: opts.Out, color: color}
-	plain := lipgloss.NewStyle()
-
-	u.styleTitle = lipgloss.NewStyle().Bold(true).Foreground(ozPurple)
-	u.styleSubtle = lipgloss.NewStyle().Foreground(ozFaint)
-	u.styleHeader = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
-	u.styleDim = lipgloss.NewStyle().Foreground(ozFaint)
-	u.styleValue = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
-	u.styleTag = lipgloss.NewStyle().Foreground(ozSoft)
-	u.styleTableText = lipgloss.NewStyle().Foreground(ozSoft)
-	u.styleOK = lipgloss.NewStyle().Bold(true).Foreground(ozGreen)
-	u.styleWarn = lipgloss.NewStyle().Foreground(ozOrange)
-	u.stylePrompt = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
-	u.styleDesc = lipgloss.NewStyle().Foreground(ozSoft)
-	u.styleRule = lipgloss.NewStyle().Foreground(ozFaint)
-	u.styleAccent = lipgloss.NewStyle().Foreground(ozPurple).Bold(true)
-
-	if !color {
-		for _, s := range []*lipgloss.Style{&u.styleTitle, &u.styleSubtle, &u.styleHeader, &u.styleDim, &u.styleValue, &u.styleTag, &u.styleTableText, &u.styleOK, &u.styleWarn, &u.stylePrompt, &u.styleDesc, &u.styleRule, &u.styleAccent} {
-			*s = plain
-		}
-	}
-	_ = plain
-	return u
+	return &ui{w: opts.Out, color: color}
 }
 
 func (u *ui) render(st lipgloss.Style, s string) string {
@@ -206,13 +170,13 @@ func printConceptTable(u *ui, o *semantic.Overlay, indices []int) {
 		return
 	}
 	fmt.Fprintln(u.w)
-	fmt.Fprintln(u.w, "  "+u.render(u.styleAccent, fmt.Sprintf("Unreviewed concepts (%d)", len(indices))))
+	fmt.Fprintln(u.w, "  "+u.render(termstyle.Brand, fmt.Sprintf("Unreviewed concepts (%d)", len(indices))))
 	fmt.Fprintf(u.w, "  %s  %s  %s  %s\n",
-		u.render(u.styleHeader, padRunes("name", 28)),
-		u.render(u.styleHeader, "tag       "),
-		u.render(u.styleHeader, "conf "),
-		u.render(u.styleHeader, "source"))
-	fmt.Fprintln(u.w, "  "+u.render(u.styleRule, strings.Repeat("─", 72)))
+		u.render(termstyle.AccentBold, padRunes("name", 28)),
+		u.render(termstyle.AccentBold, "tag       "),
+		u.render(termstyle.AccentBold, "conf "),
+		u.render(termstyle.AccentBold, "source"))
+	fmt.Fprintln(u.w, "  "+u.render(termstyle.Subtle, strings.Repeat("─", 72)))
 	for _, i := range indices {
 		c := o.Concepts[i]
 		sources := strings.Join(c.SourceFiles, ", ")
@@ -220,10 +184,10 @@ func printConceptTable(u *ui, o *semantic.Overlay, indices []int) {
 			sources = truncateRunes(sources, 36)
 		}
 		fmt.Fprintf(u.w, "  %s  %s  %s  %s\n",
-			u.render(u.styleValue, padRunes(truncateRunes(c.Name, 28), 28)),
-			u.render(u.styleTag, padRunes(c.Tag, 9)),
-			u.render(u.styleTableText, fmt.Sprintf("%4.2f", c.Confidence)),
-			u.render(u.styleDim, sources),
+			u.render(termstyle.AccentBold, padRunes(truncateRunes(c.Name, 28), 28)),
+			u.render(termstyle.Muted, padRunes(c.Tag, 9)),
+			u.render(termstyle.Muted, fmt.Sprintf("%4.2f", c.Confidence)),
+			u.render(termstyle.Subtle, sources),
 		)
 	}
 }
@@ -234,21 +198,21 @@ func printEdgeTable(u *ui, o *semantic.Overlay, indices []int) {
 		return
 	}
 	fmt.Fprintln(u.w)
-	fmt.Fprintln(u.w, "  "+u.render(u.styleAccent, fmt.Sprintf("Unreviewed edges (%d)", len(indices))))
+	fmt.Fprintln(u.w, "  "+u.render(termstyle.Brand, fmt.Sprintf("Unreviewed edges (%d)", len(indices))))
 	fmt.Fprintf(u.w, "  %s  %s  %s  %s\n",
-		u.render(u.styleHeader, padRunes("from", 28)),
-		u.render(u.styleHeader, padRunes("type", 26)),
-		u.render(u.styleHeader, padRunes("to", 28)),
-		u.render(u.styleHeader, "conf "),
+		u.render(termstyle.AccentBold, padRunes("from", 28)),
+		u.render(termstyle.AccentBold, padRunes("type", 26)),
+		u.render(termstyle.AccentBold, padRunes("to", 28)),
+		u.render(termstyle.AccentBold, "conf "),
 	)
-	fmt.Fprintln(u.w, "  "+u.render(u.styleRule, strings.Repeat("─", 90)))
+	fmt.Fprintln(u.w, "  "+u.render(termstyle.Subtle, strings.Repeat("─", 90)))
 	for _, i := range indices {
 		e := o.Edges[i]
 		fmt.Fprintf(u.w, "  %s  %s  %s  %s\n",
-			u.render(u.styleValue, padRunes(truncateRunes(e.From, 28), 28)),
-			u.render(u.styleTableText, padRunes(truncateRunes(e.Type, 26), 26)),
-			u.render(u.styleValue, padRunes(truncateRunes(e.To, 28), 28)),
-			u.render(u.styleTableText, fmt.Sprintf("%4.2f", e.Confidence)),
+			u.render(termstyle.AccentBold, padRunes(truncateRunes(e.From, 28), 28)),
+			u.render(termstyle.Muted, padRunes(truncateRunes(e.Type, 26), 26)),
+			u.render(termstyle.AccentBold, padRunes(truncateRunes(e.To, 28), 28)),
+			u.render(termstyle.Muted, fmt.Sprintf("%4.2f", e.Confidence)),
 		)
 	}
 }
@@ -265,8 +229,8 @@ func interactiveReview(
 	scanner := bufio.NewScanner(opts.In)
 
 	fmt.Fprintln(opts.Out)
-	fmt.Fprintln(opts.Out, "  "+ui.render(ui.styleAccent, "Review each item")+"  "+ui.render(ui.styleSubtle, "[y]es  [n]o  [q]uit"))
-	fmt.Fprintln(opts.Out, "  "+ui.render(ui.styleRule, strings.Repeat("─", 58)))
+	fmt.Fprintln(opts.Out, "  "+ui.render(termstyle.Brand, "Review each item")+"  "+ui.render(termstyle.Subtle, "[y]es  [n]o  [q]uit"))
+	fmt.Fprintln(opts.Out, "  "+ui.render(termstyle.Subtle, strings.Repeat("─", 58)))
 
 	completed = true
 	step := 0
@@ -278,15 +242,15 @@ func interactiveReview(
 		step++
 		c := overlay.Concepts[i]
 		fmt.Fprintln(opts.Out)
-		fmt.Fprintf(opts.Out, "  %s\n", ui.render(ui.styleSubtle, fmt.Sprintf("%d / %d — concept", step, totalItems)))
+		fmt.Fprintf(opts.Out, "  %s\n", ui.render(termstyle.Subtle, fmt.Sprintf("%d / %d — concept", step, totalItems)))
 		fmt.Fprintf(opts.Out, "  %s  %s  %s\n",
-			ui.render(ui.styleTitle, c.Name),
-			ui.render(ui.styleSubtle, "·"),
-			ui.render(ui.styleTag, fmt.Sprintf("%s · %.2f", c.Tag, c.Confidence)))
+			ui.render(termstyle.Brand, c.Name),
+			ui.render(termstyle.Subtle, "·"),
+			ui.render(termstyle.Muted, fmt.Sprintf("%s · %.2f", c.Tag, c.Confidence)))
 		for _, line := range wrapText(c.Description, 78, "    ") {
-			fmt.Fprintln(opts.Out, ui.render(ui.styleDesc, line))
+			fmt.Fprintln(opts.Out, ui.render(termstyle.Muted, line))
 		}
-		fmt.Fprint(opts.Out, "  "+ui.render(ui.stylePrompt, "accept?")+" "+ui.render(ui.styleSubtle, "[y/N/q] "))
+		fmt.Fprint(opts.Out, "  "+ui.render(termstyle.AccentBold, "accept?")+" "+ui.render(termstyle.Subtle, "[y/N/q] "))
 
 		ans, quit := prompt(scanner)
 		if quit {
@@ -317,10 +281,10 @@ func interactiveReview(
 		step++
 		e := overlay.Edges[i]
 		fmt.Fprintln(opts.Out)
-		fmt.Fprintf(opts.Out, "  %s\n", ui.render(ui.styleSubtle, fmt.Sprintf("%d / %d — edge", step, totalItems)))
-		edgeLine := ui.render(ui.styleValue, e.From) + ui.render(ui.styleDim, "  —[") + ui.render(ui.styleTableText, e.Type) + ui.render(ui.styleDim, "]→  ") + ui.render(ui.styleValue, e.To) + ui.render(ui.styleSubtle, "  ·  ") + ui.render(ui.styleTableText, fmt.Sprintf("%.2f", e.Confidence))
+		fmt.Fprintf(opts.Out, "  %s\n", ui.render(termstyle.Subtle, fmt.Sprintf("%d / %d — edge", step, totalItems)))
+		edgeLine := ui.render(termstyle.AccentBold, e.From) + ui.render(termstyle.Subtle, "  —[") + ui.render(termstyle.Muted, e.Type) + ui.render(termstyle.Subtle, "]→  ") + ui.render(termstyle.AccentBold, e.To) + ui.render(termstyle.Subtle, "  ·  ") + ui.render(termstyle.Muted, fmt.Sprintf("%.2f", e.Confidence))
 		fmt.Fprintln(opts.Out, "  "+edgeLine)
-		fmt.Fprint(opts.Out, "  "+ui.render(ui.stylePrompt, "accept?")+" "+ui.render(ui.styleSubtle, "[y/N/q] "))
+		fmt.Fprint(opts.Out, "  "+ui.render(termstyle.AccentBold, "accept?")+" "+ui.render(termstyle.Subtle, "[y/N/q] "))
 
 		ans, quit := prompt(scanner)
 		if quit {

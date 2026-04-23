@@ -14,6 +14,7 @@ import (
 	"github.com/joaoajmatos/oz/internal/crystallize/classifier/heuristic"
 	"github.com/joaoajmatos/oz/internal/crystallize/promote"
 	"github.com/joaoajmatos/oz/internal/crystallize/review"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
@@ -69,7 +70,7 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 	stderr := cmd.ErrOrStderr()
 
 	fmt.Fprintln(out)
-	fmt.Fprintf(out, "  %s  %s\n\n", styleBrand.Render("oz"), styleSubtle.Render("crystallize"))
+	fmt.Fprintf(out, "  %s  %s\n\n", termstyle.Brand.Render("oz"), termstyle.Subtle.Render("crystallize"))
 
 	notesDir := filepath.Join(root, "notes")
 	if _, err := os.Stat(notesDir); err != nil {
@@ -84,11 +85,11 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	if len(paths) == 0 {
-		fmt.Fprintln(out, styleSubtle.Render("no notes to crystallize"))
+		fmt.Fprintln(out, termstyle.Subtle.Render("no notes to crystallize"))
 		return nil
 	}
 
-	fmt.Fprintf(out, "%s %s\n\n", styleSectionTitle.Render("Scan"), styleSubtle.Render(fmt.Sprintf("(%d file(s))", len(paths))))
+	fmt.Fprintf(out, "%s %s\n\n", termstyle.Section.Render("Scan"), termstyle.Subtle.Render(fmt.Sprintf("(%d file(s))", len(paths))))
 
 	progress := stderr
 	showSpinner := isInteractiveWriter(stderr)
@@ -112,12 +113,12 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 	}
 
 	if len(items) == 0 {
-		fmt.Fprintln(out, styleSubtle.Render("no notes matched (topic filter may have excluded all files)"))
+		fmt.Fprintln(out, termstyle.Subtle.Render("no notes matched (topic filter may have excluded all files)"))
 		return nil
 	}
 
 	previewTargets := previewTargetPaths(root, items)
-	fmt.Fprintln(out, styleSectionTitle.Render("Classification"))
+	fmt.Fprintln(out, termstyle.Section.Render("Classification"))
 	printClassificationTable(out, items, previewTargets)
 
 	// Default mode is report-only.
@@ -146,14 +147,14 @@ func runCrystallize(cmd *cobra.Command, _ []string) error {
 	}
 
 	if len(candidates) == 0 {
-		fmt.Fprintln(out, "\n"+styleSubtle.Render("no promotable notes (all classified as unknown)"))
+		fmt.Fprintln(out, "\n"+termstyle.Subtle.Render("no promotable notes (all classified as unknown)"))
 		return nil
 	}
 
 	if len(skipped) > 0 && crVerbose {
 		printVerboseSkips(out, skipped)
 	}
-	fmt.Fprintln(out, "\n"+styleSectionTitle.Render("Dry Run"))
+	fmt.Fprintln(out, "\n"+termstyle.Section.Render("Dry Run"))
 	if err := runCrystallizeDryRun(root, out, in, candidates, previewTargets); err != nil {
 		return err
 	}
@@ -196,7 +197,7 @@ func classifyPaths(
 		for i, p := range paths {
 			rel := relFromRoot(root, p)
 			if !showSpinner {
-				fmt.Fprintf(progress, "%s %s\n", styleSubtle.Render(fmt.Sprintf("[%d/%d]", i+1, len(paths))), rel)
+				fmt.Fprintf(progress, "%s %s\n", termstyle.Subtle.Render(fmt.Sprintf("[%d/%d]", i+1, len(paths))), rel)
 			}
 			content, err := os.ReadFile(p)
 			if err != nil {
@@ -253,7 +254,7 @@ func withSpinner[T any](out io.Writer, enabled bool, label string, fn func() (T,
 				fmt.Fprintf(out, "\r%s %s\r", strings.Repeat(" ", len(label)+4), "")
 				return
 			case <-ticker.C:
-				fmt.Fprintf(out, "\r%s %s", styleSubtle.Render(frames[i%len(frames)]), styleSubtle.Render(label))
+				fmt.Fprintf(out, "\r%s %s", termstyle.Subtle.Render(frames[i%len(frames)]), termstyle.Subtle.Render(label))
 				i++
 			}
 		}
@@ -263,7 +264,7 @@ func withSpinner[T any](out io.Writer, enabled bool, label string, fn func() (T,
 	if err != nil {
 		return zero, err
 	}
-	fmt.Fprintf(out, "\r%s %s\n", styleSuccess.Render("✓"), styleSubtle.Render(label))
+	fmt.Fprintf(out, "\r%s %s\n", termstyle.OK.Render("✓"), termstyle.Subtle.Render(label))
 	return v, nil
 }
 

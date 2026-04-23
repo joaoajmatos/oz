@@ -21,6 +21,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 	"github.com/mattn/go-isatty"
 )
 
@@ -278,16 +279,10 @@ func splitLines(b []byte) []string {
 }
 
 func colorizeUnifiedDiff(diff string) string {
-	// Keep styling local to this package so we don't depend on cmd/.
-	ozFaint := lipgloss.Color("#6B7280")
-	ozGreen := lipgloss.Color("#10B981")
-	ozRed := lipgloss.Color("#EF4444")
-	ozPurple := lipgloss.Color("#7C3AED")
-
-	header := lipgloss.NewStyle().Foreground(ozFaint)
-	hunk := lipgloss.NewStyle().Foreground(ozPurple)
-	add := lipgloss.NewStyle().Foreground(ozGreen)
-	del := lipgloss.NewStyle().Foreground(ozRed)
+	header := lipgloss.NewStyle().Foreground(termstyle.Faint)
+	hunk := lipgloss.NewStyle().Foreground(termstyle.Purple)
+	add := lipgloss.NewStyle().Foreground(termstyle.Green)
+	del := lipgloss.NewStyle().Foreground(termstyle.Red)
 
 	var b strings.Builder
 	for _, line := range strings.Split(strings.TrimRight(diff, "\n"), "\n") {

@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"github.com/joaoajmatos/oz/internal/termstyle"
 )
 
 var rootCmd = &cobra.Command{
@@ -14,11 +16,11 @@ understand — with clean integrations for Claude Code, Cursor, and any other ed
 	// Show the banner when oz is run with no subcommand.
 	RunE: func(cmd *cobra.Command, args []string) error {
 		PrintBanner()
-		fmt.Println("  " + styleBrand.Render("oz") + "  " + styleSubtle.Render("workspace convention and toolset for LLM-first development"))
+		fmt.Println("  " + termstyle.Brand.Render("oz") + "  " + termstyle.Subtle.Render("workspace convention and toolset for LLM-first development"))
 		fmt.Println()
-		fmt.Println("  " + styleCmd.Render("oz tipz") + "  " + styleSubtle.Render(randomOzTip()))
+		fmt.Println("  " + termstyle.Command.Render("oz tipz") + "  " + termstyle.Subtle.Render(randomOzTip()))
 		fmt.Println()
-		fmt.Println(styleSubtle.Render("  Run") + " " + styleCmd.Render("oz --help") + " " + styleSubtle.Render("for available commands."))
+		fmt.Println(termstyle.Subtle.Render("  Run") + " " + termstyle.Command.Render("oz --help") + " " + termstyle.Subtle.Render("for available commands."))
 		fmt.Println()
 		return nil
 	},

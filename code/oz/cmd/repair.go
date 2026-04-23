@@ -9,6 +9,7 @@ import (
 
 	"github.com/joaoajmatos/oz/internal/convention"
 	"github.com/joaoajmatos/oz/internal/scaffold"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 	"github.com/joaoajmatos/oz/internal/workspace"
 )
 
@@ -80,7 +81,7 @@ func runRepair(cmd *cobra.Command, args []string) error {
 		ClaudeMD: false,
 	}
 
-	fmt.Printf("%s %s %s\n\n", styleSubtle.Render("Repairing workspace at"), styleCmd.Render(ws.Root), styleSubtle.Render("..."))
+	fmt.Printf("%s %s %s\n\n", termstyle.Subtle.Render("Repairing workspace at"), termstyle.Command.Render(ws.Root), termstyle.Subtle.Render("..."))
 
 	result, err := scaffold.Repair(ws.Root, cfg)
 	if err != nil {
@@ -88,13 +89,13 @@ func runRepair(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(result.Created) == 0 {
-		fmt.Println(styleSuccess.Render("ok  all default files present"))
+		fmt.Println(termstyle.OK.Render("ok  all default files present"))
 		return nil
 	}
 
-	fmt.Printf("%s %d file(s) restored:\n", styleSuccess.Render("✓"), len(result.Created))
+	fmt.Printf("%s %d file(s) restored:\n", termstyle.OK.Render("✓"), len(result.Created))
 	for _, p := range result.Created {
-		fmt.Printf("  %s  %s\n", styleSubtle.Render("created"), p)
+		fmt.Printf("  %s  %s\n", termstyle.Subtle.Render("created"), p)
 	}
 	return nil
 }
