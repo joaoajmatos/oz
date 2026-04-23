@@ -21,9 +21,6 @@ import (
 var contextCmd = &cobra.Command{
 	Use:   "context",
 	Short: "Manage oz workspace context graph",
-	Long: `Context commands discover the workspace by walking up from the current
-directory until AGENTS.md and OZ.md are found, so they work from any subdirectory
-inside an oz workspace.`,
 }
 
 var contextBuildCmd = &cobra.Command{
