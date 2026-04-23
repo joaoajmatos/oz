@@ -16,24 +16,30 @@ var (
 	ozLavend = lipgloss.Color("#A78BFA")
 	ozOrange = lipgloss.Color("#F59E0B")
 	ozPurple = lipgloss.Color("#7C3AED")
-	ozRed = lipgloss.Color("#EF4444")
+	ozRed    = lipgloss.Color("#EF4444")
 
 	auditStyleTitle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(ozPurple)
-	auditStyleSubtle = lipgloss.NewStyle().Foreground(ozFaint)
-	auditStyleCode   = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
-	auditStylePath = lipgloss.NewStyle().Foreground(ozFaint)
-	auditStyleOK   = lipgloss.NewStyle().Bold(true).Foreground(ozGreen)
-	auditStyleRule = lipgloss.NewStyle().Foreground(ozFaint)
+	auditStyleSubtle   = lipgloss.NewStyle().Foreground(ozFaint)
+	auditStyleCode     = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
+	auditStylePath     = lipgloss.NewStyle().Foreground(ozFaint)
+	auditStyleOK       = lipgloss.NewStyle().Bold(true).Foreground(ozGreen)
+	auditStyleRule     = lipgloss.NewStyle().Foreground(ozFaint)
 	auditStyleSectionE = lipgloss.NewStyle().Bold(true).Foreground(ozRed)
 	auditStyleSectionW = lipgloss.NewStyle().Bold(true).Foreground(ozOrange)
 	auditStyleSectionI = lipgloss.NewStyle().Bold(true).Foreground(ozLavend)
 	auditStyleHint     = lipgloss.NewStyle().Foreground(ozFaint)
 )
 
+// maxFindingsPerSeverityStyled caps how many findings print per severity in the
+// TTY view. The full report is always available via `oz audit --json`.
+const maxFindingsPerSeverityStyled = 25
+
 // WriteHumanStyled writes a TTY-oriented, colorized report using lipgloss.
 // It mirrors WriteHuman: same fields, minSeverity filter, and count footer.
+// To keep long runs readable, at most maxFindingsPerSeverityStyled items print
+// per severity; the rest are summarized with a pointer to --json.
 // Call only when stdout is a color-capable TTY; for automation or LLM tooling,
 // use WriteJSON or WriteHuman (plain text) instead.
 func WriteHumanStyled(w io.Writer, r *audit.Report, minSeverity audit.Severity) {
@@ -43,8 +49,7 @@ func WriteHumanStyled(w io.Writer, r *audit.Report, minSeverity audit.Severity) 
 	fmt.Fprintln(w)
 	fmt.Fprintf(w, "  %s  %s\n", auditStyleTitle.Render("oz audit"), auditStyleSubtle.Render("workspace health"))
 
-	countBox := buildCountLine(r)
-	fmt.Fprintf(w, "  %s\n", countBox)
+	fmt.Fprintf(w, "  %s\n", styledCountLine(r, false))
 	fmt.Fprintln(w, "  "+auditStyleRule.Render(strings.Repeat("─", 58)))
 
 	labels := map[audit.Severity]struct {
@@ -71,8 +76,17 @@ func WriteHumanStyled(w io.Writer, r *audit.Report, minSeverity audit.Severity) 
 		}
 		meta := labels[sev]
 		fmt.Fprintln(w)
-		fmt.Fprintf(w, "  %s\n", meta.style.Render(meta.text))
-		for _, f := range group {
+		fmt.Fprintf(w, "  %s", meta.style.Render(meta.text))
+		if len(group) > maxFindingsPerSeverityStyled {
+			fmt.Fprintf(w, "  %s", auditStyleSubtle.Render(fmt.Sprintf("(showing %d of %d)", maxFindingsPerSeverityStyled, len(group))))
+		}
+		fmt.Fprintln(w)
+		lim := len(group)
+		if lim > maxFindingsPerSeverityStyled {
+			lim = maxFindingsPerSeverityStyled
+		}
+		for i := 0; i < lim; i++ {
+			f := group[i]
 			loc := f.File
 			if f.Line > 0 && loc != "" {
 				loc = fmt.Sprintf("%s:%d", loc, f.Line)
@@ -96,6 +110,11 @@ func WriteHumanStyled(w io.Writer, r *audit.Report, minSeverity audit.Severity) 
 			}
 			printed++
 		}
+		extra := len(group) - lim
+		if extra > 0 {
+			fmt.Fprintf(w, "    %s\n", auditStyleSubtle.Render(
+				fmt.Sprintf("… and %d more in this section not shown. Use `oz audit --json` (or a narrower `--severity` / `--only`) for the full set.", extra)))
+		}
 	}
 
 	if printed == 0 {
@@ -103,25 +122,36 @@ func WriteHumanStyled(w io.Writer, r *audit.Report, minSeverity audit.Severity) 
 		fmt.Fprintf(w, "  %s  %s\n", auditStyleOK.Render("All clear"), auditStyleSubtle.Render("— no findings at or above the severity threshold."))
 	}
 
-	footer := fmt.Sprintf("errors: %d  warnings: %d  info: %d",
-		r.Counts[audit.SeverityError],
-		r.Counts[audit.SeverityWarn],
-		r.Counts[audit.SeverityInfo],
-	)
 	fmt.Fprintln(w)
-	fmt.Fprintf(w, "  %s\n", auditStyleSubtle.Render(footer))
+	fmt.Fprintf(w, "  %s\n", styledCountLine(r, true))
 	fmt.Fprintln(w)
 }
 
-func buildCountLine(r *audit.Report) string {
+// styledCountLine renders errors / warnings / info with matching severity colors.
+// withLabels uses "errors: 38" style; otherwise "errors 38" (for the top summary).
+func styledCountLine(r *audit.Report, withLabels bool) string {
 	ne, nw, ni := r.Counts[audit.SeverityError], r.Counts[audit.SeverityWarn], r.Counts[audit.SeverityInfo]
 	sep := auditStyleSubtle.Render("  ·  ")
+	ef := func(n int) string {
+		if withLabels {
+			return lipgloss.NewStyle().Foreground(ozRed).Bold(true).Render(fmt.Sprintf("errors: %d", n))
+		}
+		return lipgloss.NewStyle().Foreground(ozRed).Bold(true).Render(fmt.Sprintf("errors %d", n))
+	}
+	wf := func(n int) string {
+		if withLabels {
+			return lipgloss.NewStyle().Foreground(ozOrange).Bold(true).Render(fmt.Sprintf("warnings: %d", n))
+		}
+		return lipgloss.NewStyle().Foreground(ozOrange).Bold(true).Render(fmt.Sprintf("warnings %d", n))
+	}
+	ifN := func(n int) string {
+		if withLabels {
+			return lipgloss.NewStyle().Foreground(ozLavend).Render(fmt.Sprintf("info: %d", n))
+		}
+		return lipgloss.NewStyle().Foreground(ozLavend).Render(fmt.Sprintf("info %d", n))
+	}
 	return strings.Join(
-		[]string{
-			lipgloss.NewStyle().Foreground(ozRed).Bold(true).Render(fmt.Sprintf("errors %d", ne)),
-			lipgloss.NewStyle().Foreground(ozOrange).Bold(true).Render(fmt.Sprintf("warnings %d", nw)),
-			lipgloss.NewStyle().Foreground(ozLavend).Render(fmt.Sprintf("info %d", ni)),
-		},
+		[]string{ef(ne), wf(nw), ifN(ni)},
 		sep,
 	)
 }
