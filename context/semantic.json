@@ -1,65 +1,159 @@
 {
   "schema_version": "1",
-  "graph_hash": "966d827146a839e6a012c35738c4d440e78616744cc6bf2dc66ab6cc3b552baa",
-  "model": "anthropic/claude-3.5-haiku",
-  "generated_at": "2026-04-22T18:27:02Z",
+  "graph_hash": "5048e963d93ba4235688986e0a45a84fa3c155fa4945d29c718d4492aedd8655",
+  "model": "x-ai/grok-4.20",
+  "generated_at": "2026-04-23T20:45:28Z",
   "concepts": [
     {
-      "id": "concept:workspace-convention",
-      "name": "Oz Workspace Convention",
-      "description": "A standardized structure and set of rules for organizing software project workspaces with clear agent roles and responsibilities.",
+      "id": "concept:oz-workspace-convention",
+      "name": "oz Workspace Convention",
+      "description": "The complete specification, structure, and tooling that defines what makes a valid oz workspace, including the tiered trust model, required directories, and agent responsibilities.",
       "source_files": [
         "specs/oz-project-specification.md",
-        "AGENTS.md",
-        "OZ.md"
+        "docs/architecture.md",
+        "code/oz/internal/convention/convention.go"
       ],
       "tag": "EXTRACTED",
       "confidence": 1,
       "reviewed": false
     },
     {
-      "id": "concept:semantic-routing",
-      "name": "Semantic Agent Routing",
-      "description": "A mechanism for dynamically selecting the most appropriate agent to handle a given task based on contextual scoring and candidate evaluation.",
+      "id": "concept:structural-context-graph",
+      "name": "Structural Context Graph",
+      "description": "The graph.json representation of the workspace that models agents, specs, docs, decisions, and code as nodes with typed relationships.",
       "source_files": [
-        "specs/routing-packet.md",
-        "specs/semantic-overlay.md"
+        "specs/graph-schema.md",
+        "docs/architecture.md",
+        "code/oz/internal/context",
+        "code/oz/internal/graph"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "id": "concept:semantic-overlay",
+      "name": "Semantic Overlay",
+      "description": "The semantic.json layer that adds extracted and reviewed concepts and relationships on top of the structural graph, with staleness and review contracts.",
+      "source_files": [
+        "specs/semantic-overlay.md",
+        "docs/architecture.md",
+        "code/oz/internal/semantic",
+        "code/oz/internal/enrich"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "id": "concept:crystallize-workflow",
+      "name": "Crystallize Workflow",
+      "description": "The process of classifying notes from the notes/ tier and promoting them to the correct authoritative tier (specs/, docs/, decisions/) with review gates.",
+      "source_files": [
+        "specs/decisions/0002-crystallize-classifier-approach.md",
+        "code/oz/internal/crystallize",
+        "agent:oz-notes"
       ],
       "tag": "EXTRACTED",
       "confidence": 0.95,
       "reviewed": false
     },
     {
-      "id": "concept:workspace-auditing",
-      "name": "Workspace Health and Compliance",
-      "description": "Systematic processes for ensuring workspace integrity, agent role adherence, and conformance to defined conventions.",
+      "id": "concept:audit-framework",
+      "name": "Audit Framework",
+      "description": "The pluggable audit system that runs checks for coverage, drift, orphans, and staleness, producing reports with standardized findings.",
       "source_files": [
         "specs/audit-catalogue.md",
-        "rules/coding-guidelines.md"
+        "code/oz/internal/audit",
+        "docs/architecture.md"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "id": "concept:spec-code-drift-detection",
+      "name": "Spec-Code Drift Detection",
+      "description": "The audit mechanism that detects when code symbols or packages implement concepts not referenced in specs or when specs reference non-existent code.",
+      "source_files": [
+        "specs/decisions/0001-audit-v1-symbols-from-graph-codeindex.md",
+        "code/oz/internal/audit/drift",
+        "code/oz/internal/audit/drift/specscan"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "id": "concept:routing-packet",
+      "name": "Routing Packet",
+      "description": "The internal data structure used by the query engine containing context blocks, candidate agents, scoring configuration, and selection semantics.",
+      "source_files": [
+        "specs/routing-packet.md",
+        "code/oz/internal/query"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 0.95,
+      "reviewed": false
+    },
+    {
+      "id": "concept:three-layer-architecture",
+      "name": "Three-Layer Architecture",
+      "description": "The oz workspace trust model with Notes (low-trust), Docs (medium-trust), and Specs (high-trust) layers, where specs take precedence in conflicts.",
+      "source_files": [
+        "specs/oz-project-specification.md",
+        "docs/architecture.md"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "id": "concept:agent-definition",
+      "name": "Agent Definition",
+      "description": "The standardized AGENT.md format containing role, responsibilities, read-chain, and out-of-scope sections that defines autonomous actors in the workspace.",
+      "source_files": [
+        "specs/oz-project-specification.md",
+        "agent:oz-maintainer"
       ],
       "tag": "EXTRACTED",
       "confidence": 0.9,
       "reviewed": false
     },
     {
-      "id": "concept:specification-management",
-      "name": "Living Specification",
-      "description": "An approach where project specifications are dynamically updated to reflect current implementation, with code taking precedence over existing documentation.",
+      "id": "concept:concept-object",
+      "name": "Concept Object",
+      "description": "The canonical semantic unit in the overlay that can be owned by agents, implemented by code packages, and linked to spec sections.",
       "source_files": [
-        "specs/oz-project-specification.md",
-        "specs/decisions/_template.md"
+        "specs/semantic-overlay.md",
+        "code/oz/internal/semantic"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": false
+    },
+    {
+      "id": "concept:implements-edge",
+      "name": "Implements Edge",
+      "description": "The semantic relationship linking a concept to the code package that realizes it, or a spec section to the code that implements its rules.",
+      "source_files": [
+        "specs/graph-schema.md",
+        "specs/semantic-overlay.md",
+        "code/oz/internal/graph",
+        "decision:0003-implements-edge-review-gate"
       ],
       "tag": "EXTRACTED",
       "confidence": 0.95,
       "reviewed": false
     },
     {
-      "id": "concept:architectural-decision-tracking",
-      "name": "Architectural Decision Recording",
-      "description": "A systematic method of documenting significant design choices and their rationales to maintain project architectural coherence.",
+      "id": "concept:workspace-validation",
+      "name": "Workspace Validation",
+      "description": "The validation framework ensuring an oz workspace conforms to the specification, including directory structure, agent definitions, and reference integrity.",
       "source_files": [
-        "specs/decisions/0001-audit-v1-symbols-from-graph-codeindex.md",
-        "specs/decisions/_template.md"
+        "code/oz/internal/validate",
+        "agent:oz-maintainer",
+        "docs/implementation.md"
       ],
       "tag": "EXTRACTED",
       "confidence": 0.9,
@@ -68,84 +162,284 @@
   ],
   "edges": [
     {
-      "from": "concept:workspace-convention",
-      "to": "agent:oz-maintainer",
+      "from": "concept:oz-workspace-convention",
+      "to": "agent:oz-spec",
       "type": "agent_owns_concept",
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
-      "from": "concept:workspace-convention",
+      "from": "concept:oz-workspace-convention",
       "to": "spec_section:specs/oz-project-specification.md:Workspace Structure",
       "type": "implements_spec",
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
-      "from": "concept:semantic-routing",
-      "to": "agent:oz-spec",
+      "from": "concept:oz-workspace-convention",
+      "to": "spec_section:specs/oz-project-specification.md:Core Concepts",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:oz-workspace-convention",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/convention",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:structural-context-graph",
+      "to": "agent:oz-coding",
       "type": "agent_owns_concept",
       "tag": "EXTRACTED",
       "confidence": 0.9,
-      "reviewed": false
+      "reviewed": true
     },
     {
-      "from": "concept:semantic-routing",
-      "to": "spec_section:specs/routing-packet.md:Routing packet object",
+      "from": "concept:structural-context-graph",
+      "to": "spec_section:specs/graph-schema.md:Node object",
       "type": "implements_spec",
       "tag": "EXTRACTED",
-      "confidence": 0.95,
-      "reviewed": false
+      "confidence": 1,
+      "reviewed": true
     },
     {
-      "from": "concept:workspace-auditing",
+      "from": "concept:structural-context-graph",
+      "to": "spec_section:specs/graph-schema.md:Edge object",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:structural-context-graph",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/context",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:structural-context-graph",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/graph",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:semantic-overlay",
+      "to": "agent:oz-coding",
+      "type": "agent_owns_concept",
+      "tag": "EXTRACTED",
+      "confidence": 0.85,
+      "reviewed": true
+    },
+    {
+      "from": "concept:semantic-overlay",
+      "to": "spec_section:specs/semantic-overlay.md:Concept object",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:semantic-overlay",
+      "to": "spec_section:specs/semantic-overlay.md:Merge contract",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:semantic-overlay",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/semantic",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:semantic-overlay",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/enrich",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:crystallize-workflow",
+      "to": "agent:oz-notes",
+      "type": "agent_owns_concept",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:crystallize-workflow",
+      "to": "decision:0002-crystallize-classifier-approach",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:crystallize-workflow",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/crystallize/classifier",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:crystallize-workflow",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/crystallize/promote",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:audit-framework",
       "to": "agent:oz-maintainer",
       "type": "agent_owns_concept",
       "tag": "EXTRACTED",
-      "confidence": 1,
-      "reviewed": false
+      "confidence": 0.9,
+      "reviewed": true
     },
     {
-      "from": "concept:workspace-auditing",
-      "to": "spec_section:specs/audit-catalogue.md:Determinism",
+      "from": "concept:audit-framework",
+      "to": "spec_section:specs/audit-catalogue.md:Report object",
       "type": "implements_spec",
       "tag": "EXTRACTED",
-      "confidence": 0.9,
-      "reviewed": false
+      "confidence": 1,
+      "reviewed": true
     },
     {
-      "from": "concept:specification-management",
-      "to": "agent:oz-spec",
-      "type": "agent_owns_concept",
+      "from": "concept:audit-framework",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/audit",
+      "type": "implements",
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
-      "from": "concept:specification-management",
+      "from": "concept:spec-code-drift-detection",
+      "to": "decision:0001-audit-v1-symbols-from-graph-codeindex",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:spec-code-drift-detection",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/audit/drift",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:routing-packet",
+      "to": "spec_section:specs/routing-packet.md:Routing packet object",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:routing-packet",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/query",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:three-layer-architecture",
       "to": "spec_section:specs/oz-project-specification.md:Design Principles",
       "type": "implements_spec",
       "tag": "EXTRACTED",
-      "confidence": 0.95,
-      "reviewed": false
+      "confidence": 1,
+      "reviewed": true
     },
     {
-      "from": "concept:architectural-decision-tracking",
-      "to": "agent:oz-spec",
-      "type": "agent_owns_concept",
+      "from": "concept:three-layer-architecture",
+      "to": "spec_section:specs/oz-project-specification.md:Core Concepts",
+      "type": "implements_spec",
       "tag": "EXTRACTED",
       "confidence": 1,
-      "reviewed": false
+      "reviewed": true
     },
     {
-      "from": "concept:architectural-decision-tracking",
-      "to": "decision:_template",
+      "from": "concept:agent-definition",
+      "to": "spec_section:specs/oz-project-specification.md:Workspace Structure",
       "type": "implements_spec",
       "tag": "EXTRACTED",
       "confidence": 0.9,
-      "reviewed": false
+      "reviewed": true
+    },
+    {
+      "from": "concept:concept-object",
+      "to": "spec_section:specs/semantic-overlay.md:Concept object",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:concept-object",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/semantic",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:implements-edge",
+      "to": "decision:0003-implements-edge-review-gate",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:implements-edge",
+      "to": "spec_section:specs/graph-schema.md:Edge object",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 0.95,
+      "reviewed": true
+    },
+    {
+      "from": "concept:implements-edge",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/graph",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 0.9,
+      "reviewed": true
+    },
+    {
+      "from": "concept:workspace-validation",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/validate",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:workspace-validation",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/workspace",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 0.9,
+      "reviewed": true
     }
   ]
 }
