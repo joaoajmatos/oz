@@ -245,7 +245,7 @@ testws.ExpectNoOwner(t, result)     // agent == null
 
 ## Routing weight tuning (maintainers only)
 
-This is **not** end-user tooling: there is no `oz` subcommand and no repo script for parameter sweeps. Weights and BM25F knobs live in [`context/scoring.toml`](../context/scoring.toml) for real workspaces (`oz context query` loads that file from the workspace root). The golden routing suites under `code/oz/internal/query/testdata/golden/` usually **do not** ship a `context/scoring.toml`, so [`TestRoutingAccuracy`](../code/oz/internal/query/query_test.go) exercises the same defaults as [`DefaultScoringConfig()`](../code/oz/internal/query/config.go) until you add a file to a fixture on purpose.
+For real workspaces, use `oz context scoring` (see the “oz context scoring” subsection in [`docs/implementation.md`](../docs/implementation.md)) to list keys, show or set values, and validate `context/scoring.toml`. There is no separate in-repo script for parameter sweeps. Weights and BM25F knobs still live in [`context/scoring.toml`](../context/scoring.toml) on disk (`oz context query` loads that file from the workspace root). The golden routing suites under `code/oz/internal/query/testdata/golden/` usually **do not** ship a `context/scoring.toml`, so [`TestRoutingAccuracy`](../code/oz/internal/query/query_test.go) exercises the same defaults as [`DefaultScoringConfig()`](../code/oz/internal/query/config.go) until you add a file to a fixture on purpose.
 
 **Typical maintainer loop**
 
@@ -259,9 +259,9 @@ This is **not** end-user tooling: there is no `oz` subcommand and no repo script
 
 3. Mirror the chosen numbers into the repo-root [`context/scoring.toml`](../context/scoring.toml) (that file’s header already says it should match `DefaultScoringConfig()`). Keep TOML key names aligned with the `[weights]`, `[routing]`, `[bm25]`, `[fields]`, and `[tokenize]` sections — not informal aliases from planning docs.
 
-4. Optionally sanity-check routing on this workspace with `oz context query "…"` after editing `context/scoring.toml`.
+4. Optionally sanity-check routing on this workspace with `oz context query "…"` after editing `context/scoring.toml`, or use `oz context scoring set` / `validate` for a safer loop.
 
-There is no supported env var or shell sweep in-tree; if you need a grid search, do it ad hoc (e.g. local shell loop over temp TOML files) outside the shipped `oz` CLI.
+There is no supported env var for scoring parameters; for a grid search, use a local shell loop over temp workspaces or TOML files, or call `set` in a script.
 
 ---
 

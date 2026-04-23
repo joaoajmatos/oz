@@ -121,5 +121,7 @@ If `context/scoring.toml` exists, the query engine reads these sections and keys
 Fallback behavior:
 
 - If `context/scoring.toml` is absent, built-in defaults are used.
-- Unknown keys are ignored.
-- Malformed or unparseable values fall back to the Go zero-value behavior of the current loader; callers should prefer valid TOML values if they need stable tuning.
+- Unknown keys are ignored by the query loader (use `oz context scoring validate` to catch typos and unknown tables before running queries).
+- If the file is present but not valid TOML, the loader keeps built-in defaults for the whole file. Valid TOML with out-of-range values is rejected by `oz context scoring set` and `validate` where those checks apply.
+
+**Preferred editing path:** `oz context scoring` (`list`, `describe`, `get`, `set`, `show`, `validate`) — see `docs/implementation.md`.

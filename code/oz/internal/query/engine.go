@@ -42,7 +42,8 @@ func runRouting(workspacePath, queryText string, opts Options) routingState {
 	st.G = g
 
 	st.Cfg = LoadConfig(workspacePath)
-	st.Cfg.IncludeNotes = opts.IncludeNotes
+	// File can enable notes; --include-notes also enables (union).
+	st.Cfg.IncludeNotes = st.Cfg.IncludeNotes || opts.IncludeNotes
 
 	st.Terms = TokenizeQuery(queryText, st.Cfg.UseBigrams)
 	if len(st.Terms) == 0 {

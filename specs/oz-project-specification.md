@@ -173,7 +173,7 @@ flowchart TB
 - `AGENTS.md` is the single entry point for any LLM. It always exists at root and MUST route
   agents using the `## Agents` markdown table defined above.
 - `OZ.md` is the workspace manifest. It declares the oz standard version and registered agents.
-- `context/` holds oz-generated artifacts only: `graph.json` (from `oz context build`), `semantic.json` (from `oz context enrich`), and `scoring.toml` (BM25F tuning config). Do not write manually authored content here. Query the graph via `oz context query` or the MCP server.
+- `context/` holds oz-generated artifacts: `graph.json` (from `oz context build`), `semantic.json` (from `oz context enrich`), and `scoring.toml` (BM25F tuning). Treat `graph.json` and `semantic.json` as tool output only. `scoring.toml` is configuration (may be edited via `oz context scoring` or checked in by hand). Query the graph via `oz context query` or the MCP server.
 - `code/` holds actual project code. May contain git submodules.
 - `notes/` is the only low-trust layer. Everything else should be considered authoritative.
   Optional convention: `notes/planning/` for product-management artifacts (PRDs, pre-mortems, sprint plans) that inform work but are not normative until promoted to `specs/` or `docs/`.
@@ -247,7 +247,11 @@ repeated runs with no changes (SHA-256 content hash embedded).
 **`oz context query <text>`** — loads `graph.json`, scores agents using multi-field BM25F
 with Porter stemming and temperature-scaled softmax, and returns a JSON routing packet:
 agent, confidence, scope paths, context blocks (sorted by trust tier), and relevant concepts
-from the semantic overlay when present. Supports `--raw` for debug output and `--include-notes`.
+from the semantic overlay when present. Supports `--raw` for debug output and `--include-notes`
+(the flag OR `routing.include_notes` in `context/scoring.toml` enables notes in context blocks).
+
+**`oz context scoring`** — inspect and edit BM25F / routing parameters in `context/scoring.toml`
+without hand-editing: `show`, `get`, `set`, `list`, `describe`, and `validate` (see `docs/implementation.md`).
 
 **`oz context enrich`** — sends the structural graph to an LLM via OpenRouter and writes
 `context/semantic.json` with extracted concept nodes and typed relationships. Requires
@@ -343,7 +347,7 @@ All `oz add` subcommands resolve the workspace root by walking ancestor director
 - **oz init**: complete — scaffolds a full oz-compliant workspace from embedded templates.
 - **oz validate**: complete — enforces all 7 required AGENT.md sections, checks required files/directories, warns on unreviewed semantic nodes.
 - **oz audit**: V1 complete — orphans, coverage, staleness, drift, JSON report, deterministic ordering, `graph-summary` stub preserved. Multi-language / tree-sitter drift is deferred.
-- **oz context**: V1 complete — `build`, `query`, `enrich`, `review`, and `serve` all ship. MCP server validated. BM25F scoring with Porter stemming and softmax routing.
+- **oz context**: V1 complete — `build`, `query`, `scoring`, `enrich`, `review`, and `serve` all ship. MCP server validated. BM25F scoring with Porter stemming and softmax routing.
 - **oz crystallize**: V1 report-first complete — classification table + dry-run diffs; no direct promotion writes.
 - **oz repair**: complete — restores missing default workspace files without overwriting existing ones; idempotent; excludes `CLAUDE.md` (opt-in only).
 - **oz add**: complete — `oz add claude`, `oz add cursor` for editor integrations; `oz add <package-id>` for optional bundled agent+skill packages; `oz add list` enumerates available packages.

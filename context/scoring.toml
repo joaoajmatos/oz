@@ -1,5 +1,6 @@
 # Default BM25F and routing parameters for `oz context query`.
-# Same values as internal/query.DefaultScoringConfig(); edit to tune routing.
+# Same values as internal/query.DefaultScoringConfig() unless overridden below.
+# Tuning: run `oz context scoring list` and `oz context scoring describe <key>`.
 
 [bm25]
 k1 = 1.2

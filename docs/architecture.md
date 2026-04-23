@@ -235,7 +235,7 @@ warning: semantic overlay may be stale — run 'oz context enrich' to update
 
 ## Query pipeline: BM25F scoring
 
-The query engine scores agents using multi-field BM25F. All parameters are configurable in `context/scoring.toml` (falls back to defaults if absent).
+The query engine scores agents using multi-field BM25F. All parameters are configurable in `context/scoring.toml` (falls back to defaults if absent). The `oz context scoring` command group lists valid keys, prints effective values, and validates the file; see `docs/implementation.md` for subcommands.
 
 ### BM25F fields (per agent)
 
