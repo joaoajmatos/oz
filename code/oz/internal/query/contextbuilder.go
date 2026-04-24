@@ -11,7 +11,8 @@ import (
 	"github.com/joaoajmatos/oz/internal/query/contextretrieval"
 )
 
-// BuildContextBlocks returns the ordered context blocks for the winning agent.
+// BuildContextBlocks returns ranked, thresholded context blocks, any excluded
+// path prefixes, and the full retrieval score list (for --raw debug).
 //
 // Selection strategy:
 //  1. Build retrieval corpus from eligible node types.
@@ -21,10 +22,10 @@ import (
 // Blocks are ordered by relevance with deterministic tie-breakers.
 // When cfg.IncludeNotes is false, note nodes are omitted from the retrieval corpus
 // and "notes/" is added to Excluded when the graph has notes.
-func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, queryTerms []string, cfg ScoringConfig) (blocks []ContextBlock, excluded []string) {
+func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, queryTerms []string, cfg ScoringConfig) (blocks []ContextBlock, excluded []string, scored []contextretrieval.ScoredBlock) {
 	candidates := buildRetrievalCandidates(workspacePath, g, cfg)
 	retrievalCfg := defaultRetrievalConfig(cfg)
-	scored := contextretrieval.Score(queryTerms, candidates, retrievalCfg, agentName)
+	scored = contextretrieval.Score(queryTerms, candidates, retrievalCfg, agentName)
 	maxBlocks := int(math.Round(cfg.RetrievalMaxBlocks))
 	if maxBlocks < 1 {
 		maxBlocks = 1
@@ -60,7 +61,7 @@ func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, 
 		}
 	}
 
-	return blocks, excluded
+	return blocks, excluded, scored
 }
 
 func ensureScopeSurvivor(blocks *[]ContextBlock, passed []contextretrieval.ScoredBlock, scope []string) {

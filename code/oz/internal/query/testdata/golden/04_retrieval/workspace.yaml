@@ -67,6 +67,19 @@ agents:
     skills:
       - "skills/oz/"
 
+  - name: oz-r09-isolated
+    role: "qrv9isolatedtoken r09only: stub agent for R-09 golden (routing match with empty retrieval at default min_relevance)"
+    scope:
+      - "isolated/r09only/**"
+    responsibilities: "Placeholder; real repo has no graph overlap with this unique role text."
+    out_of_scope: "Entire rest of the repository for routing isolation."
+    readchain:
+      - "AGENTS.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/oz/"
+
 specs:
   - path: "specs/oz-project-specification.md"
     sections:

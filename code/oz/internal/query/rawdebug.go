@@ -4,16 +4,29 @@ import (
 	"sort"
 
 	"github.com/joaoajmatos/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/query/contextretrieval"
 )
 
 // RawQueryDebug is the JSON payload for `oz context query --raw` (PRD C-09):
 // routing result, per-agent scores, and a query-relevant subgraph of the
 // structural graph (not the full workspace graph).
 type RawQueryDebug struct {
-	Query    string            `json:"query"`
-	Result   Result            `json:"result"`
-	Agents   []AgentScoreDebug `json:"agents"`
-	Subgraph QuerySubgraph     `json:"subgraph"`
+	Query     string            `json:"query"`
+	Result    Result            `json:"result"`
+	Agents    []AgentScoreDebug `json:"agents"`
+	Retrieval []RawRetrievalBlock `json:"retrieval,omitempty"`
+	Subgraph  QuerySubgraph     `json:"subgraph"`
+}
+
+// RawRetrievalBlock is one scored retrieval candidate in --raw (R-07).
+type RawRetrievalBlock struct {
+	File          string  `json:"file"`
+	Section       string  `json:"section"`
+	Trust         string  `json:"trust"`
+	BM25          float64 `json:"bm25"`
+	TrustBoost    float64 `json:"trust_boost"`
+	AgentAffinity float64 `json:"agent_affinity"`
+	Relevance     float64 `json:"relevance"`
 }
 
 // AgentScoreDebug carries one agent's BM25F raw score and softmax confidence.
@@ -35,9 +48,10 @@ func BuildRawQueryDebug(workspacePath, queryText string, opts Options) RawQueryD
 	st := runRouting(workspacePath, queryText, opts)
 
 	out := RawQueryDebug{
-		Query:    queryText,
-		Result:   st.Result,
-		Subgraph: BuildQuerySubgraph(st.G, st.Result),
+		Query:     queryText,
+		Result:    st.Result,
+		Retrieval: buildRawRetrieval(st.RetrievalScored),
+		Subgraph:  BuildQuerySubgraph(st.G, st.Result),
 	}
 	for i, s := range st.Scores {
 		row := AgentScoreDebug{Name: s.Agent, RawScore: s.Value}
@@ -49,6 +63,25 @@ func BuildRawQueryDebug(workspacePath, queryText string, opts Options) RawQueryD
 	sort.Slice(out.Agents, func(i, j int) bool {
 		return out.Agents[i].Name < out.Agents[j].Name
 	})
+	return out
+}
+
+func buildRawRetrieval(scored []contextretrieval.ScoredBlock) []RawRetrievalBlock {
+	if len(scored) == 0 {
+		return nil
+	}
+	out := make([]RawRetrievalBlock, 0, len(scored))
+	for _, s := range scored {
+		out = append(out, RawRetrievalBlock{
+			File:          s.Block.File,
+			Section:       s.Block.Section,
+			Trust:         s.Block.Trust,
+			BM25:          s.BM25,
+			TrustBoost:    s.TrustBoost,
+			AgentAffinity: s.AffinityBoost,
+			Relevance:     s.Relevance,
+		})
+	}
 	return out
 }
 

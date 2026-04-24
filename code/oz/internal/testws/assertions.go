@@ -235,12 +235,17 @@ func ExpectTrustBeats(t *testing.T, result query.Result, winnerTier, loserTier s
 	}
 }
 
-// ExpectNoRelevantContext asserts that retrieval produced no context_blocks
-// — used for low-relevance queries (R-09, Sprint 4).
+// ExpectNoRelevantContext asserts that retrieval produced no context_blocks.
+// When a winning agent is present (R-09), the packet should carry reason
+// "no_relevant_context". When there is no owner, reason may be "no_clear_owner" instead.
 func ExpectNoRelevantContext(t *testing.T, result query.Result) {
 	t.Helper()
 	if len(result.ContextBlocks) != 0 {
 		t.Errorf("expected empty context_blocks (low-relevance), got %v", formatContextBlocks(result.ContextBlocks))
+	}
+	if result.Agent != "" && result.Reason != "no_relevant_context" {
+		t.Errorf("expected reason %q when an agent is set but no context_blocks, got %q",
+			"no_relevant_context", result.Reason)
 	}
 }
 

@@ -100,3 +100,9 @@ queries:
     expect_packages_in_topk:
       - package: "audit/drift"
         k: 3
+
+  # ----- R-09: owner chosen but no block clears min_relevance -----------------
+  - query: "qrv9isolatedtoken r09only"
+    expected_agent: oz-r09-isolated
+    min_confidence: 0.15
+    expect_no_relevant_context: true

@@ -48,7 +48,7 @@ func TestBuildContextBlocks_EnsuresScopeSurvivorAfterTruncation(t *testing.T) {
 	cfg.RetrievalMinRelevance = 0.0
 	cfg.RetrievalMaxBlocks = 1
 
-	blocks, _ := BuildContextBlocks(ws, g, "winner", []string{"api"}, cfg)
+	blocks, _, _ := BuildContextBlocks(ws, g, "winner", []string{"api"}, cfg)
 	if len(blocks) != 1 {
 		t.Fatalf("expected 1 block, got %d", len(blocks))
 	}

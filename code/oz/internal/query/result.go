@@ -38,7 +38,8 @@ type Result struct {
 	// retrieval.include_notes is false). Empty with shipped defaults (include_notes true).
 	Excluded []string `json:"excluded,omitempty"`
 
-	// Reason is set when Agent is empty. Currently: "no_clear_owner".
+	// Reason is set for terminal states: "no_clear_owner" (no agent), "no_relevant_context"
+	// (agent chosen but no context block cleared min_relevance), "workspace_overview" (list mode).
 	Reason string `json:"reason,omitempty"`
 
 	// CandidateAgents is populated when Confidence < 0.7, listing all agents

@@ -20,7 +20,7 @@ The packet is a JSON object with these fields:
 - `relevant_concepts` (array of strings, optional): concept names owned by the winning agent when a semantic overlay exists.
 - `implementing_packages` (array of strings, optional): import paths of `code_package` nodes that implement query-relevant concepts via reviewed `implements` edges, ranked and capped.
 - `excluded` (array of strings, optional): path prefixes hard-excluded from the retrieval corpus. Empty under shipped defaults (`retrieval.include_notes = true`); contains `"notes/"` when `retrieval.include_notes = false` and notes exist.
-- `reason` (string, optional): currently `"no_clear_owner"` when no winner is returned.
+- `reason` (string, optional): `"no_clear_owner"` when no winner is returned; `"no_relevant_context"` when a winner is returned but no retrieval block cleared `retrieval.min_relevance` (and `context_blocks` is then omitted or empty). Other protocol reasons (e.g. list-mode overviews) may be added as needed.
 - `candidate_agents` (array of candidate-agent objects, optional): populated only for ambiguous but still routed results.
 
 ## Context block object

@@ -8,6 +8,7 @@ import (
 	ozcontext "github.com/joaoajmatos/oz/internal/context"
 	"github.com/joaoajmatos/oz/internal/graph"
 	"github.com/joaoajmatos/oz/internal/query/bm25"
+	"github.com/joaoajmatos/oz/internal/query/contextretrieval"
 	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
@@ -27,6 +28,10 @@ type routingState struct {
 	Conf   []float64
 	Route  RouteResult
 	Result Result
+
+	// RetrievalScored is the full ranked retrieval list (for --raw). Empty when
+	// routing returned no owner or query had no terms.
+	RetrievalScored []contextretrieval.ScoredBlock
 }
 
 // runRouting executes load → tokenize → score → route → assemble Result.
@@ -71,7 +76,8 @@ func runRouting(workspacePath, queryText string, opts Options) routingState {
 		return st
 	}
 
-	blocks, excluded := BuildContextBlocks(workspacePath, g, st.Route.Agent, st.Terms, st.Cfg)
+	blocks, excluded, scored := BuildContextBlocks(workspacePath, g, st.Route.Agent, st.Terms, st.Cfg)
+	st.RetrievalScored = scored
 	scope := BuildScopeForAgent(g, st.Route.Agent)
 	st.Result = Result{
 		Agent:         st.Route.Agent,
@@ -79,6 +85,9 @@ func runRouting(workspacePath, queryText string, opts Options) routingState {
 		Scope:         scope,
 		ContextBlocks: blocks,
 		Excluded:      excluded,
+	}
+	if len(blocks) == 0 {
+		st.Result.Reason = "no_relevant_context"
 	}
 	if len(st.Route.Candidates) > 0 {
 		st.Result.CandidateAgents = st.Route.Candidates
