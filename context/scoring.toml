@@ -42,5 +42,11 @@ weight_title = 2.5
 weight_path = 1.7
 weight_body = 0.62
 
+[retrieval.concepts]
+weight_name = 2.0
+weight_description = 1.0
+# Paths from semantic source_files (ADRs, package paths) for query–concept match.
+weight_source_files = 1.2
+
 [tokenize]
 use_bigrams = false

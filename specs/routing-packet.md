@@ -24,7 +24,12 @@ The packet is a JSON object with these fields:
   and `retrieval.concept_min_fraction_of_top`), and truncated to
   `retrieval.max_relevant_concepts` (default `10`). Omitted when no overlay exists,
   no terms score above the floor, or the overlay has no reviewed concepts. Not
-  a list of concepts “owned by” the winning agent.
+  a list of concepts “owned by” the winning agent.   The engine also drops a
+  small set of ultra-common query stems (currently `code`) when the query
+  has other stems, so “code + something” queries do not rank every concept
+  on the word “code” in the **description** alone. Concept `source_files`
+  paths are still tokenized so stems like `index` can match
+  `...-codeindex.md` and package paths in the overlay.
 - `implementing_packages` (array of strings, optional): import paths of `code_package` nodes that implement query-relevant concepts via reviewed `implements` edges, ranked and capped.
 - `excluded` (array of strings, optional): path prefixes hard-excluded from the retrieval corpus. Empty under shipped defaults (`retrieval.include_notes = true`); contains `"notes/"` when `retrieval.include_notes = false` and notes exist.
 - `reason` (string, optional): `"no_clear_owner"` when no winner is returned; `"no_relevant_context"` when a winner is returned but no retrieval block cleared `retrieval.min_relevance` (and `context_blocks` is then omitted or empty). Other protocol reasons (e.g. list-mode overviews) may be added as needed.

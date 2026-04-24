@@ -90,8 +90,9 @@ type scoringTOMLRetrievalField struct {
 }
 
 type scoringTOMLRetrievalConcepts struct {
-	WeightName        *float64 `toml:"weight_name"`
-	WeightDescription *float64 `toml:"weight_description"`
+	WeightName         *float64 `toml:"weight_name"`
+	WeightDescription  *float64 `toml:"weight_description"`
+	WeightSourceFiles  *float64 `toml:"weight_source_files"`
 }
 
 type scoringTOMLRetrievalTrust struct {
@@ -261,6 +262,9 @@ func mergeScoringTOML(cfg *ScoringConfig, in *scoringTOMLIn) {
 			if in.Retrieval.Concepts.WeightDescription != nil {
 				cfg.RetrievalConceptWeightDescription = *in.Retrieval.Concepts.WeightDescription
 			}
+			if in.Retrieval.Concepts.WeightSourceFiles != nil {
+				cfg.RetrievalConceptWeightSourceFiles = *in.Retrieval.Concepts.WeightSourceFiles
+			}
 		}
 		if in.Retrieval.TrustBoost != nil {
 			if in.Retrieval.TrustBoost.Specs != nil {
@@ -342,8 +346,9 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 				WeightKind  float64 `toml:"weight_kind"`
 			} `toml:"fields"`
 			Concepts struct {
-				WeightName        float64 `toml:"weight_name"`
-				WeightDescription float64 `toml:"weight_description"`
+				WeightName         float64 `toml:"weight_name"`
+				WeightDescription  float64 `toml:"weight_description"`
+				WeightSourceFiles  float64 `toml:"weight_source_files"`
 			} `toml:"concepts"`
 			TrustBoost struct {
 				Specs   float64 `toml:"specs"`
@@ -385,6 +390,7 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 	enc.Retrieval.Fields.WeightKind = cfg.RetrievalWeightKind
 	enc.Retrieval.Concepts.WeightName = cfg.RetrievalConceptWeightName
 	enc.Retrieval.Concepts.WeightDescription = cfg.RetrievalConceptWeightDescription
+	enc.Retrieval.Concepts.WeightSourceFiles = cfg.RetrievalConceptWeightSourceFiles
 	enc.Retrieval.TrustBoost.Specs = cfg.RetrievalTrustBoostSpecs
 	enc.Retrieval.TrustBoost.Docs = cfg.RetrievalTrustBoostDocs
 	enc.Retrieval.TrustBoost.Context = cfg.RetrievalTrustBoostContext
@@ -567,6 +573,9 @@ func ValidateScoringConfig(cfg ScoringConfig) error {
 		return err
 	}
 	if err := validatePositiveFinite("retrieval.concepts.weight_description", cfg.RetrievalConceptWeightDescription); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.concepts.weight_source_files", cfg.RetrievalConceptWeightSourceFiles); err != nil {
 		return err
 	}
 	if err := validatePositiveFinite("retrieval.trust_boost.specs", cfg.RetrievalTrustBoostSpecs); err != nil {

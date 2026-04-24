@@ -21,9 +21,10 @@ type Result struct {
 	ContextBlocks []ContextBlock `json:"context_blocks,omitempty"`
 
 	// RelevantConcepts lists reviewed semantic concept **names** ranked by query
-	// relevance (BM25 over name + description), thresholded, and capped. Not
-	// the winning agent’s ownership portfolio. Omitted when no overlay is present
-	// or no concept clears the floor.
+	// relevance (BM25 over name, description, and source_files path tokens), thresholded,
+	// and capped. Very common stems (e.g. "code") are dropped when the query has other
+	// terms so concepts are not all tied on description prose alone. Omitted when
+	// no overlay is present or no concept clears the floor.
 	RelevantConcepts []string `json:"relevant_concepts,omitempty"`
 
 	// ImplementingPackages lists code_package import paths that implement

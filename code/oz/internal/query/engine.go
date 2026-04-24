@@ -148,6 +148,10 @@ func loadRelevantConcepts(workspacePath string, queryTerms []string, cfg Scoring
 	if err != nil || o == nil || len(queryTerms) == 0 {
 		return nil
 	}
+	terms := SemanticRetrievalQueryTerms(queryTerms)
+	if len(terms) == 0 {
+		return nil
+	}
 	var reviewed []semantic.Concept
 	for i := range o.Concepts {
 		if o.Concepts[i].Reviewed {
@@ -157,7 +161,7 @@ func loadRelevantConcepts(workspacePath string, queryTerms []string, cfg Scoring
 	if len(reviewed) == 0 {
 		return nil
 	}
-	scores := scoreConcepts(reviewed, queryTerms, cfg, cfg.UseBigrams)
+	scores := scoreConcepts(reviewed, terms, cfg, cfg.UseBigrams)
 	threshold := effectiveConceptRelevanceThreshold(scores, cfg)
 	type item struct {
 		name  string
@@ -204,15 +208,21 @@ func (d conceptFieldDoc) Fields() map[string][]string {
 
 func conceptFieldTokens(c semantic.Concept, useBigrams bool) map[string][]string {
 	return map[string][]string{
-		"name":        TokenizeMulti(c.Name, useBigrams),
-		"description": TokenizeMulti(c.Description, useBigrams),
+		"name":         TokenizeMulti(c.Name, useBigrams),
+		"description":  TokenizeMulti(c.Description, useBigrams),
+		"source_paths": TokenizePathsMulti(c.SourceFiles, useBigrams),
 	}
 }
 
 func conceptRetrievalFields(cfg ScoringConfig) []bm25.BM25Field {
+	wSrc := cfg.RetrievalConceptWeightSourceFiles
+	if wSrc <= 0 {
+		wSrc = 1.0
+	}
 	return []bm25.BM25Field{
 		{Name: "name", Weight: cfg.RetrievalConceptWeightName, B: cfg.BText},
 		{Name: "description", Weight: cfg.RetrievalConceptWeightDescription, B: cfg.BText},
+		{Name: "source_paths", Weight: wSrc, B: cfg.BPath},
 	}
 }
 
@@ -256,11 +266,15 @@ func packageBestConceptReachScores(workspacePath string, queryTerms []string, cf
 	if len(queryTerms) == 0 {
 		return nil
 	}
+	q := SemanticRetrievalQueryTerms(queryTerms)
+	if len(q) == 0 {
+		return nil
+	}
 	o, err := semantic.Load(workspacePath)
 	if err != nil || o == nil {
 		return nil
 	}
-	conceptScores := scoreConcepts(o.Concepts, queryTerms, cfg, conceptUseBigrams)
+	conceptScores := scoreConcepts(o.Concepts, q, cfg, conceptUseBigrams)
 	if len(conceptScores) == 0 {
 		return nil
 	}
@@ -372,8 +386,12 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 	if g == nil || winningAgent == "" || len(queryTerms) == 0 {
 		return nil
 	}
+	dterms := SemanticRetrievalQueryTerms(queryTerms)
+	if len(dterms) == 0 {
+		return nil
+	}
 	scope := BuildScopeForAgent(g, winningAgent)
-	packageConceptReach := eligiblePackagesByConcept(workspacePath, queryTerms, cfg)
+	packageConceptReach := eligiblePackagesByConcept(workspacePath, dterms, cfg)
 
 	var nodes []graph.Node
 	for _, n := range g.Nodes {
@@ -417,7 +435,7 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 		pkgCS, inConceptMap := packageConceptReach[n.Package]
 		byConcept := inConceptMap
 		bm := bm25.BM25Score(
-			queryTerms,
+			dterms,
 			codeSymbolFieldTokens(n, cfg.UseBigrams),
 			fields,
 			k1,

@@ -1,6 +1,7 @@
 package query
 
 import (
+	"regexp"
 	"strings"
 	"unicode"
 )
@@ -125,4 +126,66 @@ func split(s string) []string {
 	return strings.FieldsFunc(s, func(r rune) bool {
 		return !unicode.IsLetter(r)
 	})
+}
+
+// Insert a space between lower/digit and uppercase to split fooBar, driftRun.
+var camelBreakRE = regexp.MustCompile(`([a-z0-9])([A-Z])`)
+
+// TokenizeCodeSymbolName tokenizes a Go symbol name (func/type/method) for
+// retrieval. Identifiers are lowercased and split on . _ camel edges but not
+// Porter-stemmed, so "Codes" does not conflate with the query stem "code".
+// Bigrams, if enabled, are adjacent parts only (e.g. build + context).
+func TokenizeCodeSymbolName(name string, useBigrams bool) []string {
+	if name == "" {
+		return nil
+	}
+	var segs []string
+	for _, chunk := range strings.FieldsFunc(name, func(r rune) bool { return r == '.' || r == '/' || r == '_' }) {
+		chunk = strings.TrimSpace(chunk)
+		if chunk == "" {
+			continue
+		}
+		s2 := insertCamelWordBreaks(chunk)
+		for _, w := range split(strings.ToLower(s2)) {
+			if len(w) < 2 {
+				continue
+			}
+			if stopwords[w] {
+				continue
+			}
+			// no Porter stem — these are program identifiers
+			segs = append(segs, w)
+		}
+	}
+	seen := make(map[string]bool, len(segs))
+	var uni []string
+	for _, s := range segs {
+		if !seen[s] {
+			seen[s] = true
+			uni = append(uni, s)
+		}
+	}
+	if !useBigrams || len(uni) < 2 {
+		return uni
+	}
+	out := make([]string, len(uni), len(uni)+len(uni)-1)
+	copy(out, uni)
+	for i := 0; i < len(uni)-1; i++ {
+		bg := uni[i] + "_" + uni[i+1]
+		if !seen[bg] {
+			seen[bg] = true
+			out = append(out, bg)
+		}
+	}
+	return out
+}
+
+// insertCamelWordBreaks is a best-effort split: fooBar → "foo bar";
+// "Codes" is unchanged (one word → token "codes").
+func insertCamelWordBreaks(s string) string {
+	if s == "" {
+		return s
+	}
+	s = camelBreakRE.ReplaceAllString(s, "$1 $2")
+	return strings.Join(strings.Fields(s), " ")
 }

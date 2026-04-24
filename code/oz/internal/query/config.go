@@ -62,8 +62,9 @@ type ScoringConfig struct {
 	RetrievalWeightPath               float64
 	RetrievalWeightBody               float64
 	RetrievalWeightKind               float64
-	RetrievalConceptWeightName        float64
-	RetrievalConceptWeightDescription float64
+	RetrievalConceptWeightName         float64
+	RetrievalConceptWeightDescription  float64
+	RetrievalConceptWeightSourceFiles  float64
 }
 
 // DefaultScoringConfig returns the default parameters.
@@ -103,8 +104,9 @@ func DefaultScoringConfig() ScoringConfig {
 		RetrievalWeightPath:               1.7,
 		RetrievalWeightBody:               0.62,
 		RetrievalWeightKind:               1.0,
-		RetrievalConceptWeightName:        2.0,
-		RetrievalConceptWeightDescription: 1.0,
+		RetrievalConceptWeightName:         2.0,
+		RetrievalConceptWeightDescription:  1.0,
+		RetrievalConceptWeightSourceFiles: 1.2,
 	}
 }
 

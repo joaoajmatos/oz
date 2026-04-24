@@ -64,7 +64,10 @@ func Build(root string) (*BuildResult, error) {
 		return nil, fmt.Errorf("walk code files: %w", err)
 	}
 	// pkgDocs collects the first non-empty package doc comment seen per import path.
+	// pkgFirstFile records one workspace .go file per package (for code_package
+	// retrieval display and for routing blocks that point at real files).
 	pkgDocs := map[string]string{}
+	pkgFirstFile := map[string]string{}
 	for _, cf := range codeFiles {
 		if cf.Lang != goIdx.Language() {
 			continue
@@ -77,6 +80,9 @@ func Build(root string) (*BuildResult, error) {
 		nodes = append(nodes, res.Symbols...)
 		edges = append(edges, res.Edges...)
 		if res.FileNode.Package != "" {
+			if _, seen := pkgFirstFile[res.FileNode.Package]; !seen {
+				pkgFirstFile[res.FileNode.Package] = res.FileNode.File
+			}
 			if _, seen := pkgDocs[res.FileNode.Package]; !seen && res.FileNode.DocComment != "" {
 				pkgDocs[res.FileNode.Package] = res.FileNode.DocComment
 			} else if _, seen := pkgDocs[res.FileNode.Package]; !seen {
@@ -91,9 +97,11 @@ func Build(root string) (*BuildResult, error) {
 	}
 	slices.Sort(pkgPaths)
 	for _, pkg := range pkgPaths {
+		rep := pkgFirstFile[pkg]
 		nodes = append(nodes, graph.Node{
 			ID:         "code_package:" + pkg,
 			Type:       graph.NodeTypeCodePackage,
+			File:       rep,
 			Name:       lastPathSegment(pkg),
 			Package:    pkg,
 			Language:   goIdx.Language(),

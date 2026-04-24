@@ -12,8 +12,9 @@
 # Sprints 2–4: the expect_* retrieval fields activate as each R-requirement
 # ships.
 #
-# ADR-0001 (graph schema) is asserted at k:6 for the two drift-implementation
-# cases — at k:5 it can sit just below other high-signal spec/ADR blocks.
+# ADR-0001 (graph schema) is asserted at k:8 for the two drift-implementation
+# cases — code_package blocks can rank in the first few slots when the query
+# matches package paths; 0001 may sit just below audit + code.
 
 min_accuracy: 0.75
 
@@ -28,7 +29,7 @@ queries:
         k: 5
       - file: "specs/decisions/0001-graph-schema.md"
         section: ""
-        k: 6
+        k: 8
       - file: "docs/architecture.md"
         section: "oz audit (V1)"
         k: 5
@@ -65,7 +66,7 @@ queries:
         k: 5
       - file: "specs/decisions/0001-graph-schema.md"
         section: ""
-        k: 6
+        k: 8
       - file: "docs/architecture.md"
         section: "oz audit (V1)"
         k: 5

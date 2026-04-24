@@ -30,7 +30,20 @@ func ResetRetrievalBodyCacheForBenchmark() {
 }
 
 func loadRetrievalBodyTokens(workspacePath, graphHash string, n graph.Node, useBigrams bool) []string {
-	if workspacePath == "" || n.File == "" {
+	if workspacePath == "" {
+		return nil
+	}
+	// code_package: use aggregate package doc only (not an entire .go file body).
+	if n.Type == graph.NodeTypeCodePackage {
+		cacheKey := n.ID + "|pkgdoc|bigrams=" + boolString(useBigrams)
+		if tokens, ok := bodyTokenCache.get(graphHash, cacheKey); ok {
+			return tokens
+		}
+		tokens := TokenizeMulti(n.DocComment, useBigrams)
+		bodyTokenCache.set(graphHash, cacheKey, tokens)
+		return tokens
+	}
+	if n.File == "" {
 		return nil
 	}
 	cacheKey := n.ID + "|bigrams=" + boolString(useBigrams)

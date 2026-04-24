@@ -273,6 +273,14 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Kind: ScoringKindFloat,
 	},
 	{
+		Key:   "retrieval.concepts.weight_source_files",
+		Title: "Concept scoring weight for source_files paths",
+		Description: `BM25 field weight for tokenized paths in each concept’s source_files list ` +
+			`(e.g. ADR filenames with codeindex, .../graph/index). Lets “index”-style ` +
+			`queries match without relying on the word “code” in the description alone.`,
+		Kind: ScoringKindFloat,
+	},
+	{
 		Key:   "retrieval.trust_boost.specs",
 		Title: "Retrieval trust boost for specs tier",
 		Description: `Trust multiplier for blocks from specs/decisions. ` +
@@ -394,6 +402,8 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.RetrievalConceptWeightName, nil
 	case "retrieval.concepts.weight_description":
 		return cfg.RetrievalConceptWeightDescription, nil
+	case "retrieval.concepts.weight_source_files":
+		return cfg.RetrievalConceptWeightSourceFiles, nil
 	case "retrieval.trust_boost.specs":
 		return cfg.RetrievalTrustBoostSpecs, nil
 	case "retrieval.trust_boost.docs":
@@ -563,6 +573,9 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 	case "retrieval.concepts.weight_description":
 		x, _ := v.(float64)
 		cfg.RetrievalConceptWeightDescription = x
+	case "retrieval.concepts.weight_source_files":
+		x, _ := v.(float64)
+		cfg.RetrievalConceptWeightSourceFiles = x
 	case "retrieval.trust_boost.specs":
 		x, _ := v.(float64)
 		cfg.RetrievalTrustBoostSpecs = x

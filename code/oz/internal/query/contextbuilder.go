@@ -46,6 +46,7 @@ func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, 
 		}
 	}
 	ensureScopeSurvivor(&blocks, passed, BuildScopeForAgent(g, agentName))
+	ensureCodePackageSurvivor(&blocks, passed, queryTerms, maxBlocks)
 
 	// Excluded: note paths (when not included).
 	if !cfg.IncludeNotes {
@@ -62,6 +63,66 @@ func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, 
 	}
 
 	return blocks, excluded, scored
+}
+
+// querySuggestsCodeContext is true when stems read like an implementation
+// or indexing task (so surfacing a code/ file may help). Deliberately excludes
+// generic "implement" so "how is drift detection implemented" remains ranked
+// by the normal spec-heavy retrieval mix.
+func querySuggestsCodeContext(terms []string) bool {
+	for _, t := range terms {
+		switch t {
+		case "index", "symbol", "packag", "graph", "load", "build", "api", "func", "type", "test", "debug", "rout", "migrat":
+			return true
+		}
+	}
+	return false
+}
+
+// ensureCodePackageSurvivor only when the ranked slice has no code/ entry but
+// some code_package cleared the relevance floor — typically because specs
+// (high trust) pushed all Go files out of the first max_blocks. If the best
+// code block beats the lowest-ranked kept block, swap the last slot; if there
+// is still capacity, append instead. Never downgrades a higher-relevance tail.
+func ensureCodePackageSurvivor(blocks *[]ContextBlock, passed []contextretrieval.ScoredBlock, queryTerms []string, maxBlocks int) {
+	if len(passed) == 0 {
+		return
+	}
+	if !querySuggestsCodeContext(queryTerms) {
+		return
+	}
+	for _, b := range *blocks {
+		if strings.HasPrefix(b.File, "code/") {
+			return
+		}
+	}
+	var best *contextretrieval.ScoredBlock
+	for i := range passed {
+		if !strings.HasPrefix(passed[i].Block.File, "code/") {
+			continue
+		}
+		if best == nil || passed[i].Relevance > best.Relevance {
+			best = &passed[i]
+		}
+	}
+	if best == nil {
+		return
+	}
+	add := ContextBlock{
+		File:      best.Block.File,
+		Section:   best.Block.Section,
+		Trust:     best.Block.Trust,
+		Relevance: best.Relevance,
+	}
+	if len(*blocks) < maxBlocks {
+		*blocks = append(*blocks, add)
+		return
+	}
+	last := len(*blocks) - 1
+	if best.Relevance <= (*blocks)[last].Relevance {
+		return
+	}
+	(*blocks)[last] = add
 }
 
 func ensureScopeSurvivor(blocks *[]ContextBlock, passed []contextretrieval.ScoredBlock, scope []string) {
@@ -110,6 +171,38 @@ func BuildScopeForAgent(g *graph.Graph, agentName string) []string {
 }
 
 // ---- helpers ----------------------------------------------------------------
+
+// retrievalTitleAndPathParts returns a display title and path strings to
+// tokenize for BM25. code_package uses the import path in the title and
+// includes both file path and import path so segments like "index" match
+// .../graph/index in addition to the on-disk path.
+func retrievalTitleAndPathParts(n graph.Node) (title string, pathParts []string) {
+	if n.Type == graph.NodeTypeCodePackage {
+		if n.Package != "" {
+			title = n.Package
+		} else {
+			title = strings.TrimSpace(n.Name)
+		}
+		if n.File != "" {
+			pathParts = append(pathParts, n.File)
+		}
+		if n.Package != "" {
+			pathParts = append(pathParts, n.Package)
+		}
+		if len(pathParts) == 0 && n.File != "" {
+			pathParts = []string{n.File}
+		}
+		return title, pathParts
+	}
+	title = strings.TrimSpace(n.Section)
+	if title == "" {
+		title = strings.TrimSpace(n.Name)
+	}
+	if n.File != "" {
+		pathParts = []string{n.File}
+	}
+	return title, pathParts
+}
 
 // tierToTrust maps graph tier strings to context block trust strings.
 func tierToTrust(tier convention.Tier) string {
@@ -160,24 +253,25 @@ func buildRetrievalCandidates(workspacePath string, g *graph.Graph, cfg ScoringC
 		}
 		for agent, scopes := range scopesByAgent {
 			for _, scope := range scopes {
-				if pathInScope(n.File, scope) {
+				if n.File != "" && pathInScope(n.File, scope) {
 					connected[agent] = true
 					break
 				}
 			}
 		}
-		title := strings.TrimSpace(n.Section)
-		if title == "" {
-			title = strings.TrimSpace(n.Name)
+		title, pathParts := retrievalTitleAndPathParts(n)
+		section := n.Section
+		if n.Type == graph.NodeTypeCodePackage && n.Package != "" {
+			section = n.Package
 		}
 		out = append(out, contextretrieval.Block{
 			File:    n.File,
-			Section: n.Section,
+			Section: section,
 			Trust:   tierToTrust(n.Tier),
 			Tier:    string(n.Tier),
 			TokenFields: map[string][]string{
 				"title": TokenizeMulti(title, cfg.UseBigrams),
-				"path":  TokenizePathsMulti([]string{n.File}, cfg.UseBigrams),
+				"path":  TokenizePathsMulti(pathParts, cfg.UseBigrams),
 				"body":  loadRetrievalBodyTokens(workspacePath, g.ContentHash, n, cfg.UseBigrams),
 			},
 			ConnectedAgents: connected,
@@ -189,6 +283,10 @@ func buildRetrievalCandidates(workspacePath string, g *graph.Graph, cfg ScoringC
 func isRetrievalNodeType(nodeType string, includeNotes bool) bool {
 	switch nodeType {
 	case graph.NodeTypeSpecSection, graph.NodeTypeDecision, graph.NodeTypeDoc, graph.NodeTypeContextSnapshot:
+		return true
+	case graph.NodeTypeCodePackage:
+		// One block per Go package: path + import path + package doc, so
+		// implementation queries (e.g. "indexing") can surface code/ in context_blocks.
 		return true
 	case graph.NodeTypeNote:
 		return includeNotes
