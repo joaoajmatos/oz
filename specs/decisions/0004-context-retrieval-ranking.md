@@ -1,7 +1,8 @@
 # ADR-0004: Context Retrieval Ranking
 
 Date: 2026-04-23
-Status: Proposed
+Status: Accepted
+Accepted: 2026-04-24
 
 ## Context
 
@@ -190,8 +191,55 @@ and defaults to `true` to match the tiered model.
 - The packet contract grows: new `relevance` field on context blocks,
   new `code_entry_points` field, new `[retrieval]` config section.
   Consumers that pin exact-field shape must be updated.
-- Trust boost multipliers are initial guesses and will need tuning
-  against real queries, similar to the ADR-0003 threshold story.
+- Trust boost multipliers for tiers other than the tuned `notes` boost, and field
+  weights, were chosen as reasonable starting points; further workspace-specific
+  tuning may use `oz context scoring` and golden suites.
+
+## V1 tuning (Sprint 2 grid, re-confirmed Sprint 4)
+
+A fixed grid over `retrieval.min_relevance` ∈ `{0.03, 0.05, 0.08}`,
+`retrieval.trust_boost.notes` ∈ `{0.5, 0.6, 0.7}`, and `retrieval.agent_affinity` ∈
+`{1.1, 1.2, 1.3}` is implemented as `TestRetrievalTuningGridS2` in
+`code/oz/internal/query/tuning_s2_test.go`. Each candidate is rejected if
+`02_medium` routing accuracy drops below the default-config baseline; the remainder
+is ranked by top-K `expect_blocks_in_topk` hit rate on `04_retrieval`, with a
+tie-break toward the pre-ADR default triplet.
+
+**Sprint 4 re-run (2026-04-24):** all 27 candidates passed the routing gate; block
+top-K score was 1.0 for every cell on the then-current `04_retrieval` cases;
+the selected winner is **`min_relevance=0.05`**, **`trust_boost.notes=0.6`**, **`agent_affinity=1.2`**
+— matching `DefaultScoringConfig` in `internal/query/config.go` and
+`[retrieval]` in generated/published `context/scoring.toml` guidance. The test
+now asserts the grid winner matches this locked triplet (fail if the golden
+suites or tie-break would pick something else without an intentional default change).
+
+Full `04_retrieval` behaviour (including `code_entry_points`, `implementing_packages`,
+`no_relevant_context`, notes) is enforced by `TestRetrievalAccuracy` and routing
+harnesses at their configured floors.
+
+**Latency (micro-benchmark, 2026-04-24):** Command: `go test -run=^$ -bench=BenchmarkQuery -benchmem -benchtime=2s -count=5 ./internal/query` from `code/oz` on **darwin/arm64 (Apple M1)**.
+
+| Benchmark | ns/op (5 runs, observed range) | B/op (approx.) | allocs/op |
+|-----------|---------------------------------|----------------|-----------|
+| `BenchmarkQueryWarmCache` | 582k–600k | 198k | 1350 |
+| `BenchmarkQueryColdCache` | 773k–827k | 247k | 1600 |
+
+The harness builds a **small** synthetic workspace in memory (`benchmark_test.go`); it is not
+the full oz monorepo graph. **Warm** keeps the retrieval body-token cache hot across
+iterations; **cold** calls `query.ResetRetrievalBodyCacheForBenchmark()` each iteration.
+On this run, **cold / warm ≈ 1.33×** wall time, which is a sanity check that on-demand body
+reads dominate cold behaviour.
+
+**PRD gate (p95 ≤ 2× pre–Sprint-1 baseline on the real workspace):** not automatically
+enforced. Re-run the same `go test -bench=BenchmarkQuery…` at a baseline tag vs HEAD, or
+time `oz context query` end-to-end on a fixed query set over `context/graph.json` for the
+dogfood repo. The numbers above are a **regression canary** for the query engine hot path
+with V1 retrieval enabled, not a production SLO.
+
+**S4-08 (audit):** `oz validate` passes on the oz repo. `oz audit` may still
+report pre-existing `DRIFT001`/`DRIFT002` and orphan/coverage items from catalogued
+docs and spec wording; those are not introduced by retrieval V1 and are tracked
+outside this ADR.
 
 ## Alternatives considered
 

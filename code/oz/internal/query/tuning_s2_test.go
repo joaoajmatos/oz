@@ -104,6 +104,15 @@ func TestRetrievalTuningGridS2(t *testing.T) {
 		best.retrievalScore,
 		best.routingAccuracy,
 	)
+
+	// S4-07: lock = `DefaultScoringConfig` retrieval triplet. If this fails, re-run
+	// the grid, update defaults in config.go (and context/scoring.toml if needed), and ADR-0004.
+	const wantMin, wantNotes, wantAff = 0.05, 0.6, 1.2
+	if best.candidate.minRelevance != wantMin || best.candidate.notesBoost != wantNotes || best.candidate.affinity != wantAff {
+		t.Fatalf("grid winner (min_relevance=%.2f trust_boost.notes=%.1f agent_affinity=%.1f) != locked V1 defaults (%.2f / %.1f / %.1f)",
+			best.candidate.minRelevance, best.candidate.notesBoost, best.candidate.affinity,
+			wantMin, wantNotes, wantAff)
+	}
 }
 
 func buildS2Grid() []tuningCandidate {

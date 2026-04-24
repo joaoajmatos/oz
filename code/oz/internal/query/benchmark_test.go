@@ -9,6 +9,7 @@ import (
 
 // BenchmarkQueryWarmCache measures steady-state query latency after the
 // retrieval body-token cache has been populated for the current graph hash.
+// Recorded numbers and methodology: ADR-0004 “Latency (micro-benchmark)”.
 func BenchmarkQueryWarmCache(b *testing.B) {
 	ws := testws.New(b).
 		WithAgent("oz-coding",

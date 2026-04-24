@@ -132,6 +132,8 @@ Resolves pre-mortem T-02 (tuning step) and T-03 (latency check) and T-04 (affini
 | S4-07 | Final tuning re-run | Re-run Sprint-2 grid with all surfaces live (notes, code entry points, packages). Lock final defaults. Update ADR-4 consequences. |
 | S4-08 | `oz audit` clean on all new docs | No new DRIFT001/DRIFT002 findings attributable to this work. |
 
+**Done 2026-04-24 — S4-07 / S4-08 close-out:** Sprint-2 grid re-run via `TestRetrievalTuningGridS2` (all 27 candidates pass `02_medium` gate; block top-K on `04_retrieval` tied at 1.0; **locked default triplet** `min_relevance=0.05`, `trust_boost.notes=0.6`, `agent_affinity=1.2` asserted in-test). [ADR-0004](../../specs/decisions/0004-context-retrieval-ranking.md) set to **Accepted** with V1 tuning, **micro-benchmark** warm/cold numbers, audit notes, and how to re-check the PRD latency gate. `oz validate` ok; full-repo `oz audit` still reports catalogued DRIFT/orphans unrelated to retrieval V1 (see ADR).
+
 ### Sprint risks
 - Doc drift: `docs/architecture.md` may reference current behaviour elsewhere. Grep for `context_blocks` across docs and fix any stale mentions in S4-05.
 
