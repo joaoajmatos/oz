@@ -27,17 +27,18 @@ The shipped pipeline does (2) poorly. `BuildContextBlocks`
 - `note` nodes are excluded unless `include_notes` is set.
 - Blocks are sorted by `(trust, file, section)` — no relevance signal.
 
-On a representative query ("how is drift detection implemented?") this
-produced 48 blocks, of which ~40 were spec sections unrelated to drift (API
-design, enrich pipeline, scoring, routing packet, etc.). The winning agent
+On a representative implementation query on the spec–code comparison
+workstream (the routing/retrieval PRD records the exact wording) this
+produced 48 blocks, of which ~40 were spec sections unrelated to the topic
+(API design, enrich pipeline, scoring, routing packet, etc.). The winning agent
 was correct; the context delivered was a firehose.
 
-Three additional gaps show up on the same query:
+Three additional gaps show up on the same example:
 
 - **Code entry points are not surfaced.** `code_symbol` nodes exist in the
-  graph but the routing packet has no field for them. An LLM asking "how is
-  drift detection implemented" gets no pointer to `LoadSymbols` or the
-  surrounding drift detector entry points.
+  graph but the routing packet has no field for them. An LLM running that
+  class of task gets no pointer to `LoadSymbols` or the
+  surrounding entry points.
 - **`implementing_packages` is over-inclusive.** `loadImplementingPackages`
   in `code/oz/internal/query/engine.go` does a binary token-overlap check
   against concept name+description. Every concept that shares any token with
