@@ -320,6 +320,7 @@ func (b *Builder) writeOverlay(root string, o *SemanticOverlay) error {
 			Name:       c.Name,
 			Tag:        semantic.TagExtracted,
 			Confidence: 1.0,
+			Reviewed:   true,
 		})
 		full.Edges = append(full.Edges, semantic.ConceptEdge{
 			From:       conceptID,
@@ -327,6 +328,7 @@ func (b *Builder) writeOverlay(root string, o *SemanticOverlay) error {
 			Type:       semantic.EdgeTypeAgentOwnsConcept,
 			Tag:        semantic.TagExtracted,
 			Confidence: 1.0,
+			Reviewed:   true,
 		})
 	}
 	for _, imp := range o.Implements {

@@ -92,7 +92,7 @@ func runRouting(workspacePath, queryText string, opts Options) routingState {
 	if len(st.Route.Candidates) > 0 {
 		st.Result.CandidateAgents = st.Route.Candidates
 	}
-	st.Result.RelevantConcepts = loadRelevantConcepts(workspacePath, st.Route.Agent, g)
+	st.Result.RelevantConcepts = loadRelevantConcepts(workspacePath, st.Terms, st.Cfg)
 	st.Result.ImplementingPackages = loadImplementingPackages(workspacePath, st.Terms)
 	st.Result.CodeEntryPoints = loadCodeEntryPoints(workspacePath, g, st.Route.Agent, st.Terms, st.Cfg)
 	return st
@@ -138,14 +138,60 @@ func ListAgents(workspacePath string) Result {
 	}
 }
 
-// loadRelevantConcepts reads context/semantic.json (if present) and returns
-// concept names owned by agentName. Returns nil when no overlay exists.
-func loadRelevantConcepts(workspacePath, agentName string, _ *graph.Graph) []string {
+// loadRelevantConcepts returns up to [ScoringConfig.RetrievalMaxRelevantConcepts]
+// reviewed concept **names** from the semantic overlay, ranked by the same
+// BM25 concept scorer used for [loadImplementingPackages], filtered by
+// [effectiveConceptRelevanceThreshold], and sorted by score DESC then name ASC.
+// Returns nil when there is no overlay, no query terms, or no passing concepts.
+func loadRelevantConcepts(workspacePath string, queryTerms []string, cfg ScoringConfig) []string {
 	o, err := semantic.Load(workspacePath)
-	if err != nil || o == nil {
+	if err != nil || o == nil || len(queryTerms) == 0 {
 		return nil
 	}
-	return semantic.ConceptsForAgent(o, agentName)
+	var reviewed []semantic.Concept
+	for i := range o.Concepts {
+		if o.Concepts[i].Reviewed {
+			reviewed = append(reviewed, o.Concepts[i])
+		}
+	}
+	if len(reviewed) == 0 {
+		return nil
+	}
+	scores := scoreConcepts(reviewed, queryTerms, cfg, cfg.UseBigrams)
+	threshold := effectiveConceptRelevanceThreshold(scores, cfg)
+	type item struct {
+		name  string
+		score float64
+	}
+	var items []item
+	for _, c := range reviewed {
+		s, ok := scores[c.ID]
+		if !ok || s < threshold {
+			continue
+		}
+		items = append(items, item{name: c.Name, score: s})
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].score != items[j].score {
+			return items[i].score > items[j].score
+		}
+		return items[i].name < items[j].name
+	})
+	maxK := int(math.Round(cfg.RetrievalMaxRelevantConcepts))
+	if maxK < 1 {
+		maxK = 1
+	}
+	if len(items) > maxK {
+		items = items[:maxK]
+	}
+	out := make([]string, len(items))
+	for i := range items {
+		out[i] = items[i].name
+	}
+	return out
 }
 
 type conceptFieldDoc struct {

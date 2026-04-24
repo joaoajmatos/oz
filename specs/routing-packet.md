@@ -17,7 +17,14 @@ The packet is a JSON object with these fields:
 - `scope` (array of strings, optional): the winning agent's declared scope paths.
 - `context_blocks` (array of context blocks, optional): ranked by query relevance.
 - `code_entry_points` (array of code-entry-point objects, optional): top-ranked `code_symbol` references for code-level queries.
-- `relevant_concepts` (array of strings, optional): concept names owned by the winning agent when a semantic overlay exists.
+- `relevant_concepts` (array of strings, optional): reviewed semantic **concept
+  names** from the overlay, ranked by query–concept relevance (BM25 on name and
+  description with `[retrieval.concepts]` weights), then filtered with the same
+  absolute and relative floors as `implementing_packages` (`retrieval.concept_min_relevance`
+  and `retrieval.concept_min_fraction_of_top`), and truncated to
+  `retrieval.max_relevant_concepts` (default `10`). Omitted when no overlay exists,
+  no terms score above the floor, or the overlay has no reviewed concepts. Not
+  a list of concepts “owned by” the winning agent.
 - `implementing_packages` (array of strings, optional): import paths of `code_package` nodes that implement query-relevant concepts via reviewed `implements` edges, ranked and capped.
 - `excluded` (array of strings, optional): path prefixes hard-excluded from the retrieval corpus. Empty under shipped defaults (`retrieval.include_notes = true`); contains `"notes/"` when `retrieval.include_notes = false` and notes exist.
 - `reason` (string, optional): `"no_clear_owner"` when no winner is returned; `"no_relevant_context"` when a winner is returned but no retrieval block cleared `retrieval.min_relevance` (and `context_blocks` is then omitted or empty). Other protocol reasons (e.g. list-mode overviews) may be added as needed.
@@ -211,6 +218,8 @@ If `context/scoring.toml` exists, the query engine reads these sections and keys
   entries.
 - `max_implementing_packages` (default `5`): maximum
   `implementing_packages` entries.
+- `max_relevant_concepts` (default `10`): maximum `relevant_concepts` names
+  after query ranking and the concept floors.
 - `concept_min_relevance` (default `0.1`): absolute floor for concept
   retrieval score before walking `implements` edges.
 - `concept_min_fraction_of_top` (default `0.5`): relative floor; a concept

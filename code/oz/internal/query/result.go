@@ -20,14 +20,15 @@ type Result struct {
 	// source-of-truth tier (specs > docs > context > notes).
 	ContextBlocks []ContextBlock `json:"context_blocks,omitempty"`
 
-	// RelevantConcepts lists concept node names from the semantic overlay
-	// that are relevant to this task. Omitted when no overlay is present.
+	// RelevantConcepts lists reviewed semantic concept **names** ranked by query
+	// relevance (BM25 over name + description), thresholded, and capped. Not
+	// the winning agent’s ownership portfolio. Omitted when no overlay is present
+	// or no concept clears the floor.
 	RelevantConcepts []string `json:"relevant_concepts,omitempty"`
 
 	// ImplementingPackages lists code_package import paths that implement
-	// concepts owned by the routing agent. Only reviewed implements edges
-	// are included. Omitted when no semantic overlay is present or no
-	// implements edges exist.
+	// query-relevant concepts (per reviewed implements edges). Omitted
+	// when no semantic overlay is present or no packages pass the concept floor.
 	ImplementingPackages []string `json:"implementing_packages,omitempty"`
 
 	// CodeEntryPoints lists ranked symbols relevant to code-level queries.

@@ -26,6 +26,7 @@ min_candidate_confidence = 0.2
 include_notes = true
 concept_min_relevance = 0.1
 concept_min_fraction_of_top = 0.5
+max_relevant_concepts = 10
 
 [retrieval.bm25]
 # Slightly below routing k1: tighter term saturation in long decision bodies.

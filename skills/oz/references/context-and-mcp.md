@@ -10,7 +10,7 @@ Never hand-edit `context/graph.json`. **STALE001** from `oz audit staleness` mea
 
 ## `oz context query`
 
-Prints a **JSON routing packet**: `agent`, `confidence`, `scope`, `context_blocks`, `excluded`, and `relevant_concepts` when `context/semantic.json` exists and its `graph_hash` matches the graph.
+Prints a **JSON routing packet**: `agent`, `confidence`, `scope`, `context_blocks`, `excluded`, and (when `context/semantic.json` exists) `relevant_concepts` — reviewed concepts ranked by query–concept relevance, not the winning agent’s full ownership list.
 
 | Flag | Effect |
 |------|--------|

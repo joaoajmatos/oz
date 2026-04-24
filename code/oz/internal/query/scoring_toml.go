@@ -65,6 +65,7 @@ type scoringTOMLRetrievalIn struct {
 	MaxBlocks     *float64                   `toml:"max_blocks"`
 	MaxCodeEntryPoints *float64              `toml:"max_code_entry_points"`
 	MaxImplementingPackages *float64         `toml:"max_implementing_packages"`
+	MaxRelevantConcepts     *float64         `toml:"max_relevant_concepts"`
 	ConceptMinRelevance *float64             `toml:"concept_min_relevance"`
 	ConceptMinFractionOfTop *float64        `toml:"concept_min_fraction_of_top"`
 	BM25          *scoringTOMLRetrievalBM25  `toml:"bm25"`
@@ -123,7 +124,7 @@ var allowedKeysInSection = map[string]map[string]struct{}{
 	"retrieval": {
 		"include_notes": {},
 		"min_relevance": {}, "max_blocks": {}, "max_code_entry_points": {},
-		"max_implementing_packages": {}, "concept_min_relevance": {},
+		"max_implementing_packages": {}, "max_relevant_concepts": {}, "concept_min_relevance": {},
 		"concept_min_fraction_of_top": {}, "agent_affinity": {},
 		"bm25": {}, "fields": {}, "concepts": {}, "trust_boost": {},
 	},
@@ -210,6 +211,9 @@ func mergeScoringTOML(cfg *ScoringConfig, in *scoringTOMLIn) {
 		}
 		if in.Retrieval.MaxImplementingPackages != nil {
 			cfg.RetrievalMaxImplementingPackages = *in.Retrieval.MaxImplementingPackages
+		}
+		if in.Retrieval.MaxRelevantConcepts != nil {
+			cfg.RetrievalMaxRelevantConcepts = *in.Retrieval.MaxRelevantConcepts
 		}
 		if in.Retrieval.ConceptMinRelevance != nil {
 			cfg.RetrievalConceptMinRelevance = *in.Retrieval.ConceptMinRelevance
@@ -308,6 +312,7 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 			MaxBlocks     float64 `toml:"max_blocks"`
 			MaxCodeEntryPoints float64 `toml:"max_code_entry_points"`
 			MaxImplementingPackages float64 `toml:"max_implementing_packages"`
+			MaxRelevantConcepts     float64 `toml:"max_relevant_concepts"`
 			ConceptMinRelevance     float64 `toml:"concept_min_relevance"`
 			ConceptMinFractionOfTop float64 `toml:"concept_min_fraction_of_top"`
 			AgentAffinity           float64 `toml:"agent_affinity"`
@@ -350,6 +355,7 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 	enc.Retrieval.MaxBlocks = cfg.RetrievalMaxBlocks
 	enc.Retrieval.MaxCodeEntryPoints = cfg.RetrievalMaxCodeEntryPoints
 	enc.Retrieval.MaxImplementingPackages = cfg.RetrievalMaxImplementingPackages
+	enc.Retrieval.MaxRelevantConcepts = cfg.RetrievalMaxRelevantConcepts
 	enc.Retrieval.ConceptMinRelevance = cfg.RetrievalConceptMinRelevance
 	enc.Retrieval.ConceptMinFractionOfTop = cfg.RetrievalConceptMinFractionOfTop
 	enc.Retrieval.AgentAffinity = cfg.RetrievalAgentAffinity
@@ -500,6 +506,9 @@ func ValidateScoringConfig(cfg ScoringConfig) error {
 		return err
 	}
 	if err := validatePositiveFinite("retrieval.max_implementing_packages", cfg.RetrievalMaxImplementingPackages); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.max_relevant_concepts", cfg.RetrievalMaxRelevantConcepts); err != nil {
 		return err
 	}
 	if err := validateNonnegFinite("retrieval.concept_min_relevance", cfg.RetrievalConceptMinRelevance); err != nil {

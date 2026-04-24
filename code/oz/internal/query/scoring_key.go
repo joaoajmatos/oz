@@ -173,6 +173,13 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Kind: ScoringKindFloat,
 	},
 	{
+		Key:   "retrieval.max_relevant_concepts",
+		Title: "Maximum number of query-ranked relevant concepts",
+		Description: `Hard cap on relevant_concepts (semantic concept names) after query BM25 scoring ` +
+			`and the same concept floor used for implementing_packages.`,
+		Kind: ScoringKindFloat,
+	},
+	{
 		Key:   "retrieval.concept_min_relevance",
 		Title: "Minimum concept relevance threshold",
 		Description: `Concepts scoring below this threshold are excluded before walking reviewed ` +
@@ -337,6 +344,8 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.RetrievalMaxCodeEntryPoints, nil
 	case "retrieval.max_implementing_packages":
 		return cfg.RetrievalMaxImplementingPackages, nil
+	case "retrieval.max_relevant_concepts":
+		return cfg.RetrievalMaxRelevantConcepts, nil
 	case "retrieval.concept_min_relevance":
 		return cfg.RetrievalConceptMinRelevance, nil
 	case "retrieval.concept_min_fraction_of_top":
@@ -484,6 +493,9 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 	case "retrieval.max_implementing_packages":
 		x, _ := v.(float64)
 		cfg.RetrievalMaxImplementingPackages = x
+	case "retrieval.max_relevant_concepts":
+		x, _ := v.(float64)
+		cfg.RetrievalMaxRelevantConcepts = x
 	case "retrieval.concept_min_relevance":
 		x, _ := v.(float64)
 		cfg.RetrievalConceptMinRelevance = x

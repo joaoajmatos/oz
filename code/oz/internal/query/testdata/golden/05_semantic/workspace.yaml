@@ -1,7 +1,7 @@
 # Golden suite 05_semantic — same 10-agent workspace as 02_medium with a
-# pre-built semantic overlay. Tests that concept names flow into routing packets
-# via loadRelevantConcepts when semantic.json is present.
-# min_accuracy: 0.93 (46/50 queries must route correctly)
+# pre-built semantic overlay. Routing accuracy only (min_accuracy: 0.93).
+# relevant_concepts in the packet are query-ranked reviewed concepts, not the
+# winning agent’s ownership list; see routing-packet / retrieval PRD.
 
 agents:
   - name: backend

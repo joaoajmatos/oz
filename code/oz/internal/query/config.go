@@ -36,6 +36,8 @@ type ScoringConfig struct {
 	RetrievalMaxBlocks               float64
 	RetrievalMaxCodeEntryPoints      float64
 	RetrievalMaxImplementingPackages float64
+	// Maximum relevant_concepts names returned (query-ranked semantic concepts).
+	RetrievalMaxRelevantConcepts float64
 	// Minimum BM25 score for a concept to participate in implements-walking.
 	RetrievalConceptMinRelevance float64
 	// When > 0, a concept is kept only if its score is at least this fraction of
@@ -81,6 +83,7 @@ func DefaultScoringConfig() ScoringConfig {
 		RetrievalMaxBlocks:                12,
 		RetrievalMaxCodeEntryPoints:       5,
 		RetrievalMaxImplementingPackages:  5,
+		RetrievalMaxRelevantConcepts:      10,
 		RetrievalConceptMinRelevance:      0.1,
 		RetrievalConceptMinFractionOfTop:  0.5,
 		RetrievalK1:                       1.05,

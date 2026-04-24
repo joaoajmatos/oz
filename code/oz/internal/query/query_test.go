@@ -197,6 +197,39 @@ func containsStr(s, sub string) bool {
 	return false
 }
 
+// TestRelevantConcepts_QueryRanked checks that relevant_concepts are ordered by
+// query–concept BM25, not the winning agent’s full concept portfolio.
+func TestRelevantConcepts_QueryRanked(t *testing.T) {
+	suites, err := testws.LoadGoldenSuites(t, "testdata/golden")
+	if err != nil {
+		t.Fatalf("load golden suites: %v", err)
+	}
+	var suite *testws.GoldenSuite
+	for _, s := range suites {
+		if s.Name == "05_semantic" {
+			suite = s
+			break
+		}
+	}
+	if suite == nil {
+		t.Fatal("missing 05_semantic suite")
+	}
+	ws := suite.Build(t)
+	if err := query.WriteScoringTOML(ws.Path(), query.DefaultScoringConfig()); err != nil {
+		t.Fatalf("write scoring: %v", err)
+	}
+	r := query.Run(ws.Path(), "add TOTP-based MFA for organization admin accounts")
+	if r.Agent != "auth" {
+		t.Fatalf("expected auth agent, got %q", r.Agent)
+	}
+	if len(r.RelevantConcepts) == 0 {
+		t.Fatal("expected non-empty relevant_concepts for MFA query with overlay")
+	}
+	if r.RelevantConcepts[0] != "MFA Enforcement" {
+		t.Fatalf("first concept = %q, want MFA Enforcement; all = %v", r.RelevantConcepts[0], r.RelevantConcepts)
+	}
+}
+
 func mapTrustTier(tier string) string {
 	switch tier {
 	case "specs":

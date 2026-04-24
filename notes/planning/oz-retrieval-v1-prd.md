@@ -159,6 +159,15 @@ Top-K `code_symbol` blocks where the symbol's `file` is under the winning agent'
 
 Concepts scored against the query via retrieval BM25; surviving concepts walk reviewed `implements` edges to packages; packages ranked by max reaching concept score; capped.
 
+### `relevant_concepts`
+
+The same per-concept BM25 scores and thresholds (`retrieval.concept_min_relevance`,
+`retrieval.concept_min_fraction_of_top`, and `[retrieval.concepts]` field weights) as
+`implementing_packages`, but **without** requiring an `implements` edge. Result:
+query-relevant **names** of reviewed concepts only, sorted by score DESC (then name
+ASC), capped at `retrieval.max_relevant_concepts`. This replaces the pre-V1 behavior
+of listing the winning agent’s full concept portfolio in arbitrary order.
+
 ### Notes
 
 Notes enter the same ranked pipeline at trust_boost 0.6. They only surface when they outscore higher-trust material. `include_notes=false` hard-excludes them from the corpus and reports `"notes/"` in `excluded`.
