@@ -20,8 +20,8 @@ import (
 // Blocks are ordered by relevance with deterministic tie-breakers.
 // Notes are excluded unless cfg.IncludeNotes is true.
 // Notes are always listed in Excluded when not included.
-func BuildContextBlocks(g *graph.Graph, agentName string, queryTerms []string, cfg ScoringConfig) (blocks []ContextBlock, excluded []string) {
-	candidates := buildRetrievalCandidates(g, cfg)
+func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, queryTerms []string, cfg ScoringConfig) (blocks []ContextBlock, excluded []string) {
+	candidates := buildRetrievalCandidates(workspacePath, g, cfg)
 	retrievalCfg := defaultRetrievalConfig(cfg)
 	scored := contextretrieval.Score(queryTerms, candidates, retrievalCfg, agentName)
 	for _, s := range scored {
@@ -103,7 +103,7 @@ func defaultRetrievalConfig(cfg ScoringConfig) contextretrieval.RetrievalConfig 
 	}
 }
 
-func buildRetrievalCandidates(g *graph.Graph, cfg ScoringConfig) []contextretrieval.Block {
+func buildRetrievalCandidates(workspacePath string, g *graph.Graph, cfg ScoringConfig) []contextretrieval.Block {
 	readersByNode := buildReadersByNode(g)
 	scopesByAgent := buildScopesByAgent(g)
 	out := make([]contextretrieval.Block, 0, len(g.Nodes))
@@ -134,8 +134,7 @@ func buildRetrievalCandidates(g *graph.Graph, cfg ScoringConfig) []contextretrie
 			TokenFields: map[string][]string{
 				"title": TokenizeMulti(title, cfg.UseBigrams),
 				"path":  TokenizePathsMulti([]string{n.File}, cfg.UseBigrams),
-				// Body-token loading is added in Sprint 2 S2-03.
-				"body": nil,
+				"body":  loadRetrievalBodyTokens(workspacePath, g.ContentHash, n, cfg.UseBigrams),
 			},
 			ConnectedAgents: connected,
 		})
