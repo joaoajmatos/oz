@@ -14,6 +14,26 @@ type AgentDoc struct {
 	OutOfScope       []string // from out-of-scope text (penalty signal)
 }
 
+// Field names exposed by AgentDoc.Fields. Kept as constants so the scorer
+// and any future consumers agree on the routing-corpus shape.
+const (
+	AgentFieldScope            = "scope"
+	AgentFieldRole             = "role"
+	AgentFieldResponsibilities = "responsibilities"
+	AgentFieldReadChain        = "readchain"
+)
+
+// Fields satisfies the generic FieldDoc interface used by the BM25 core.
+// OutOfScope is deliberately excluded — it feeds the penalty term, not TF.
+func (d AgentDoc) Fields() map[string][]string {
+	return map[string][]string{
+		AgentFieldScope:            d.Scope,
+		AgentFieldRole:             d.Role,
+		AgentFieldResponsibilities: d.Responsibilities,
+		AgentFieldReadChain:        d.ReadChain,
+	}
+}
+
 // BuildAgentDocs creates one AgentDoc per agent node in the graph.
 func BuildAgentDocs(nodes []graph.Node, cfg ScoringConfig) []AgentDoc {
 	var docs []AgentDoc

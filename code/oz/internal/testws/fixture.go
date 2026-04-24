@@ -148,13 +148,58 @@ func (s *GoldenSuite) Build(t *testing.T) *Workspace {
 	return s.builder.Build()
 }
 
-// QueryCase is a single routing query with expected outcome.
+// QueryCase is a single query with its expected routing and retrieval
+// outcomes. Routing fields (ExpectedAgent, MinConfidence, ExpectedCandidates,
+// Reason) are enforced by TestRoutingAccuracy / QueryCase.Matches. The
+// Expect* retrieval fields are enforced by the retrieval matchers in
+// assertions.go — they are only read once the corresponding R-requirement
+// from the retrieval PRD has shipped.
 type QueryCase struct {
 	Query              string   `yaml:"query"`
 	ExpectedAgent      string   `yaml:"expected_agent"`
 	MinConfidence      float64  `yaml:"min_confidence"`
 	ExpectedCandidates []string `yaml:"expected_candidates"`
 	Reason             string   `yaml:"reason"`
+
+	// Retrieval expectations (drafted in Sprint 1; activated Sprints 2–4).
+	ExpectBlocksInTopK          []BlockExpectation          `yaml:"expect_blocks_in_topk,omitempty"`
+	ExpectCodeEntryPointsInTopK []CodeEntryPointExpectation `yaml:"expect_code_entry_points_in_topk,omitempty"`
+	ExpectPackagesInTopK        []PackageExpectation        `yaml:"expect_packages_in_topk,omitempty"`
+	ExpectRelevanceDescending   bool                        `yaml:"expect_relevance_descending,omitempty"`
+	ExpectNoRelevantContext     bool                        `yaml:"expect_no_relevant_context,omitempty"`
+	ExpectTrustBeats            *TrustBeatsExpectation      `yaml:"expect_trust_beats,omitempty"`
+}
+
+// BlockExpectation asserts that a context_block matching (File, Section) is
+// present in the top K returned blocks. An empty Section matches any section
+// under File.
+type BlockExpectation struct {
+	File    string `yaml:"file"`
+	Section string `yaml:"section"`
+	K       int    `yaml:"k"`
+}
+
+// CodeEntryPointExpectation asserts that a code_entry_point with the given
+// symbol name is present in the top K. Symbol may be bare ("Run") or
+// qualified ("drift.Run").
+type CodeEntryPointExpectation struct {
+	Symbol string `yaml:"symbol"`
+	K      int    `yaml:"k"`
+}
+
+// PackageExpectation asserts that the given package path is in the top K
+// implementing_packages.
+type PackageExpectation struct {
+	Package string `yaml:"package"`
+	K       int    `yaml:"k"`
+}
+
+// TrustBeatsExpectation asserts that at least one block at WinnerTier appears
+// at a higher rank than every block at LoserTier — used for cross-tier
+// queries where specs must outrank notes on ties.
+type TrustBeatsExpectation struct {
+	WinnerTier string `yaml:"winner_tier"`
+	LoserTier  string `yaml:"loser_tier"`
 }
 
 // QueriesFile is the YAML schema for a queries.yaml file.

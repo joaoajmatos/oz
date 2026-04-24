@@ -132,3 +132,163 @@ func formatContextBlocks(blocks []query.ContextBlock) string {
 	}
 	return "[" + strings.Join(parts, ", ") + "]"
 }
+
+// ---- retrieval matchers (Sprint 1) ------------------------------------------
+//
+// These assertions back the retrieval golden suite. They consume only the
+// public fields on query.Result — any new retrieval data (code_entry_points,
+// block.Relevance) must be read here once Sprints 2–4 populate it.
+
+// ExpectBlockInTopK asserts that a context_block matching file (and, if
+// non-empty, section) is present in the first k entries of
+// result.ContextBlocks. k <= 0 searches the whole slice.
+func ExpectBlockInTopK(t *testing.T, result query.Result, file, section string, k int) {
+	t.Helper()
+	limit := len(result.ContextBlocks)
+	if k > 0 && k < limit {
+		limit = k
+	}
+	for i := 0; i < limit; i++ {
+		cb := result.ContextBlocks[i]
+		if cb.File == file && (section == "" || cb.Section == section) {
+			return
+		}
+	}
+	if section != "" {
+		t.Errorf("expected context block %s#%s in top-%d, got %v", file, section, k, formatContextBlocks(result.ContextBlocks))
+	} else {
+		t.Errorf("expected context block %s in top-%d, got %v", file, k, formatContextBlocks(result.ContextBlocks))
+	}
+}
+
+// ExpectCodeEntryPoint asserts that a code_entry_point with the given symbol
+// name is present in the first k entries. Symbol may be bare ("Run") or
+// qualified ("drift.Run"); matching accepts either form once Sprint 3 wires
+// the field.
+func ExpectCodeEntryPoint(t *testing.T, result query.Result, symbol string, k int) {
+	t.Helper()
+	entries := codeEntryPoints(result)
+	limit := len(entries)
+	if k > 0 && k < limit {
+		limit = k
+	}
+	for i := 0; i < limit; i++ {
+		if matchesSymbol(entries[i], symbol) {
+			return
+		}
+	}
+	t.Errorf("expected code_entry_point %q in top-%d, got %v", symbol, k, formatCodeEntryPoints(entries))
+}
+
+// ExpectPackageInTopK asserts that pkg is present in the first k entries of
+// result.ImplementingPackages.
+func ExpectPackageInTopK(t *testing.T, result query.Result, pkg string, k int) {
+	t.Helper()
+	limit := len(result.ImplementingPackages)
+	if k > 0 && k < limit {
+		limit = k
+	}
+	for i := 0; i < limit; i++ {
+		if result.ImplementingPackages[i] == pkg {
+			return
+		}
+	}
+	t.Errorf("expected implementing_package %q in top-%d, got %v", pkg, k, result.ImplementingPackages)
+}
+
+// ExpectRelevanceDescending asserts that context_blocks are sorted by
+// relevance in descending order. Activates once blocks carry a Relevance
+// field (R-01, Sprint 2); until then it is a no-op on zero values.
+func ExpectRelevanceDescending(t *testing.T, result query.Result) {
+	t.Helper()
+	var last float64 = -1
+	for i, cb := range result.ContextBlocks {
+		r := blockRelevance(cb)
+		if i > 0 && r > last+1e-9 {
+			t.Errorf("context blocks not descending by relevance at %d: %.4f > %.4f (%s#%s)", i, r, last, cb.File, cb.Section)
+			return
+		}
+		last = r
+	}
+}
+
+// ExpectTrustBeats asserts that at least one block at winnerTier outranks
+// every block at loserTier in result.ContextBlocks. Cross-tier queries use
+// this to guarantee specs outrank notes on ties.
+func ExpectTrustBeats(t *testing.T, result query.Result, winnerTier, loserTier string) {
+	t.Helper()
+	firstWinner, firstLoser := -1, -1
+	for i, cb := range result.ContextBlocks {
+		if firstWinner < 0 && cb.Trust == winnerTier {
+			firstWinner = i
+		}
+		if firstLoser < 0 && cb.Trust == loserTier {
+			firstLoser = i
+		}
+	}
+	if firstWinner < 0 {
+		t.Errorf("expected at least one block at trust %q, got %v", winnerTier, formatContextBlocks(result.ContextBlocks))
+		return
+	}
+	if firstLoser >= 0 && firstWinner > firstLoser {
+		t.Errorf("expected trust %q to outrank %q, got %v", winnerTier, loserTier, formatContextBlocks(result.ContextBlocks))
+	}
+}
+
+// ExpectNoRelevantContext asserts that retrieval produced no context_blocks
+// — used for low-relevance queries (R-09, Sprint 4).
+func ExpectNoRelevantContext(t *testing.T, result query.Result) {
+	t.Helper()
+	if len(result.ContextBlocks) != 0 {
+		t.Errorf("expected empty context_blocks (low-relevance), got %v", formatContextBlocks(result.ContextBlocks))
+	}
+}
+
+// --- code_entry_point compatibility shims -----------------------------------
+//
+// code_entry_points is a new query.Result field added in Sprint 3. Until it
+// lands, codeEntryPoints returns an empty slice and the matcher no-ops on
+// empty input. The shim lets Sprint 1 lock the assertion surface without
+// blocking on the packet-shape change.
+
+type codeEntryPoint struct {
+	Symbol  string
+	Package string
+}
+
+func codeEntryPoints(r query.Result) []codeEntryPoint {
+	// Replaced in Sprint 3 with reflection over r.CodeEntryPoints (or a
+	// typed accessor on query.Result).
+	_ = r
+	return nil
+}
+
+func matchesSymbol(e codeEntryPoint, want string) bool {
+	if e.Symbol == want {
+		return true
+	}
+	if e.Package != "" && e.Package+"."+e.Symbol == want {
+		return true
+	}
+	return false
+}
+
+func formatCodeEntryPoints(entries []codeEntryPoint) string {
+	parts := make([]string, len(entries))
+	for i, e := range entries {
+		if e.Package != "" {
+			parts[i] = e.Package + "." + e.Symbol
+		} else {
+			parts[i] = e.Symbol
+		}
+	}
+	return "[" + strings.Join(parts, ", ") + "]"
+}
+
+// blockRelevance reads the Sprint-2 Relevance field off a ContextBlock. Until
+// the field lands, returns 0 — which keeps ExpectRelevanceDescending inert on
+// current output instead of falsely failing.
+func blockRelevance(cb query.ContextBlock) float64 {
+	_ = cb
+	return 0
+}

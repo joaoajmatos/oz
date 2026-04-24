@@ -1,0 +1,102 @@
+# Golden suite queries for retrieval V1 acceptance.
+#
+# Each case exercises one of the eight query archetypes from the retrieval PRD
+# (code-implementation, spec-intent, docs-only, notes-rationale, ambiguous,
+# low-relevance, cross-tier, code-symbol-only) and carries both routing and
+# retrieval expectations.
+#
+# Sprint 1: TestRetrievalAccuracy is skipped — only routing expectations are
+# enforced (via TestRoutingAccuracy, which walks every suite). min_accuracy
+# stays conservative so flexing the fixture does not churn routing numbers.
+#
+# Sprints 2–4: the expect_* retrieval fields activate as each R-requirement
+# ships.
+
+min_accuracy: 0.75
+
+queries:
+  # ----- code-implementation: answer is in code symbols + packages -----------
+  - query: "how is drift detection implemented in the audit package"
+    expected_agent: oz-coding
+    min_confidence: 0.4
+    expect_blocks_in_topk:
+      - file: "specs/audit-catalogue.md"
+        section: "DRIFT001 spec and code divergence"
+        k: 5
+    expect_code_entry_points_in_topk:
+      - symbol: "drift.Run"
+        k: 5
+      - symbol: "drift.LoadSymbols"
+        k: 5
+    expect_packages_in_topk:
+      - package: "audit/drift"
+        k: 5
+    expect_relevance_descending: true
+
+  # ----- spec-intent: answer is in a spec section ----------------------------
+  # Routes to oz-coding via the catalogue path in its read-chain; that is fine
+  # — the intent here is to validate retrieval picks the DRIFT001 spec section,
+  # not which agent owns the task.
+  - query: "what does the audit catalogue say DRIFT001 detects"
+    expected_agent: oz-coding
+    min_confidence: 0.4
+    expect_blocks_in_topk:
+      - file: "specs/audit-catalogue.md"
+        section: "DRIFT001 spec and code divergence"
+        k: 3
+    expect_relevance_descending: true
+
+  # ----- docs-only: answer is in context snapshots not specs/ ---------------
+  - query: "where is the architecture overview context snapshot for oz packages"
+    expected_agent: oz-coding
+    min_confidence: 0.3
+    expect_blocks_in_topk:
+      - file: "context/architecture/overview.md"
+        section: ""
+        k: 5
+
+  # ----- notes-rationale: answer is only in notes/ ---------------------------
+  - query: "what design rationale in the planning notes justifies the drift auditor"
+    expected_agent: oz-notes
+    min_confidence: 0.4
+    expect_blocks_in_topk:
+      - file: "notes/planning/audit-v1-prd.md"
+        section: ""
+        k: 5
+
+  # ----- ambiguous: routing should present candidates ------------------------
+  # Routes to oz-coding on "drift" + "findings" (audit terms). The cross-agent
+  # ambiguity is validated by expected_candidates, not the winning agent.
+  - query: "update documentation for drift findings"
+    expected_agent: oz-coding
+    min_confidence: 0.3
+    expected_candidates: ["oz-spec", "oz-coding", "oz-notes"]
+
+  # ----- low-relevance: retrieval should return few/no blocks ---------------
+  - query: "migrate the mobile app to React Native"
+    expected_agent: ""
+    reason: "no_clear_owner"
+    expect_no_relevant_context: true
+
+  # ----- cross-tier: answer in both specs and notes; specs must win ---------
+  - query: "drift detection symbol tracking"
+    expected_agent: oz-coding
+    min_confidence: 0.3
+    expect_blocks_in_topk:
+      - file: "specs/audit-catalogue.md"
+        section: "DRIFT002 symbol tracking"
+        k: 3
+    expect_trust_beats:
+      winner_tier: "specs"
+      loser_tier: "notes"
+
+  # ----- code-symbol-only: answer only in code_symbol names -----------------
+  - query: "where is the LoadSymbols helper in the audit drift implementation"
+    expected_agent: oz-coding
+    min_confidence: 0.35
+    expect_code_entry_points_in_topk:
+      - symbol: "drift.LoadSymbols"
+        k: 3
+    expect_packages_in_topk:
+      - package: "audit/drift"
+        k: 3

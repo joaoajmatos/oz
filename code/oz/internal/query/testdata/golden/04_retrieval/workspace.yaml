@@ -1,0 +1,213 @@
+# Golden suite for retrieval V1 acceptance.
+#
+# Mirrors an oz-like workspace: drift detection is the central example from the
+# retrieval PRD ("how is drift detection implemented?"). Content is shaped so
+# that each query in queries.yaml has a well-defined correct retrieval answer
+# — a specific spec section, ADR, doc, note, code symbol, or package.
+#
+# Sprint 1 wires this fixture up but TestRetrievalAccuracy is skipped until
+# Sprint 2 implements ranked context_blocks. The workspace.yaml must parse via
+# testws.FromFixture (S1-06 acceptance) and route sensibly so that the
+# TestRoutingAccuracy harness — which also walks this suite — stays green.
+#
+# The code_packages / code_symbols sections below are consumed by the fixture
+# loader starting in Sprint 3 (S3-02); the current loader ignores unknown keys.
+
+agents:
+  - name: oz-coding
+    role: "Builds the Go implementation of the oz CLI, its tests, and embedded scaffolding."
+    scope:
+      - "code/oz/**"
+      - "code/oz/cmd/**"
+      - "code/oz/internal/**"
+    responsibilities: "Implements CLI subcommands, context graph builder, BM25F routing, drift detection, audit reporting, scaffold generation, MCP server."
+    out_of_scope: "Normative spec text, convention decisions, notes triage, rewriting specs/oz-project-specification.md."
+    readchain:
+      - "AGENTS.md"
+      - "specs/oz-project-specification.md"
+      - "specs/audit-catalogue.md"
+      - "specs/routing-packet.md"
+      - "docs/architecture.md"
+      - "docs/test-framework.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/oz/"
+
+  - name: oz-spec
+    role: "Owns normative convention text: the project specification, routing packet spec, audit catalogue, and architectural decision records."
+    scope:
+      - "specs/**"
+      - "specs/decisions/**"
+    responsibilities: "Writes and revises specs, drafts ADRs, aligns specs with shipped behaviour, maintains the source-of-truth hierarchy."
+    out_of_scope: "Go implementation code, CLI wiring, note triage, docs prose."
+    readchain:
+      - "AGENTS.md"
+      - "specs/oz-project-specification.md"
+      - "specs/decisions/0001-graph-schema.md"
+      - "specs/decisions/0002-bm25-routing.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/oz/"
+
+  - name: oz-notes
+    role: "Triages raw thinking in notes/, decides what to promote, and routes content into specs, docs, or ADRs."
+    scope:
+      - "notes/**"
+      - "notes/planning/**"
+    responsibilities: "Classifies notes, promotes design rationale into docs or specs, archives superseded notes, preserves planning history."
+    out_of_scope: "Code implementation, normative spec decisions, CLI changes."
+    readchain:
+      - "AGENTS.md"
+      - "notes/README.md"
+      - "specs/oz-project-specification.md"
+    rules:
+      - "rules/coding-guidelines.md"
+    skills:
+      - "skills/oz/"
+
+specs:
+  - path: "specs/oz-project-specification.md"
+    sections:
+      - heading: "Overview"
+        content: "oz is a workspace convention and CLI for LLM-first development. It structures a repository so any agent — Claude Code, Cursor, or a bespoke tool — can orient itself from AGENTS.md down."
+      - heading: "Routing"
+        content: "Agent selection uses BM25F over each agent's scope, role, responsibilities, and read-chain fields. The winning agent owns the task; softmax gives confidence; low-confidence queries return candidate_agents."
+      - heading: "Retrieval"
+        content: "Context retrieval emits a ranked list of spec sections, docs, context snapshots, and notes relevant to the query. Blocks carry a relevance score and are capped by max_blocks."
+
+  - path: "specs/audit-catalogue.md"
+    sections:
+      - heading: "DRIFT001 spec and code divergence"
+        content: "Drift detection scans exported symbols declared in specs against symbols present in source code. When a spec names a symbol the code no longer exports, or code exports a symbol the spec never declared, the auditor emits a DRIFT001 finding."
+      - heading: "DRIFT002 symbol tracking"
+        content: "Tracks rename and move events across commits. Uses the code graph's containment edges to follow a symbol through history."
+      - heading: "Ownership"
+        content: "Drift findings are surfaced by the oz audit command and attributed to the agent that owns the affected spec section."
+
+  - path: "specs/routing-packet.md"
+    sections:
+      - heading: "Packet shape"
+        content: "The routing packet carries agent, confidence, scope, context_blocks, relevant_concepts, implementing_packages, code_entry_points, excluded, reason, and candidate_agents."
+      - heading: "Selection semantics"
+        content: "Context blocks are chosen by retrieval, ranked by relevance, thresholded at min_relevance, and capped at max_blocks. Survivors include at least one block per declared agent scope path when available."
+
+decisions:
+  - id: "0001-graph-schema"
+    content: "Decision: use a typed node-and-edge graph with node types agent, spec_section, decision, doc, context_snapshot, note, code_file, code_symbol, code_package. Consequence: every query consumes the same graph regardless of source — routing and retrieval share the corpus."
+
+  - id: "0002-bm25-routing"
+    content: "Decision: route agents with BM25F over scope, role, responsibilities, and read-chain. Reject embeddings for V1 — BM25F over tokenised fields is deterministic, auditable, and requires no model. Consequence: query latency stays under 50ms on a typical workspace."
+
+  - id: "0003-semantic-review"
+    content: "Decision: all implements edges between code_package and concept nodes require explicit review before they count for retrieval. Extracted-but-unreviewed edges are carried in the overlay but gated off. Consequence: drift detection on packages never fires on an unreviewed hypothesis."
+
+contexts:
+  - topic: "architecture"
+    file: "overview.md"
+    content: "oz is composed of a context graph builder, a BM25F routing engine, a drift auditor, and a scaffold generator. Each is a small Go package under code/oz/internal."
+
+  - topic: "audit"
+    file: "findings.md"
+    content: "Recent audit runs over the oz repo detected one DRIFT001 finding on the routing packet spec section and zero DRIFT002 findings."
+
+notes:
+  - file: "planning/audit-v1-prd.md"
+    content: |
+      # oz audit V1 — Product Requirements Document
+
+      Drift detection is the core capability. The auditor walks spec sections
+      that declare exported symbols and compares them against the code graph.
+      Design rationale: specs drift from code faster than vice versa, so the
+      auditor treats code as the source of truth for behaviour and flags the
+      spec when they diverge. This note captures the decision history behind
+      the shipped drift.Run entry point and its symbol-loading helpers.
+
+  - file: "planning/codeindex-v1-sprints.md"
+    content: |
+      # oz codeindex V1 — Sprint Plan
+
+      Sprint 2 added code_symbol and code_package nodes. Sprint 3 wired the
+      drift auditor to walk them. The LoadSymbols helper was extracted from
+      specscan.Scan so both the auditor and the codeindex validator could share
+      it. Contains the why behind the drift/audit split and the eligibility rule
+      for flagged symbols.
+
+# --- code packages and symbols ------------------------------------------------
+# These sections are drafted for the Sprint 3 fixture loader. The Sprint 1
+# loader ignores unknown keys; no test consumes them yet.
+#
+# Counts: 4 packages × 2–3 symbols each = 10 symbols total (satisfies ≥3
+# packages / ≥8 symbols in S1-03).
+
+code_packages:
+  - path: "audit/drift"
+    import: "github.com/joaoajmatos/oz/internal/audit/drift"
+    doc: "Package drift compares declared spec symbols against the code graph and emits DRIFT001 findings when they diverge."
+    symbols:
+      - name: "Run"
+        kind: "function"
+        file: "code/oz/internal/audit/drift/drift.go"
+        line: 42
+        doc: "Run executes drift detection across the loaded graph."
+      - name: "LoadSymbols"
+        kind: "function"
+        file: "code/oz/internal/audit/drift/symbols.go"
+        line: 18
+        doc: "LoadSymbols extracts exported symbol names from the code graph."
+      - name: "Symbol"
+        kind: "struct"
+        file: "code/oz/internal/audit/drift/symbols.go"
+        line: 7
+        doc: "Symbol is an exported identifier tracked by the auditor."
+      - name: "Candidate"
+        kind: "struct"
+        file: "code/oz/internal/audit/drift/drift.go"
+        line: 12
+        doc: "Candidate is a potential drift finding before deduplication."
+
+  - path: "audit"
+    import: "github.com/joaoajmatos/oz/internal/audit"
+    doc: "Package audit orchestrates the audit subcommands and aggregates findings from drift and other detectors."
+    symbols:
+      - name: "Walk"
+        kind: "function"
+        file: "code/oz/internal/audit/audit.go"
+        line: 24
+        doc: "Walk invokes each registered detector against the graph."
+      - name: "Finding"
+        kind: "struct"
+        file: "code/oz/internal/audit/audit.go"
+        line: 9
+        doc: "Finding is one audit result, typed by its detector."
+
+  - path: "graph"
+    import: "github.com/joaoajmatos/oz/internal/graph"
+    doc: "Package graph builds the typed context graph from the workspace."
+    symbols:
+      - name: "Build"
+        kind: "function"
+        file: "code/oz/internal/graph/graph.go"
+        line: 55
+        doc: "Build constructs the graph from a workspace root."
+      - name: "LoadPackages"
+        kind: "function"
+        file: "code/oz/internal/graph/code.go"
+        line: 30
+        doc: "LoadPackages scans Go source trees and emits code_package and code_symbol nodes."
+
+  - path: "specscan"
+    import: "github.com/joaoajmatos/oz/internal/specscan"
+    doc: "Package specscan parses spec markdown and extracts declared symbol references."
+    symbols:
+      - name: "Scan"
+        kind: "function"
+        file: "code/oz/internal/specscan/specscan.go"
+        line: 14
+        doc: "Scan walks spec files and returns declared symbol references."
+      - name: "Reference"
+        kind: "struct"
+        file: "code/oz/internal/specscan/specscan.go"
+        line: 5
+        doc: "Reference is a spec-declared symbol with its source file and line."

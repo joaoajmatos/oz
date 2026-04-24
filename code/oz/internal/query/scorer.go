@@ -12,44 +12,26 @@ type Score struct {
 }
 
 // ComputeBM25F returns a Score for each agent document.
-// Terms is the tokenized query (stemmed, deduplicated).
+// Terms is the tokenized query (stemmed, deduplicated). The routing math is
+// delegated to the generic BM25 core (bm25.go); only the out-of-scope
+// penalty is agent-specific and applied here.
 func ComputeBM25F(terms []string, docs []AgentDoc, cfg ScoringConfig) []Score {
 	if len(docs) == 0 || len(terms) == 0 {
 		return nil
 	}
 
-	// Compute per-field average lengths.
-	avgScope, avgRole, avgResp, avgRC := avgFieldLengths(docs)
+	fields := agentBM25Fields(cfg)
 
-	// Compute per-term document frequency (across all fields combined).
-	df := computeDF(docs)
-
-	N := float64(len(docs))
+	generic := make([]FieldDoc, len(docs))
+	for i, d := range docs {
+		generic[i] = d
+	}
+	avgLen := AvgFieldLengths(generic, fields)
+	df := ComputeDF(generic)
 
 	scores := make([]Score, len(docs))
 	for i, doc := range docs {
-		score := 0.0
-		for _, term := range terms {
-			// IDF with floor of 1.0 to handle small corpora.
-			dfVal := float64(df[term])
-			idf := math.Log((N-dfVal+0.5)/(dfVal+0.5) + 1)
-			if idf < 1.0 {
-				idf = 1.0
-			}
-
-			// Pseudo-TF: weighted sum across fields.
-			scopeTF := normTF(termFreq(term, doc.Scope), len(doc.Scope), avgScope, cfg.BPath)
-			roleTF := normTF(termFreq(term, doc.Role), len(doc.Role), avgRole, cfg.BText)
-			respTF := normTF(termFreq(term, doc.Responsibilities), len(doc.Responsibilities), avgResp, cfg.BText)
-			rcTF := normTF(termFreq(term, doc.ReadChain), len(doc.ReadChain), avgRC, cfg.BPath)
-
-			tfTilde := cfg.WeightScope*scopeTF +
-				cfg.WeightRole*roleTF +
-				cfg.WeightResponsibilities*respTF +
-				cfg.WeightReadchain*rcTF
-
-			score += idf * tfTilde / (cfg.K1 + tfTilde)
-		}
+		score := BM25Score(terms, doc.Fields(), fields, cfg.K1, avgLen, df, len(docs))
 
 		// Out-of-scope penalty: subtract for each query term that appears
 		// in the agent's out-of-scope declaration.
@@ -65,6 +47,17 @@ func ComputeBM25F(terms []string, docs []AgentDoc, cfg ScoringConfig) []Score {
 		scores[i] = Score{Agent: doc.Name, Value: score}
 	}
 	return scores
+}
+
+// agentBM25Fields returns the field set used to score the agent-routing
+// corpus, in a stable order (matters for floating-point reproducibility).
+func agentBM25Fields(cfg ScoringConfig) []BM25Field {
+	return []BM25Field{
+		{Name: AgentFieldScope, Weight: cfg.WeightScope, B: cfg.BPath},
+		{Name: AgentFieldRole, Weight: cfg.WeightRole, B: cfg.BText},
+		{Name: AgentFieldResponsibilities, Weight: cfg.WeightResponsibilities, B: cfg.BText},
+		{Name: AgentFieldReadChain, Weight: cfg.WeightReadchain, B: cfg.BPath},
+	}
 }
 
 // Softmax converts raw BM25F scores to confidences using temperature scaling.
@@ -160,68 +153,3 @@ func Route(scores []Score, cfg ScoringConfig) RouteResult {
 	return result
 }
 
-// ---- helpers ----------------------------------------------------------------
-
-// normTF returns the BM25F normalised term frequency for one field.
-// tf = raw count, fieldLen = length of this field in the doc,
-// avgLen = average field length across corpus, b = normalisation factor.
-func normTF(tf, fieldLen int, avgLen, b float64) float64 {
-	if tf == 0 || fieldLen == 0 {
-		return 0
-	}
-	norm := 1 - b + b*float64(fieldLen)/avgLen
-	if norm == 0 {
-		norm = 1
-	}
-	return float64(tf) / norm
-}
-
-// avgFieldLengths returns average lengths (in tokens) for scope, role,
-// responsibilities, and readchain across all docs.
-func avgFieldLengths(docs []AgentDoc) (scope, role, resp, rc float64) {
-	if len(docs) == 0 {
-		return 1, 1, 1, 1
-	}
-	for _, d := range docs {
-		scope += float64(len(d.Scope))
-		role += float64(len(d.Role))
-		resp += float64(len(d.Responsibilities))
-		rc += float64(len(d.ReadChain))
-	}
-	n := float64(len(docs))
-	scope /= n
-	role /= n
-	resp /= n
-	rc /= n
-	// Floor to 1 to avoid division by zero.
-	if scope < 1 {
-		scope = 1
-	}
-	if role < 1 {
-		role = 1
-	}
-	if resp < 1 {
-		resp = 1
-	}
-	if rc < 1 {
-		rc = 1
-	}
-	return
-}
-
-// computeDF returns how many agents contain each term in any field.
-func computeDF(docs []AgentDoc) map[string]int {
-	df := make(map[string]int)
-	for _, d := range docs {
-		seen := make(map[string]bool)
-		for _, tokens := range [][]string{d.Scope, d.Role, d.Responsibilities, d.ReadChain} {
-			for _, t := range tokens {
-				if !seen[t] {
-					df[t]++
-					seen[t] = true
-				}
-			}
-		}
-	}
-	return df
-}

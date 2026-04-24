@@ -49,6 +49,54 @@ func TestRoutingAccuracy(t *testing.T) {
 	}
 }
 
+// TestRetrievalAccuracy walks the 04_retrieval golden suite and checks each
+// query's retrieval expectations. Skipped until Sprint 2 ships ranked
+// context_blocks — the stub exists in Sprint 1 (S1-06) to confirm the suite
+// loads, the matchers compile, and the YAML schema parses.
+func TestRetrievalAccuracy(t *testing.T) {
+	t.Skip("awaiting Sprint 2 implementation of ranked context_blocks (R-01)")
+
+	suites, err := testws.LoadGoldenSuites(t, "testdata/golden")
+	if err != nil {
+		t.Fatalf("load golden suites: %v", err)
+	}
+
+	for _, suite := range suites {
+		if suite.Name != "04_retrieval" {
+			continue
+		}
+		suite := suite
+		t.Run(suite.Name, func(t *testing.T) {
+			ws := suite.Build(t)
+			for _, q := range suite.Queries {
+				q := q
+				t.Run(q.Query, func(t *testing.T) {
+					result := query.Run(ws.Path(), q.Query)
+
+					for _, b := range q.ExpectBlocksInTopK {
+						testws.ExpectBlockInTopK(t, result, b.File, b.Section, b.K)
+					}
+					for _, e := range q.ExpectCodeEntryPointsInTopK {
+						testws.ExpectCodeEntryPoint(t, result, e.Symbol, e.K)
+					}
+					for _, p := range q.ExpectPackagesInTopK {
+						testws.ExpectPackageInTopK(t, result, p.Package, p.K)
+					}
+					if q.ExpectRelevanceDescending {
+						testws.ExpectRelevanceDescending(t, result)
+					}
+					if q.ExpectNoRelevantContext {
+						testws.ExpectNoRelevantContext(t, result)
+					}
+					if q.ExpectTrustBeats != nil {
+						testws.ExpectTrustBeats(t, result, q.ExpectTrustBeats.WinnerTier, q.ExpectTrustBeats.LoserTier)
+					}
+				})
+			}
+		})
+	}
+}
+
 // TestBuilder_BasicWorkspace validates the testws builder produces a
 // convention-compliant workspace that oz validate would accept.
 func TestBuilder_BasicWorkspace(t *testing.T) {
