@@ -92,8 +92,10 @@ type SemanticOverlay struct {
 
 // OverlayConcept is a concept node in the semantic overlay.
 type OverlayConcept struct {
-	Name    string `json:"name"`
-	OwnedBy string `json:"owned_by"`
+	Name        string   `json:"name"`
+	OwnedBy     string   `json:"owned_by"`
+	Description string   `json:"description,omitempty"`
+	SourceFiles []string `json:"source_files,omitempty"`
 }
 
 type OverlayImplements struct {
@@ -316,11 +318,13 @@ func (b *Builder) writeOverlay(root string, o *SemanticOverlay) error {
 		conceptID := "concept:" + slugify(c.Name)
 		agentNodeID := "agent:" + c.OwnedBy
 		full.Concepts = append(full.Concepts, semantic.Concept{
-			ID:         conceptID,
-			Name:       c.Name,
-			Tag:        semantic.TagExtracted,
-			Confidence: 1.0,
-			Reviewed:   true,
+			ID:          conceptID,
+			Name:        c.Name,
+			Description: c.Description,
+			SourceFiles: c.SourceFiles,
+			Tag:         semantic.TagExtracted,
+			Confidence:  1.0,
+			Reviewed:    true,
 		})
 		full.Edges = append(full.Edges, semantic.ConceptEdge{
 			From:       conceptID,

@@ -25,8 +25,16 @@ type WorkspaceFixture struct {
 // It is a simplified representation: each concept is listed with its owning agent.
 // The fixture loader calls WithSemanticOverlay, which writes a full semantic.json.
 type SemanticOverlayFixture struct {
-	Concepts   []OverlayConcept          `yaml:"concepts"`
+	Concepts   []OverlayConceptFixture   `yaml:"concepts"`
 	Implements []OverlayImplementsFixture `yaml:"implements,omitempty"`
+}
+
+// OverlayConceptFixture is one semantic concept in a workspace.yaml overlay.
+type OverlayConceptFixture struct {
+	Name        string   `yaml:"name"`
+	OwnedBy     string   `yaml:"owned_by"`
+	Description string   `yaml:"description,omitempty"`
+	SourceFiles []string `yaml:"source_files,omitempty"`
 }
 
 type OverlayImplementsFixture struct {
@@ -180,8 +188,17 @@ func FromFixture(t *testing.T, path string) *Builder {
 				Reviewed: e.Reviewed,
 			})
 		}
+		concepts := make([]OverlayConcept, 0, len(fix.SemanticOverlay.Concepts))
+		for _, c := range fix.SemanticOverlay.Concepts {
+			concepts = append(concepts, OverlayConcept{
+				Name:        c.Name,
+				OwnedBy:     c.OwnedBy,
+				Description: c.Description,
+				SourceFiles: c.SourceFiles,
+			})
+		}
 		b.WithSemanticOverlay(SemanticOverlay{
-			Concepts: fix.SemanticOverlay.Concepts,
+			Concepts:   concepts,
 			Implements: implements,
 		})
 	}

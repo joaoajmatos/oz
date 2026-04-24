@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "graph_hash": "5048e963d93ba4235688986e0a45a84fa3c155fa4945d29c718d4492aedd8655",
+  "graph_hash": "0d214e977957038345e68d4918da5e5631dffed8030f689e78b053f22b31a0b7",
   "model": "x-ai/grok-4.20",
   "generated_at": "2026-04-23T20:45:28Z",
   "concepts": [
@@ -72,11 +72,25 @@
       "reviewed": true
     },
     {
+      "id": "concept:code-indexing",
+      "name": "Code indexing (graph)",
+      "description": "Indexing source files (Go in V1) into the structural context graph: walking code, parsing with goindexer, emitting code_file and code_symbol nodes and related edges during oz context build. Lives in codeindex and goindexer; this is the graph build pipeline, not spec markdown backtick scanning for drift (see Spec-Code Drift Detection).",
+      "source_files": [
+        "specs/graph-schema.md",
+        "docs/architecture.md",
+        "code/oz/internal/codeindex",
+        "code/oz/internal/codeindex/goindexer",
+        "code/oz/internal/context/builder.go"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
       "id": "concept:spec-code-drift-detection",
       "name": "Spec-Code Drift Detection",
       "description": "The audit mechanism that detects when code symbols or packages implement concepts not referenced in specs or when specs reference non-existent code.",
       "source_files": [
-        "specs/decisions/0001-audit-v1-symbols-from-graph-codeindex.md",
         "code/oz/internal/audit/drift",
         "code/oz/internal/audit/drift/specscan"
       ],
@@ -324,6 +338,38 @@
     {
       "from": "concept:audit-framework",
       "to": "code_package:github.com/joaoajmatos/oz/internal/audit",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:code-indexing",
+      "to": "agent:oz-coding",
+      "type": "agent_owns_concept",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:code-indexing",
+      "to": "spec_section:specs/graph-schema.md:Node object",
+      "type": "implements_spec",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:code-indexing",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/codeindex",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "from": "concept:code-indexing",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/codeindex/goindexer",
       "type": "implements",
       "tag": "EXTRACTED",
       "confidence": 1,

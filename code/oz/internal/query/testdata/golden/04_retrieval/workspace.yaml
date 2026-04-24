@@ -237,6 +237,26 @@ code_packages:
         line: 5
         doc: "Reference is a spec-declared symbol with its source file and line."
 
+  - path: "codeindex"
+    import: "github.com/joaoajmatos/oz/internal/codeindex"
+    doc: "Package codeindex walks Go source and registers indexers to emit code_file and code_symbol nodes for the context graph build."
+    symbols:
+      - name: "WalkCode"
+        kind: "function"
+        file: "code/oz/internal/codeindex/walk.go"
+        line: 20
+        doc: "WalkCode visits Go files and runs registered indexers."
+
+  - path: "codeindex/goindexer"
+    import: "github.com/joaoajmatos/oz/internal/codeindex/goindexer"
+    doc: "Package goindexer parses Go AST and indexes exported symbols for graph nodes."
+    symbols:
+      - name: "IndexFile"
+        kind: "function"
+        file: "code/oz/internal/codeindex/goindexer/goindexer.go"
+        line: 30
+        doc: "IndexFile returns graph-ready nodes for one Go file."
+
   - path: "semantic"
     import: "github.com/joaoajmatos/oz/internal/semantic"
     doc: "Package semantic holds the semantic overlay JSON model for concepts and implements edges."
@@ -256,6 +276,13 @@ semantic_overlay:
     # "implement" so a weak concept cannot tie the PRD query.
     - name: "Context graph link"
       owned_by: "oz-coding"
+    - name: "Code indexing"
+      owned_by: "oz-coding"
+      description: "Indexing Go sources into the structural graph via codeindex and goindexer (code_file and code_symbol). Runs inside context build, separate from specscan markdown scanning."
+      source_files:
+        - "code/oz/internal/codeindex"
+        - "code/oz/internal/codeindex/goindexer"
+        - "notes/planning/codeindex-v1-sprints.md"
   implements:
     - concept: "drift detection"
       package: "audit/drift"
@@ -268,4 +295,10 @@ semantic_overlay:
       reviewed: true
     - concept: "Context graph link"
       package: "semantic"
+      reviewed: true
+    - concept: "Code indexing"
+      package: "codeindex"
+      reviewed: true
+    - concept: "Code indexing"
+      package: "codeindex/goindexer"
       reviewed: true
