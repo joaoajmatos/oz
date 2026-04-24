@@ -122,8 +122,8 @@ eligible when **either**:
 
 - its `file` is under a path in the winning agent's `scope`, **or**
 - its containing `code_package` has a reviewed `implements` edge to a
-  concept whose retrieval score is at least
-  `retrieval.concept_min_relevance`.
+  concept whose retrieval score clears the same **concept relevance floor**
+  as `implementing_packages` (see below).
 
 Eligible symbols are ranked by block `relevance` and truncated to
 `retrieval.max_code_entry_points`.
@@ -132,7 +132,10 @@ Eligible symbols are ranked by block `relevance` and truncated to
 
 1. Score each `concept` against the query using the retrieval BM25 with
    `[retrieval.concepts]` field weights.
-2. Keep concepts with `score >= retrieval.concept_min_relevance`.
+2. Keep concepts whose score is at least `max(retrieval.concept_min_relevance,
+   best_concept_score × retrieval.concept_min_fraction_of_top)` when
+   `concept_min_fraction_of_top` is in `(0,1]`, and at least
+   `retrieval.concept_min_relevance` when the fraction is `0`.
 3. Walk reviewed `implements` edges from those concepts to `code_package`
    nodes.
 4. Sort packages by the maximum concept score reaching them; truncate to
@@ -208,9 +211,11 @@ If `context/scoring.toml` exists, the query engine reads these sections and keys
   entries.
 - `max_implementing_packages` (default `5`): maximum
   `implementing_packages` entries.
-- `concept_min_relevance` (default `0.1`): minimum concept retrieval score
-  required for a concept to contribute to `implementing_packages` or to
-  promote code symbols via the `implements` path.
+- `concept_min_relevance` (default `0.1`): absolute floor for concept
+  retrieval score before walking `implements` edges.
+- `concept_min_fraction_of_top` (default `0.5`): relative floor; a concept
+  must also score at least this fraction of the best-matching concept unless
+  set to `0` (relative rule off).
 - `agent_affinity_boost` (default `1.2`): multiplicative factor when a
   block is connected to the winning agent.
 - `trust_boost_specs` (default `1.3`)

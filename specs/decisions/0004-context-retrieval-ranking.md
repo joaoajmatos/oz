@@ -143,7 +143,11 @@ winning agent's scope or to a `code_package` connected via a reviewed
 1. Score each concept against the query using the same retrieval BM25 over
    `(concept.name, concept.description)` with `[retrieval.concepts]`
    weights.
-2. Keep concepts with `score >= retrieval.concept_min_relevance`.
+2. Keep concepts whose score clears the configured floor: at least
+   `retrieval.concept_min_relevance` and, when
+   `retrieval.concept_min_fraction_of_top` is non-zero, at least that
+   fraction of the best-scoring concept in the overlay (reduces spurious
+   package matches on generic query stems such as *implement*).
 3. Walk reviewed `implements` edges from those concepts to packages.
 4. Sort packages by the max concept score that reaches them, truncate to
    `retrieval.max_implementing_packages` (default `5`).

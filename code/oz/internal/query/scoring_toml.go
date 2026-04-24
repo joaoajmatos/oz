@@ -66,6 +66,7 @@ type scoringTOMLRetrievalIn struct {
 	MaxCodeEntryPoints *float64              `toml:"max_code_entry_points"`
 	MaxImplementingPackages *float64         `toml:"max_implementing_packages"`
 	ConceptMinRelevance *float64             `toml:"concept_min_relevance"`
+	ConceptMinFractionOfTop *float64        `toml:"concept_min_fraction_of_top"`
 	BM25          *scoringTOMLRetrievalBM25  `toml:"bm25"`
 	Fields        *scoringTOMLRetrievalField `toml:"fields"`
 	Concepts      *scoringTOMLRetrievalConcepts `toml:"concepts"`
@@ -122,7 +123,8 @@ var allowedKeysInSection = map[string]map[string]struct{}{
 	"retrieval": {
 		"include_notes": {},
 		"min_relevance": {}, "max_blocks": {}, "max_code_entry_points": {},
-		"max_implementing_packages": {}, "concept_min_relevance": {}, "agent_affinity": {},
+		"max_implementing_packages": {}, "concept_min_relevance": {},
+		"concept_min_fraction_of_top": {}, "agent_affinity": {},
 		"bm25": {}, "fields": {}, "concepts": {}, "trust_boost": {},
 	},
 }
@@ -211,6 +213,9 @@ func mergeScoringTOML(cfg *ScoringConfig, in *scoringTOMLIn) {
 		}
 		if in.Retrieval.ConceptMinRelevance != nil {
 			cfg.RetrievalConceptMinRelevance = *in.Retrieval.ConceptMinRelevance
+		}
+		if in.Retrieval.ConceptMinFractionOfTop != nil {
+			cfg.RetrievalConceptMinFractionOfTop = *in.Retrieval.ConceptMinFractionOfTop
 		}
 		if in.Retrieval.AgentAffinity != nil {
 			cfg.RetrievalAgentAffinity = *in.Retrieval.AgentAffinity
@@ -303,8 +308,9 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 			MaxBlocks     float64 `toml:"max_blocks"`
 			MaxCodeEntryPoints float64 `toml:"max_code_entry_points"`
 			MaxImplementingPackages float64 `toml:"max_implementing_packages"`
-			ConceptMinRelevance float64 `toml:"concept_min_relevance"`
-			AgentAffinity float64 `toml:"agent_affinity"`
+			ConceptMinRelevance     float64 `toml:"concept_min_relevance"`
+			ConceptMinFractionOfTop float64 `toml:"concept_min_fraction_of_top"`
+			AgentAffinity           float64 `toml:"agent_affinity"`
 			BM25          struct {
 				K1 float64 `toml:"k1"`
 			} `toml:"bm25"`
@@ -345,6 +351,7 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 	enc.Retrieval.MaxCodeEntryPoints = cfg.RetrievalMaxCodeEntryPoints
 	enc.Retrieval.MaxImplementingPackages = cfg.RetrievalMaxImplementingPackages
 	enc.Retrieval.ConceptMinRelevance = cfg.RetrievalConceptMinRelevance
+	enc.Retrieval.ConceptMinFractionOfTop = cfg.RetrievalConceptMinFractionOfTop
 	enc.Retrieval.AgentAffinity = cfg.RetrievalAgentAffinity
 	enc.Retrieval.BM25.K1 = cfg.RetrievalK1
 	enc.Retrieval.Fields.WeightTitle = cfg.RetrievalWeightTitle
@@ -496,6 +503,9 @@ func ValidateScoringConfig(cfg ScoringConfig) error {
 		return err
 	}
 	if err := validateNonnegFinite("retrieval.concept_min_relevance", cfg.RetrievalConceptMinRelevance); err != nil {
+		return err
+	}
+	if err := validate01("retrieval.concept_min_fraction_of_top", cfg.RetrievalConceptMinFractionOfTop, false); err != nil {
 		return err
 	}
 	if err := validatePositiveFinite("retrieval.bm25.k1", cfg.RetrievalK1); err != nil {

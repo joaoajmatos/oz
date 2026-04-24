@@ -24,7 +24,8 @@ min_candidate_confidence = 0.2
 
 [retrieval]
 include_notes = true
+concept_min_relevance = 0.1
+concept_min_fraction_of_top = 0.5
 
 [tokenize]
-# Adjacent stem bigrams (e.g. rest_api); can over-index — off by default per sprint risk.
 use_bigrams = false

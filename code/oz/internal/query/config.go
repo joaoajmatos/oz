@@ -32,11 +32,16 @@ type ScoringConfig struct {
 	UseBigrams bool
 
 	// Retrieval thresholds and caps.
-	RetrievalMinRelevance float64
-	RetrievalMaxBlocks    float64
-	RetrievalMaxCodeEntryPoints float64
+	RetrievalMinRelevance            float64
+	RetrievalMaxBlocks               float64
+	RetrievalMaxCodeEntryPoints      float64
 	RetrievalMaxImplementingPackages float64
+	// Minimum BM25 score for a concept to participate in implements-walking.
 	RetrievalConceptMinRelevance float64
+	// When > 0, a concept is kept only if its score is at least this fraction of
+	// the best-scoring concept in the overlay (in addition to
+	// RetrievalConceptMinRelevance). Cuts spurious token matches; 0 disables.
+	RetrievalConceptMinFractionOfTop float64
 
 	// Retrieval BM25 and ranking boosts.
 	RetrievalK1                float64
@@ -47,10 +52,10 @@ type ScoringConfig struct {
 	RetrievalTrustBoostNotes   float64
 
 	// Retrieval field weights.
-	RetrievalWeightTitle float64
-	RetrievalWeightPath  float64
-	RetrievalWeightBody  float64
-	RetrievalWeightKind  float64
+	RetrievalWeightTitle              float64
+	RetrievalWeightPath               float64
+	RetrievalWeightBody               float64
+	RetrievalWeightKind               float64
 	RetrievalConceptWeightName        float64
 	RetrievalConceptWeightDescription float64
 }
@@ -58,35 +63,36 @@ type ScoringConfig struct {
 // DefaultScoringConfig returns the default parameters.
 func DefaultScoringConfig() ScoringConfig {
 	return ScoringConfig{
-		K1:                     1.2,
-		BText:                  0.75,
-		BPath:                  0.5,
-		WeightScope:            4.0,
-		WeightRole:             2.5,
-		WeightResponsibilities: 2.5,
-		WeightReadchain:        0.0, // shared readchains pollute IDF; disabled
-		OutOfScopePenalty:      2.5,
-		ConfidenceThreshold:    0.7,
-		MinScore:               0.01, // low threshold: prefer routing to best guess
-		Temperature:            0.2,  // decisive routing
-		MinCandidateConfidence: 0.2,
-		IncludeNotes:           true,
-		UseBigrams:             false,
-		RetrievalMinRelevance:  0.05,
-		RetrievalMaxBlocks:     12,
-		RetrievalMaxCodeEntryPoints: 5,
-		RetrievalMaxImplementingPackages: 5,
-		RetrievalConceptMinRelevance: 0.05,
-		RetrievalK1:            1.2,
-		RetrievalAgentAffinity: 1.2,
-		RetrievalTrustBoostSpecs:   1.3,
-		RetrievalTrustBoostDocs:    1.0,
-		RetrievalTrustBoostContext: 1.0,
-		RetrievalTrustBoostNotes:   0.6,
-		RetrievalWeightTitle:       2.0,
-		RetrievalWeightPath:        1.5,
-		RetrievalWeightBody:        1.0,
-		RetrievalWeightKind:        1.0,
+		K1:                                1.2,
+		BText:                             0.75,
+		BPath:                             0.5,
+		WeightScope:                       4.0,
+		WeightRole:                        2.5,
+		WeightResponsibilities:            2.5,
+		WeightReadchain:                   0.0, // shared readchains pollute IDF; disabled
+		OutOfScopePenalty:                 2.5,
+		ConfidenceThreshold:               0.7,
+		MinScore:                          0.01, // low threshold: prefer routing to best guess
+		Temperature:                       0.2,  // decisive routing
+		MinCandidateConfidence:            0.2,
+		IncludeNotes:                      true,
+		UseBigrams:                        false,
+		RetrievalMinRelevance:             0.05,
+		RetrievalMaxBlocks:                12,
+		RetrievalMaxCodeEntryPoints:       5,
+		RetrievalMaxImplementingPackages:  5,
+		RetrievalConceptMinRelevance:      0.1,
+		RetrievalConceptMinFractionOfTop:  0.5,
+		RetrievalK1:                       1.2,
+		RetrievalAgentAffinity:            1.2,
+		RetrievalTrustBoostSpecs:          1.3,
+		RetrievalTrustBoostDocs:           1.0,
+		RetrievalTrustBoostContext:        1.0,
+		RetrievalTrustBoostNotes:          0.6,
+		RetrievalWeightTitle:              2.0,
+		RetrievalWeightPath:               1.5,
+		RetrievalWeightBody:               1.0,
+		RetrievalWeightKind:               1.0,
 		RetrievalConceptWeightName:        2.0,
 		RetrievalConceptWeightDescription: 1.0,
 	}

@@ -180,6 +180,14 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Kind: ScoringKindFloat,
 	},
 	{
+		Key:   "retrieval.concept_min_fraction_of_top",
+		Title: "Relative concept floor (fraction of best match)",
+		Description: `In [0,1]. When > 0, a concept is kept only if its score is at least this ` +
+			`fraction of the highest-scoring concept in the overlay, in addition to ` +
+			`retrieval.concept_min_relevance. Set to 0 to use only the absolute floor.`,
+		Kind: ScoringKindFloat,
+	},
+	{
 		Key:   "retrieval.agent_affinity",
 		Title: "Agent affinity boost",
 		Description: `Multiplier for blocks connected to the winning agent (reads/owns/scope links). ` +
@@ -331,6 +339,8 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.RetrievalMaxImplementingPackages, nil
 	case "retrieval.concept_min_relevance":
 		return cfg.RetrievalConceptMinRelevance, nil
+	case "retrieval.concept_min_fraction_of_top":
+		return cfg.RetrievalConceptMinFractionOfTop, nil
 	case "retrieval.agent_affinity":
 		return cfg.RetrievalAgentAffinity, nil
 	case "retrieval.bm25.k1":
@@ -477,6 +487,9 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 	case "retrieval.concept_min_relevance":
 		x, _ := v.(float64)
 		cfg.RetrievalConceptMinRelevance = x
+	case "retrieval.concept_min_fraction_of_top":
+		x, _ := v.(float64)
+		cfg.RetrievalConceptMinFractionOfTop = x
 	case "retrieval.agent_affinity":
 		x, _ := v.(float64)
 		cfg.RetrievalAgentAffinity = x

@@ -172,6 +172,33 @@ func conceptRetrievalFields(cfg ScoringConfig) []bm25.BM25Field {
 
 // loadImplementingPackages returns code packages connected through reviewed
 // semantic implements edges from concepts ranked by query relevance.
+// effectiveConceptRelevanceThreshold is the score floor for keeping a concept
+// when walking reviewed implements edges. It is the maximum of the absolute
+// floor (retrieval.concept_min_relevance) and, when
+// retrieval.concept_min_fraction_of_top > 0, (best concept score) × that
+// fraction. The relative term drops weak secondary matches (e.g. a concept
+// that only matches a generic query stem).
+func effectiveConceptRelevanceThreshold(scores map[string]float64, cfg ScoringConfig) float64 {
+	eff := cfg.RetrievalConceptMinRelevance
+	if cfg.RetrievalConceptMinFractionOfTop <= 0 {
+		return eff
+	}
+	var maxS float64
+	for _, s := range scores {
+		if s > maxS {
+			maxS = s
+		}
+	}
+	if maxS <= 0 {
+		return eff
+	}
+	rel := maxS * cfg.RetrievalConceptMinFractionOfTop
+	if rel > eff {
+		return rel
+	}
+	return eff
+}
+
 func loadImplementingPackages(workspacePath string, queryTerms []string) []string {
 	cfg := LoadConfig(workspacePath)
 	o, err := semantic.Load(workspacePath)
@@ -185,13 +212,14 @@ func loadImplementingPackages(workspacePath string, queryTerms []string) []strin
 	if len(conceptScores) == 0 {
 		return nil
 	}
+	threshold := effectiveConceptRelevanceThreshold(conceptScores, cfg)
 	packageBest := make(map[string]float64)
 	for _, e := range o.Edges {
 		if e.Type != semantic.EdgeTypeImplements || !e.Reviewed {
 			continue
 		}
 		score, ok := conceptScores[e.From]
-		if !ok || score < cfg.RetrievalConceptMinRelevance {
+		if !ok || score < threshold {
 			continue
 		}
 		pkg := packageFromImplementsTo(e.To)
@@ -397,9 +425,10 @@ func eligiblePackagesByConcept(workspacePath string, queryTerms []string, cfg Sc
 		return nil
 	}
 	conceptScores := scoreConcepts(o.Concepts, queryTerms, cfg, cfg.UseBigrams)
+	threshold := effectiveConceptRelevanceThreshold(conceptScores, cfg)
 	relevantConcepts := make(map[string]bool)
 	for id, score := range conceptScores {
-		if score >= cfg.RetrievalConceptMinRelevance {
+		if score >= threshold {
 			relevantConcepts[id] = true
 		}
 	}
