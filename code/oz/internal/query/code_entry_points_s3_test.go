@@ -151,3 +151,50 @@ func hasSymbol(entries []CodeEntryPoint, symbol string) bool {
 	}
 	return false
 }
+
+func TestLoadCodeEntryPoints_CappedByMaxCodeEntryPoints(t *testing.T) {
+	workspace := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(workspace, "context"), 0755)
+
+	g := &graph.Graph{
+		Nodes: []graph.Node{
+			{ID: "agent:w", Type: graph.NodeTypeAgent, Name: "w", Scope: []string{"code/**"}},
+			{ID: "s1", Type: graph.NodeTypeCodeSymbol, File: "code/a.go", Name: "p.A", SymbolKind: "func", Line: 1, Package: "p"},
+			{ID: "s2", Type: graph.NodeTypeCodeSymbol, File: "code/b.go", Name: "p.B", SymbolKind: "func", Line: 1, Package: "p"},
+			{ID: "s3", Type: graph.NodeTypeCodeSymbol, File: "code/c.go", Name: "p.C", SymbolKind: "func", Line: 1, Package: "p"},
+			{ID: "s4", Type: graph.NodeTypeCodeSymbol, File: "code/d.go", Name: "p.D", SymbolKind: "func", Line: 1, Package: "p"},
+		},
+	}
+	cfg := DefaultScoringConfig()
+	cfg.RetrievalMinRelevance = 0
+	cfg.RetrievalMaxCodeEntryPoints = 2
+	got := loadCodeEntryPoints(workspace, g, "w", []string{"p"}, cfg)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 after cap, got %d: %+v", len(got), got)
+	}
+}
+
+func TestLoadCodeEntryPoints_RankedByRelevanceDesc(t *testing.T) {
+	workspace := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(workspace, "context"), 0755)
+	g := &graph.Graph{
+		Nodes: []graph.Node{
+			{ID: "agent:w", Type: graph.NodeTypeAgent, Name: "w", Scope: []string{"code/**"}},
+			{ID: "s1", Type: graph.NodeTypeCodeSymbol, File: "code/z.go", Name: "other.Thing", SymbolKind: "func", Line: 1, Package: "other"},
+			{ID: "s2", Type: graph.NodeTypeCodeSymbol, File: "code/y.go", Name: "drift.Run", SymbolKind: "func", Line: 1, Package: "drift"},
+		},
+	}
+	cfg := DefaultScoringConfig()
+	cfg.RetrievalMinRelevance = 0
+	cfg.RetrievalMaxCodeEntryPoints = 5
+	got := loadCodeEntryPoints(workspace, g, "w", []string{"drift"}, cfg)
+	if len(got) < 2 {
+		t.Fatalf("expected 2 entry points, got %d: %+v", len(got), got)
+	}
+	if got[0].Symbol != "drift.Run" {
+		t.Fatalf("expected best match drift.Run first, got order: %#v", got)
+	}
+	if got[0].Relevance < got[1].Relevance-1e-9 {
+		t.Fatalf("expected descending relevance, got %v then %v", got[0].Relevance, got[1].Relevance)
+	}
+}

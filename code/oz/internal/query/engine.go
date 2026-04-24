@@ -1,11 +1,13 @@
 package query
 
 import (
+	"math"
 	"sort"
 	"strings"
 
 	ozcontext "github.com/joaoajmatos/oz/internal/context"
 	"github.com/joaoajmatos/oz/internal/graph"
+	"github.com/joaoajmatos/oz/internal/query/bm25"
 	"github.com/joaoajmatos/oz/internal/semantic"
 )
 
@@ -192,20 +194,53 @@ func loadImplementingPackages(workspacePath string, queryTerms []string) []strin
 	return pkgs
 }
 
+// codeTrustBoostSymbols is the PRD/ADR default trust multiplier for code-tier
+// material (not yet a separate scoring.toml key).
+const codeTrustBoostSymbols = 0.9
+
+// codeSymbolFieldDoc adapts a code_symbol node to bm25.FieldDoc.
+type codeSymbolFieldDoc struct {
+	m map[string][]string
+}
+
+func (d codeSymbolFieldDoc) Fields() map[string][]string {
+	return d.m
+}
+
+func codeSymbolFieldTokens(n graph.Node, useBigrams bool) map[string][]string {
+	// title/path/kind line up with [retrieval.fields] and PRD field roles for symbols.
+	return map[string][]string{
+		"title": TokenizeMulti(n.Name, useBigrams),
+		"path":  TokenizePathsMulti([]string{n.Package}, useBigrams),
+		"kind":  TokenizeMulti(n.SymbolKind, useBigrams),
+	}
+}
+
+func codeSymbolRetrievalFields(cfg ScoringConfig) []bm25.BM25Field {
+	return []bm25.BM25Field{
+		{Name: "title", Weight: cfg.RetrievalWeightTitle, B: cfg.BText},
+		{Name: "path", Weight: cfg.RetrievalWeightPath, B: cfg.BPath},
+		{Name: "kind", Weight: cfg.RetrievalWeightKind, B: cfg.BText},
+	}
+}
+
 // loadCodeEntryPoints returns eligible symbol-level entry points for code-level
-// queries. Sprint 3 Story 3 eligibility:
+// queries. Eligibility (Sprint 3 Story 3):
 //   - symbol file is under winning-agent scope, OR
 //   - symbol package is reachable from reviewed semantic implements edges for
 //     concepts relevant to the query.
 //
-// Ranking/cap behavior is implemented in later stories.
+// Rank/cap (Sprint 3 Story 4): BM25 over (name, package, kind), × code trust
+// × agent affinity, threshold at retrieval.min_relevance, cap at
+// retrieval.max_code_entry_points.
 func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent string, queryTerms []string, cfg ScoringConfig) []CodeEntryPoint {
-	if g == nil || winningAgent == "" {
+	if g == nil || winningAgent == "" || len(queryTerms) == 0 {
 		return nil
 	}
 	scope := BuildScopeForAgent(g, winningAgent)
 	eligiblePackages := eligiblePackagesByConcept(workspacePath, queryTerms, cfg)
-	var out []CodeEntryPoint
+
+	var nodes []graph.Node
 	for _, n := range g.Nodes {
 		if n.Type != graph.NodeTypeCodeSymbol {
 			continue
@@ -215,26 +250,102 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 		if !inScope && !byConcept {
 			continue
 		}
-		out = append(out, CodeEntryPoint{
-			File:    n.File,
-			Symbol:  n.Name,
-			Kind:    n.SymbolKind,
-			Line:    n.Line,
-			Package: n.Package,
-		})
+		nodes = append(nodes, n)
 	}
-	if len(out) == 0 {
+	if len(nodes) == 0 {
 		return nil
 	}
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].File != out[j].File {
-			return out[i].File < out[j].File
+
+	fields := codeSymbolRetrievalFields(cfg)
+	docs := make([]bm25.FieldDoc, len(nodes))
+	for i := range nodes {
+		docs[i] = codeSymbolFieldDoc{m: codeSymbolFieldTokens(nodes[i], cfg.UseBigrams)}
+	}
+	avgLen := bm25.AvgFieldLengths(docs, fields)
+	df := bm25.ComputeDF(docs)
+	nDocs := len(nodes)
+	k1 := cfg.RetrievalK1
+
+	if k1 <= 0 {
+		k1 = 1.2
+	}
+
+	type scored struct {
+		point CodeEntryPoint
+		rel   float64
+		orig  int
+	}
+	scoredList := make([]scored, 0, len(nodes))
+	for i, n := range nodes {
+		inScope := fileInAnyScope(n.File, scope)
+		byConcept := eligiblePackages[n.Package]
+		bm := bm25.BM25Score(
+			queryTerms,
+			codeSymbolFieldTokens(n, cfg.UseBigrams),
+			fields,
+			k1,
+			avgLen,
+			df,
+			nDocs,
+		)
+		affinity := 1.0
+		if inScope || byConcept {
+			if cfg.RetrievalAgentAffinity > 0 {
+				affinity = cfg.RetrievalAgentAffinity
+			}
 		}
-		if out[i].Symbol != out[j].Symbol {
-			return out[i].Symbol < out[j].Symbol
+		rel := bm * codeTrustBoostSymbols * affinity
+		scoredList = append(scoredList, scored{
+			point: CodeEntryPoint{
+				File:      n.File,
+				Symbol:    n.Name,
+				Kind:      n.SymbolKind,
+				Line:      n.Line,
+				Package:   n.Package,
+				Relevance: rel,
+			},
+			rel:  rel,
+			orig: i,
+		})
+	}
+
+	// Drop below min_relevance, then sort by relevance DESC with deterministic ties.
+	passed := scoredList[:0]
+	for _, s := range scoredList {
+		if s.rel >= cfg.RetrievalMinRelevance {
+			passed = append(passed, s)
 		}
-		return out[i].Line < out[j].Line
+	}
+	if len(passed) == 0 {
+		return nil
+	}
+	sort.SliceStable(passed, func(i, j int) bool {
+		if passed[i].rel != passed[j].rel {
+			return passed[i].rel > passed[j].rel
+		}
+		if passed[i].point.File != passed[j].point.File {
+			return passed[i].point.File < passed[j].point.File
+		}
+		if passed[i].point.Symbol != passed[j].point.Symbol {
+			return passed[i].point.Symbol < passed[j].point.Symbol
+		}
+		if passed[i].point.Line != passed[j].point.Line {
+			return passed[i].point.Line < passed[j].point.Line
+		}
+		return passed[i].orig < passed[j].orig
 	})
+
+	maxK := int(math.Round(cfg.RetrievalMaxCodeEntryPoints))
+	if maxK < 1 {
+		maxK = 1
+	}
+	if len(passed) > maxK {
+		passed = passed[:maxK]
+	}
+	out := make([]CodeEntryPoint, len(passed))
+	for i := range passed {
+		out[i] = passed[i].point
+	}
 	return out
 }
 
