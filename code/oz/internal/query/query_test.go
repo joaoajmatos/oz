@@ -49,13 +49,10 @@ func TestRoutingAccuracy(t *testing.T) {
 	}
 }
 
-// TestRetrievalAccuracy walks the 04_retrieval golden suite and checks each
-// query's retrieval expectations. Skipped until Sprint 2 ships ranked
-// context_blocks — the stub exists in Sprint 1 (S1-06) to confirm the suite
-// loads, the matchers compile, and the YAML schema parses.
+// TestRetrievalAccuracy walks the 04_retrieval golden suite and checks Sprint-2
+// retrieval expectations for context_blocks (R-01 scope).
+// Code entry points and implementing_packages remain covered in later sprints.
 func TestRetrievalAccuracy(t *testing.T) {
-	t.Skip("awaiting Sprint 2 implementation of ranked context_blocks (R-01)")
-
 	suites, err := testws.LoadGoldenSuites(t, "testdata/golden")
 	if err != nil {
 		t.Fatalf("load golden suites: %v", err)
@@ -71,16 +68,10 @@ func TestRetrievalAccuracy(t *testing.T) {
 			for _, q := range suite.Queries {
 				q := q
 				t.Run(q.Query, func(t *testing.T) {
-					result := query.Run(ws.Path(), q.Query)
+					result := query.RunWithOptions(ws.Path(), q.Query, query.Options{IncludeNotes: true})
 
 					for _, b := range q.ExpectBlocksInTopK {
 						testws.ExpectBlockInTopK(t, result, b.File, b.Section, b.K)
-					}
-					for _, e := range q.ExpectCodeEntryPointsInTopK {
-						testws.ExpectCodeEntryPoint(t, result, e.Symbol, e.K)
-					}
-					for _, p := range q.ExpectPackagesInTopK {
-						testws.ExpectPackageInTopK(t, result, p.Package, p.K)
 					}
 					if q.ExpectRelevanceDescending {
 						testws.ExpectRelevanceDescending(t, result)
@@ -89,7 +80,12 @@ func TestRetrievalAccuracy(t *testing.T) {
 						testws.ExpectNoRelevantContext(t, result)
 					}
 					if q.ExpectTrustBeats != nil {
-						testws.ExpectTrustBeats(t, result, q.ExpectTrustBeats.WinnerTier, q.ExpectTrustBeats.LoserTier)
+						testws.ExpectTrustBeats(
+							t,
+							result,
+							mapTrustTier(q.ExpectTrustBeats.WinnerTier),
+							mapTrustTier(q.ExpectTrustBeats.LoserTier),
+						)
 					}
 				})
 			}
@@ -190,4 +186,17 @@ func containsStr(s, sub string) bool {
 		}
 	}
 	return false
+}
+
+func mapTrustTier(tier string) string {
+	switch tier {
+	case "specs":
+		return "high"
+	case "docs", "context":
+		return "medium"
+	case "notes":
+		return "low"
+	default:
+		return tier
+	}
 }

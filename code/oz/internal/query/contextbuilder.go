@@ -29,19 +29,21 @@ func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, 
 	if maxBlocks < 1 {
 		maxBlocks = 1
 	}
+	var passed []contextretrieval.ScoredBlock
 	for _, s := range scored {
 		if s.Relevance < cfg.RetrievalMinRelevance {
 			continue
 		}
-		blocks = append(blocks, ContextBlock{
-			File:    s.Block.File,
-			Section: s.Block.Section,
-			Trust:   s.Block.Trust,
-		})
-		if len(blocks) == maxBlocks {
-			break
+		passed = append(passed, s)
+		if len(blocks) < maxBlocks {
+			blocks = append(blocks, ContextBlock{
+				File:    s.Block.File,
+				Section: s.Block.Section,
+				Trust:   s.Block.Trust,
+			})
 		}
 	}
+	ensureScopeSurvivor(&blocks, passed, BuildScopeForAgent(g, agentName))
 
 	// Excluded: note paths (when not included).
 	if !cfg.IncludeNotes {
@@ -58,6 +60,40 @@ func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, 
 	}
 
 	return blocks, excluded
+}
+
+func ensureScopeSurvivor(blocks *[]ContextBlock, passed []contextretrieval.ScoredBlock, scope []string) {
+	if len(*blocks) == 0 || len(scope) == 0 {
+		return
+	}
+	hasScopeCandidate := false
+	for _, s := range passed {
+		if fileInAnyScope(s.Block.File, scope) {
+			hasScopeCandidate = true
+			break
+		}
+	}
+	if !hasScopeCandidate {
+		return
+	}
+	for _, b := range *blocks {
+		if fileInAnyScope(b.File, scope) {
+			return
+		}
+	}
+	// Candidate exists but truncation removed all scope blocks; force the best
+	// threshold-clearing scope block to survive by replacing the last slot.
+	for _, s := range passed {
+		if !fileInAnyScope(s.Block.File, scope) {
+			continue
+		}
+		(*blocks)[len(*blocks)-1] = ContextBlock{
+			File:    s.Block.File,
+			Section: s.Block.Section,
+			Trust:   s.Block.Trust,
+		}
+		return
+	}
 }
 
 // BuildScopeForAgent returns the scope paths for the winning agent node.
@@ -197,4 +233,13 @@ func pathInScope(path, scope string) bool {
 		return true
 	}
 	return strings.HasPrefix(path, prefix)
+}
+
+func fileInAnyScope(path string, scopes []string) bool {
+	for _, s := range scopes {
+		if pathInScope(path, s) {
+			return true
+		}
+	}
+	return false
 }
