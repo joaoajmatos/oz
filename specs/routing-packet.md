@@ -229,30 +229,31 @@ If `context/scoring.toml` exists, the query engine reads these sections and keys
 
 `[retrieval.bm25]`
 
-- `k1` (default `1.2`)
+- `k1` (default `1.05` — can differ from `[bm25] k1` for routing)
 
 `[retrieval.fields]`
 
-Per-field length-normalisation factors (`b`) and weights for block scoring:
+Block retrieval reuses the global length-normalisation factors from
+`[fields]` (`b_text`, `b_path`) together with the weights below:
 
-- `b_text` (default `0.75`)
-- `b_path` (default `0.5`)
-- `weight_title` (default `3.0`): applies to `spec_section.section`,
-  `decision.title`, `doc.section`, `code_symbol.name`,
-  `code_package.name`.
-- `weight_body` (default `1.0`): applies to loaded body tokens for
-  `spec_section`, `decision`, `doc`, `context_snapshot`, `note`, and to
-  `code_package.doc_comment`.
-- `weight_path` (default `0.5`): applies to `file` and to
-  `code_symbol.package`.
-- `weight_kind` (default `0.3`): applies to `code_symbol.symbol_kind`.
+- `weight_title` (default `2.5`): `spec_section.section`, `decision` title
+  stem, `doc` section heading, and analogous title tokens for code nodes
+  in the retrieval corpus.
+- `weight_path` (default `1.7`): tokenised file path (and path-like fields
+  where the scorer attaches them).
+- `weight_body` (default `0.62`): loaded body tokens; kept below title/path
+  so long **decision** and **doc** bodies that echo benchmark queries do not
+  drown out the right ADR and architecture sections. Tune using golden
+  `04_retrieval` and (for local debugging) the BM25 `FieldScoreShares`
+  split in `internal/query/bm25`.
+- `weight_kind` (default `1.0`): `code_symbol` kind tokens where used.
 
 `[retrieval.concepts]`
 
 Field weights for scoring concepts against the query in the
 `implementing_packages` path:
 
-- `weight_name` (default `3.0`)
+- `weight_name` (default `2.0`)
 - `weight_description` (default `1.0`)
 
 `[tokenize]`

@@ -23,6 +23,16 @@ queries:
       - file: "specs/audit-catalogue.md"
         section: "DRIFT001 spec and code divergence"
         k: 5
+      - file: "specs/decisions/0001-graph-schema.md"
+        section: ""
+        k: 5
+      - file: "docs/architecture.md"
+        section: "oz audit (V1)"
+        k: 5
+    expect_blocks_not_in_topk:
+      - file: "specs/decisions/0004-context-retrieval-ranking.md"
+        section: ""
+        k: 5
     expect_code_entry_points_in_topk:
       - symbol: "drift.Run"
         k: 5

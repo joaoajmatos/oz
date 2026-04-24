@@ -73,6 +73,9 @@ func TestRetrievalAccuracy(t *testing.T) {
 					for _, b := range q.ExpectBlocksInTopK {
 						testws.ExpectBlockInTopK(t, result, b.File, b.Section, b.K)
 					}
+					for _, b := range q.ExpectBlocksNotInTopK {
+						testws.ExpectBlockNotInTopK(t, result, b.File, b.Section, b.K)
+					}
 					for _, ep := range q.ExpectCodeEntryPointsInTopK {
 						testws.ExpectCodeEntryPoint(t, result, ep.Symbol, ep.K)
 					}

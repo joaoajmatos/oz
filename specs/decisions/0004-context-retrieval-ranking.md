@@ -196,9 +196,13 @@ and defaults to `true` to match the tiered model.
 - The packet contract grows: new `relevance` field on context blocks,
   new `code_entry_points` field, new `[retrieval]` config section.
   Consumers that pin exact-field shape must be updated.
-- Trust boost multipliers for tiers other than the tuned `notes` boost, and field
-  weights, were chosen as reasonable starting points; further workspace-specific
-  tuning may use `oz context scoring` and golden suites.
+- Trust boost multipliers for tiers other than the tuned `notes` boost, and
+  `retrieval.fields` weights, need occasional refresh: `weight_title` and
+  `weight_path` must stay high enough relative to `weight_body` that a **decision**
+  node whose body repeats a golden benchmark query (ADR-0004 itself) does not
+  outrank `0001`-style graph ADRs and the audit slice of `docs/architecture.md`.
+  `internal/query/bm25.FieldScoreShares` decomposes BM25 mass by field for debugging;
+  `04_retrieval` includes a canary `0004` file and `expect_blocks_not_in_topk`.
 
 ## V1 tuning (Sprint 2 grid, re-confirmed Sprint 4)
 

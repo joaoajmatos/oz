@@ -76,28 +76,76 @@ func BM25Score(
 	df map[string]int,
 	N int,
 ) float64 {
+	_, total := bm25DocScore(terms, docFields, fields, k1, avgLen, df, N, nil)
+	return total
+}
+
+// FieldScoreShares partitions the BM25F document score across configured fields.
+// For each query term, the term contribution idf*tfTilde/(k1+tfTilde) is split
+// in proportion to each field's share of the weighted sum tfTilde, so the
+// per-field values sum to the result of [BM25Score] for the same inputs.
+// Useful for tests and debugging when a block body duplicates benchmark queries.
+func FieldScoreShares(
+	terms []string,
+	docFields map[string][]string,
+	fields []BM25Field,
+	k1 float64,
+	avgLen map[string]float64,
+	df map[string]int,
+	N int,
+) map[string]float64 {
+	acc := make(map[string]float64, len(fields))
+	bm25DocScore(terms, docFields, fields, k1, avgLen, df, N, acc)
+	return acc
+}
+
+// bm25DocScore returns the BM25F total. If acc is non-nil, it adds each field's
+// share of the total into acc (per FieldScoreShares).
+func bm25DocScore(
+	terms []string,
+	docFields map[string][]string,
+	fields []BM25Field,
+	k1 float64,
+	avgLen map[string]float64,
+	df map[string]int,
+	N int,
+	acc map[string]float64,
+) (map[string]float64, float64) {
 	if len(terms) == 0 {
-		return 0
+		return acc, 0
 	}
-	score := 0.0
+	if acc != nil {
+		for _, f := range fields {
+			acc[f.Name] = 0
+		}
+	}
 	nFloat := float64(N)
+	total := 0.0
+	parts := make([]float64, len(fields))
 	for _, term := range terms {
 		dfVal := float64(df[term])
 		idf := math.Log((nFloat-dfVal+0.5)/(dfVal+0.5) + 1)
 		if idf < 1.0 {
 			idf = 1.0
 		}
-
 		tfTilde := 0.0
-		for _, f := range fields {
+		for i, f := range fields {
 			tokens := docFields[f.Name]
 			tf := termFreq(term, tokens)
-			tfTilde += f.Weight * NormTF(tf, len(tokens), avgLen[f.Name], f.B)
+			p := f.Weight * NormTF(tf, len(tokens), avgLen[f.Name], f.B)
+			parts[i] = p
+			tfTilde += p
 		}
-
-		score += idf * tfTilde / (k1 + tfTilde)
+		termContrib := idf * tfTilde / (k1 + tfTilde)
+		total += termContrib
+		if acc == nil || tfTilde == 0 {
+			continue
+		}
+		for i, f := range fields {
+			acc[f.Name] += termContrib * (parts[i] / tfTilde)
+		}
 	}
-	return score
+	return acc, total
 }
 
 func termFreq(term string, tokens []string) int {

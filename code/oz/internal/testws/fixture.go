@@ -13,6 +13,7 @@ import (
 type WorkspaceFixture struct {
 	Agents          []AgentFixture          `yaml:"agents"`
 	Specs           []FileFixture           `yaml:"specs"`
+	Docs            []FileFixture           `yaml:"docs"`
 	Decisions       []DecisionFixture       `yaml:"decisions"`
 	Contexts        []ContextFixture        `yaml:"contexts"`
 	Notes           []NoteFixture           `yaml:"notes"`
@@ -136,6 +137,14 @@ func FromFixture(t *testing.T, path string) *Builder {
 		b.WithSpec(s.Path, opts...)
 	}
 
+	for _, s := range fix.Docs {
+		var opts []SpecOption
+		for _, sec := range s.Sections {
+			opts = append(opts, Section(sec.Heading, sec.Content))
+		}
+		b.WithSpec(s.Path, opts...)
+	}
+
 	for _, d := range fix.Decisions {
 		b.WithDecision(d.ID, d.Content)
 	}
@@ -209,6 +218,7 @@ type QueryCase struct {
 
 	// Retrieval expectations (drafted in Sprint 1; activated Sprints 2–4).
 	ExpectBlocksInTopK          []BlockExpectation          `yaml:"expect_blocks_in_topk,omitempty"`
+	ExpectBlocksNotInTopK       []BlockExpectation          `yaml:"expect_blocks_not_in_topk,omitempty"`
 	ExpectCodeEntryPointsInTopK []CodeEntryPointExpectation `yaml:"expect_code_entry_points_in_topk,omitempty"`
 	ExpectPackagesInTopK        []PackageExpectation        `yaml:"expect_packages_in_topk,omitempty"`
 	ExpectRelevanceDescending   bool                        `yaml:"expect_relevance_descending,omitempty"`

@@ -27,5 +27,16 @@ include_notes = true
 concept_min_relevance = 0.1
 concept_min_fraction_of_top = 0.5
 
+[retrieval.bm25]
+# Slightly below routing k1: tighter term saturation in long decision bodies.
+k1 = 1.05
+
+[retrieval.fields]
+# Favor title and path (ADR ids, section headings) over long bodies that may
+# duplicate golden benchmark phrasing. See ADR-0004 / retrieval PRD.
+weight_title = 2.5
+weight_path = 1.7
+weight_body = 0.62
+
 [tokenize]
 use_bigrams = false

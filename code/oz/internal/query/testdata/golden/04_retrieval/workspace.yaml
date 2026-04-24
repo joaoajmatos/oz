@@ -106,15 +106,26 @@ specs:
       - heading: "Selection semantics"
         content: "Context blocks are chosen by retrieval, ranked by relevance, thresholded at min_relevance, and capped at max_blocks. Survivors include at least one block per declared agent scope path when available."
 
+docs:
+  - path: "docs/architecture.md"
+    sections:
+      - heading: "oz audit (V1)"
+        content: "The oz audit command runs drift detection on the built graph. Use drift.Run from package internal/audit/drift; LoadSymbols collects exported identifiers for spec comparison. The audit package coordinates detectors and attributes DRIFT001 to the responsible spec or doc section when symbols diverge."
+      - heading: "Graph layers"
+        content: "Specs, decisions, and docs are indexed with code_package and code_symbol for cross-tier queries."
+
 decisions:
   - id: "0001-graph-schema"
-    content: "Decision: use a typed node-and-edge graph with node types agent, spec_section, decision, doc, context_snapshot, note, code_file, code_symbol, code_package. Consequence: every query consumes the same graph regardless of source — routing and retrieval share the corpus."
+    content: "Decision: use a typed node-and-edge graph with node types agent, spec_section, decision, doc, context_snapshot, note, code_file, code_symbol, code_package. Consequence: every query consumes the same graph regardless of source — routing, retrieval, audit, and drift checks all read the same code_package and code_symbol nodes the CLI materialises. Implementation: the audit and drift subsystems attach to this graph without a second index."
 
   - id: "0002-bm25-routing"
     content: "Decision: route agents with BM25F over scope, role, responsibilities, and read-chain. Reject embeddings for V1 — BM25F over tokenised fields is deterministic, auditable, and requires no model. Consequence: query latency stays under 50ms on a typical workspace."
 
   - id: "0003-semantic-review"
     content: "Decision: all implements edges between code_package and concept nodes require explicit review before they count for retrieval. Extracted-but-unreviewed edges are carried in the overlay but gated off. Consequence: drift detection on packages never fires on an unreviewed hypothesis."
+
+  - id: "0004-context-retrieval-ranking"
+    content: 'Decision: treat retrieval as a separate BM25 stage from agent routing. Regression canary: when this decision body repeats the exact PRD benchmark sentence — "how is drift detection implemented?" — verbatim, body-token overlap can dominate unless title/path weights exceed body weight. Consequence: golden tests expect this file to stay outside the top five for the canonical drift-implementation query.'
 
 contexts:
   - topic: "architecture"

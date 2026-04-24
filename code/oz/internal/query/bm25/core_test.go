@@ -1,6 +1,9 @@
 package bm25
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 // mapDoc is a test FieldDoc implementation that wraps a plain map.
 type mapDoc map[string][]string
@@ -115,6 +118,31 @@ func TestBM25Score_ZeroWhenNoFieldMatch(t *testing.T) {
 	got := BM25Score([]string{"zeta"}, doc, fields, 1.2, avg, df, 1)
 	if got != 0 {
 		t.Errorf("BM25Score(no match) = %f, want 0", got)
+	}
+}
+
+func TestFieldScoreShares_SumsToBM25Score(t *testing.T) {
+	fields := []BM25Field{
+		{Name: "title", Weight: 2.0, B: 0.75},
+		{Name: "path", Weight: 1.5, B: 0.5},
+		{Name: "body", Weight: 1.0, B: 0.75},
+	}
+	docs := []FieldDoc{
+		mapDoc{"title": {"drift", "audit"}, "path": {"specs", "decisions"}, "body": {"implement", "detect"}},
+		mapDoc{"title": {"ui"}, "path": {"docs"}, "body": {"react"}},
+	}
+	avg := AvgFieldLengths(docs, fields)
+	df := ComputeDF(docs)
+	terms := []string{"drift", "implement", "missing"}
+	doc0 := docs[0].Fields()
+	total := BM25Score(terms, doc0, fields, 1.2, avg, df, len(docs))
+	shares := FieldScoreShares(terms, doc0, fields, 1.2, avg, df, len(docs))
+	var sum float64
+	for _, v := range shares {
+		sum += v
+	}
+	if math.Abs(sum-total) > 1e-9 {
+		t.Errorf("FieldScoreShares sum %f != BM25Score %f", sum, total)
 	}
 }
 

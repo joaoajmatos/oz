@@ -139,6 +139,24 @@ func formatContextBlocks(blocks []query.ContextBlock) string {
 // public fields on query.Result — any new retrieval data (code_entry_points,
 // block.Relevance) must be read here once Sprints 2–4 populate it.
 
+// ExpectBlockNotInTopK asserts that no context_block matching file (and, if
+// non-empty, section) appears in the first k entries of result.ContextBlocks.
+func ExpectBlockNotInTopK(t *testing.T, result query.Result, file, section string, k int) {
+	t.Helper()
+	limit := len(result.ContextBlocks)
+	if k > 0 && k < limit {
+		limit = k
+	}
+	for i := 0; i < limit; i++ {
+		cb := result.ContextBlocks[i]
+		if cb.File == file && (section == "" || cb.Section == section) {
+			t.Errorf("did not want context block %s#%s in top-%d, but it appeared at rank %d in %v",
+				file, section, k, i+1, formatContextBlocks(result.ContextBlocks))
+			return
+		}
+	}
+}
+
 // ExpectBlockInTopK asserts that a context_block matching file (and, if
 // non-empty, section) is present in the first k entries of
 // result.ContextBlocks. k <= 0 searches the whole slice.
