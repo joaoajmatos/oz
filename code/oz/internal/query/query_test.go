@@ -82,6 +82,9 @@ func TestRetrievalAccuracy(t *testing.T) {
 					for _, p := range q.ExpectPackagesInTopK {
 						testws.ExpectPackageInTopK(t, result, p.Package, p.K)
 					}
+					for _, p := range q.ExpectPackagesNotInTopK {
+						testws.ExpectPackageNotInTopK(t, result, p.Package, p.K)
+					}
 					if q.ExpectRelevanceDescending {
 						testws.ExpectRelevanceDescending(t, result)
 					}

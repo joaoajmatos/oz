@@ -221,6 +221,7 @@ type QueryCase struct {
 	ExpectBlocksNotInTopK       []BlockExpectation          `yaml:"expect_blocks_not_in_topk,omitempty"`
 	ExpectCodeEntryPointsInTopK []CodeEntryPointExpectation `yaml:"expect_code_entry_points_in_topk,omitempty"`
 	ExpectPackagesInTopK        []PackageExpectation        `yaml:"expect_packages_in_topk,omitempty"`
+	ExpectPackagesNotInTopK     []PackageExpectation        `yaml:"expect_packages_not_in_topk,omitempty"`
 	ExpectRelevanceDescending   bool                        `yaml:"expect_relevance_descending,omitempty"`
 	ExpectNoRelevantContext     bool                        `yaml:"expect_no_relevant_context,omitempty"`
 	ExpectTrustBeats            *TrustBeatsExpectation      `yaml:"expect_trust_beats,omitempty"`
@@ -243,8 +244,9 @@ type CodeEntryPointExpectation struct {
 	K      int    `yaml:"k"`
 }
 
-// PackageExpectation asserts that the given package path is in the top K
-// implementing_packages.
+// PackageExpectation is used for expect_packages_in_topk and
+// expect_packages_not_in_topk: the package string must match the engine
+// (e.g. "audit/drift", "graph").
 type PackageExpectation struct {
 	Package string `yaml:"package"`
 	K       int    `yaml:"k"`

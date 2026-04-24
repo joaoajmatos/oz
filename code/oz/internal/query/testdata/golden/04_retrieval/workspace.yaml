@@ -125,7 +125,7 @@ decisions:
     content: "Decision: all implements edges between code_package and concept nodes require explicit review before they count for retrieval. Extracted-but-unreviewed edges are carried in the overlay but gated off. Consequence: drift detection on packages never fires on an unreviewed hypothesis."
 
   - id: "0004-context-retrieval-ranking"
-    content: 'Decision: treat retrieval as a separate BM25 stage from agent routing. Regression canary: when this decision body repeats the exact PRD benchmark sentence — "how is drift detection implemented?" — verbatim, body-token overlap can dominate unless title/path weights exceed body weight. Consequence: golden tests expect this file to stay outside the top five for the canonical drift-implementation query.'
+    content: "Decision: treat retrieval as a separate BM25 stage from agent routing. The routing PRD records a short benchmark question about drift; pasting that question verbatim in a decision body inflated body BM25. Golden 04 keeps the *subject* (drift, retrieval) without the exact sentence so 0004 stays a ranking regression target without outranking on-token duplicates."
 
 contexts:
   - topic: "architecture"
@@ -221,26 +221,51 @@ code_packages:
         line: 30
         doc: "LoadPackages scans Go source trees and emits code_package and code_symbol nodes."
 
-  - path: "specscan"
-    import: "github.com/joaoajmatos/oz/internal/specscan"
-    doc: "Package specscan parses spec markdown and extracts declared symbol references."
+  # Nesting matches production: spec scanning lives under audit/drift/specscan.
+  - path: "audit/drift/specscan"
+    import: "github.com/joaoajmatos/oz/internal/audit/drift/specscan"
+    doc: "Package specscan parses spec markdown and extracts declared symbol references for the drift auditor."
     symbols:
       - name: "Scan"
         kind: "function"
-        file: "code/oz/internal/specscan/specscan.go"
+        file: "code/oz/internal/audit/drift/specscan/scan.go"
         line: 14
         doc: "Scan walks spec files and returns declared symbol references."
       - name: "Reference"
         kind: "struct"
-        file: "code/oz/internal/specscan/specscan.go"
+        file: "code/oz/internal/audit/drift/specscan/scan.go"
         line: 5
         doc: "Reference is a spec-declared symbol with its source file and line."
+
+  - path: "semantic"
+    import: "github.com/joaoajmatos/oz/internal/semantic"
+    doc: "Package semantic holds the semantic overlay JSON model for concepts and implements edges."
+    symbols:
+      - name: "Load"
+        kind: "function"
+        file: "code/oz/internal/semantic/load.go"
+        line: 20
+        doc: "Load reads the semantic.json overlay from disk."
 
 semantic_overlay:
   concepts:
     - name: "drift detection"
       owned_by: "oz-coding"
+    # Spurious: broad token overlap (e.g. "graph", "link") on this concept must not
+    # outrank real drift implements in implementing_packages. Name avoids the stem
+    # "implement" so a weak concept cannot tie the PRD query.
+    - name: "Context graph link"
+      owned_by: "oz-coding"
   implements:
     - concept: "drift detection"
       package: "audit/drift"
+      reviewed: true
+    - concept: "drift detection"
+      package: "audit/drift/specscan"
+      reviewed: true
+    - concept: "Context graph link"
+      package: "graph"
+      reviewed: true
+    - concept: "Context graph link"
+      package: "semantic"
       reviewed: true

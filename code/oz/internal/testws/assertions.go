@@ -214,6 +214,24 @@ func ExpectPackageInTopK(t *testing.T, result query.Result, pkg string, k int) {
 	t.Errorf("expected implementing_package %q in top-%d, got %v", pkg, k, result.ImplementingPackages)
 }
 
+// ExpectPackageNotInTopK asserts that pkg does not appear in the first k
+// entries of result.ImplementingPackages (string match is exact, as emitted
+// by the engine, e.g. "audit/drift" or "graph").
+func ExpectPackageNotInTopK(t *testing.T, result query.Result, pkg string, k int) {
+	t.Helper()
+	limit := len(result.ImplementingPackages)
+	if k > 0 && k < limit {
+		limit = k
+	}
+	for i := 0; i < limit; i++ {
+		if result.ImplementingPackages[i] == pkg {
+			t.Errorf("did not want implementing_package %q in top-%d, but it appeared at rank %d in %v",
+				pkg, k, i+1, result.ImplementingPackages)
+			return
+		}
+	}
+}
+
 // ExpectRelevanceDescending asserts that context_blocks are sorted by
 // relevance in descending order. Activates once blocks carry a Relevance
 // field (R-01, Sprint 2); until then it is a no-op on zero values.

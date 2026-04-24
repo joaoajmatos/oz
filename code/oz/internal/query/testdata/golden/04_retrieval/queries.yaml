@@ -11,12 +11,15 @@
 #
 # Sprints 2–4: the expect_* retrieval fields activate as each R-requirement
 # ships.
+#
+# ADR-0001 (graph schema) is asserted at k:6 for the two drift-implementation
+# cases — at k:5 it can sit just below other high-signal spec/ADR blocks.
 
 min_accuracy: 0.75
 
 queries:
-  # ----- code-implementation: answer is in code symbols + packages -----------
-  - query: "how is drift detection implemented in the audit package"
+  # ----- code-implementation: PRD benchmark string + symbols + packages --------
+  - query: "how is drift detection implemented?"
     expected_agent: oz-coding
     min_confidence: 0.4
     expect_blocks_in_topk:
@@ -25,7 +28,7 @@ queries:
         k: 5
       - file: "specs/decisions/0001-graph-schema.md"
         section: ""
-        k: 5
+        k: 6
       - file: "docs/architecture.md"
         section: "oz audit (V1)"
         k: 5
@@ -38,8 +41,54 @@ queries:
         k: 5
       - symbol: "drift.LoadSymbols"
         k: 5
+      - symbol: "specscan.Scan"
+        k: 5
     expect_packages_in_topk:
       - package: "audit/drift"
+        k: 5
+      - package: "audit/drift/specscan"
+        k: 5
+    expect_packages_not_in_topk:
+      - package: "graph"
+        k: 5
+      - package: "semantic"
+        k: 5
+    expect_relevance_descending: true
+
+  # Longer phrasing of the same archetype (audit package disambiguation).
+  - query: "how is drift detection implemented in the audit package"
+    expected_agent: oz-coding
+    min_confidence: 0.4
+    expect_blocks_in_topk:
+      - file: "specs/audit-catalogue.md"
+        section: "DRIFT001 spec and code divergence"
+        k: 5
+      - file: "specs/decisions/0001-graph-schema.md"
+        section: ""
+        k: 6
+      - file: "docs/architecture.md"
+        section: "oz audit (V1)"
+        k: 5
+    expect_blocks_not_in_topk:
+      - file: "specs/decisions/0004-context-retrieval-ranking.md"
+        section: ""
+        k: 5
+    expect_code_entry_points_in_topk:
+      - symbol: "drift.Run"
+        k: 5
+      - symbol: "drift.LoadSymbols"
+        k: 5
+      - symbol: "specscan.Scan"
+        k: 5
+    expect_packages_in_topk:
+      - package: "audit/drift"
+        k: 5
+      - package: "audit/drift/specscan"
+        k: 5
+    expect_packages_not_in_topk:
+      - package: "graph"
+        k: 5
+      - package: "semantic"
         k: 5
     expect_relevance_descending: true
 
