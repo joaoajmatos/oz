@@ -211,3 +211,12 @@ code_packages:
         file: "code/oz/internal/specscan/specscan.go"
         line: 5
         doc: "Reference is a spec-declared symbol with its source file and line."
+
+semantic_overlay:
+  concepts:
+    - name: "drift detection"
+      owned_by: "oz-coding"
+  implements:
+    - concept: "drift detection"
+      package: "audit/drift"
+      reviewed: true

@@ -244,12 +244,7 @@ func ExpectNoRelevantContext(t *testing.T, result query.Result) {
 	}
 }
 
-// --- code_entry_point compatibility shims -----------------------------------
-//
-// code_entry_points is a new query.Result field added in Sprint 3. Until it
-// lands, codeEntryPoints returns an empty slice and the matcher no-ops on
-// empty input. The shim lets Sprint 1 lock the assertion surface without
-// blocking on the packet-shape change.
+// --- code_entry_points adapters ----------------------------------------------
 
 type codeEntryPoint struct {
 	Symbol  string
@@ -257,10 +252,14 @@ type codeEntryPoint struct {
 }
 
 func codeEntryPoints(r query.Result) []codeEntryPoint {
-	// Replaced in Sprint 3 with reflection over r.CodeEntryPoints (or a
-	// typed accessor on query.Result).
-	_ = r
-	return nil
+	out := make([]codeEntryPoint, 0, len(r.CodeEntryPoints))
+	for _, e := range r.CodeEntryPoints {
+		out = append(out, codeEntryPoint{
+			Symbol:  e.Symbol,
+			Package: e.Package,
+		})
+	}
+	return out
 }
 
 func matchesSymbol(e codeEntryPoint, want string) bool {
@@ -269,6 +268,13 @@ func matchesSymbol(e codeEntryPoint, want string) bool {
 	}
 	if e.Package != "" && e.Package+"."+e.Symbol == want {
 		return true
+	}
+	if e.Package != "" {
+		parts := strings.Split(e.Package, "/")
+		last := parts[len(parts)-1]
+		if last+"."+e.Symbol == want {
+			return true
+		}
 	}
 	return false
 }

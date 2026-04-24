@@ -17,6 +17,10 @@ func TestLoadConfig_RoundTripWrite(t *testing.T) {
 	cfg.RetrievalWeightBody = 1.4
 	cfg.RetrievalMaxCodeEntryPoints = 7
 	cfg.RetrievalWeightKind = 0.9
+	cfg.RetrievalMaxImplementingPackages = 6
+	cfg.RetrievalConceptMinRelevance = 0.07
+	cfg.RetrievalConceptWeightName = 2.2
+	cfg.RetrievalConceptWeightDescription = 1.3
 	if err := WriteScoringTOML(dir, cfg); err != nil {
 		t.Fatal(err)
 	}
@@ -38,6 +42,18 @@ func TestLoadConfig_RoundTripWrite(t *testing.T) {
 	}
 	if got.RetrievalWeightKind != 0.9 {
 		t.Fatalf("RetrievalWeightKind = %v, want 0.9", got.RetrievalWeightKind)
+	}
+	if got.RetrievalMaxImplementingPackages != 6 {
+		t.Fatalf("RetrievalMaxImplementingPackages = %v, want 6", got.RetrievalMaxImplementingPackages)
+	}
+	if got.RetrievalConceptMinRelevance != 0.07 {
+		t.Fatalf("RetrievalConceptMinRelevance = %v, want 0.07", got.RetrievalConceptMinRelevance)
+	}
+	if got.RetrievalConceptWeightName != 2.2 {
+		t.Fatalf("RetrievalConceptWeightName = %v, want 2.2", got.RetrievalConceptWeightName)
+	}
+	if got.RetrievalConceptWeightDescription != 1.3 {
+		t.Fatalf("RetrievalConceptWeightDescription = %v, want 1.3", got.RetrievalConceptWeightDescription)
 	}
 }
 

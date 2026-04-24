@@ -16,6 +16,7 @@ type WorkspaceFixture struct {
 	Decisions       []DecisionFixture       `yaml:"decisions"`
 	Contexts        []ContextFixture        `yaml:"contexts"`
 	Notes           []NoteFixture           `yaml:"notes"`
+	CodePackages    []CodePackageFixture    `yaml:"code_packages,omitempty"`
 	SemanticOverlay *SemanticOverlayFixture `yaml:"semantic_overlay,omitempty"`
 }
 
@@ -23,7 +24,14 @@ type WorkspaceFixture struct {
 // It is a simplified representation: each concept is listed with its owning agent.
 // The fixture loader calls WithSemanticOverlay, which writes a full semantic.json.
 type SemanticOverlayFixture struct {
-	Concepts []OverlayConcept `yaml:"concepts"`
+	Concepts   []OverlayConcept          `yaml:"concepts"`
+	Implements []OverlayImplementsFixture `yaml:"implements,omitempty"`
+}
+
+type OverlayImplementsFixture struct {
+	Concept  string `yaml:"concept"`
+	Package  string `yaml:"package"`
+	Reviewed *bool  `yaml:"reviewed,omitempty"`
 }
 
 // AgentFixture is the YAML schema for a single agent definition.
@@ -67,6 +75,21 @@ type ContextFixture struct {
 type NoteFixture struct {
 	File    string `yaml:"file"`
 	Content string `yaml:"content"`
+}
+
+type CodePackageFixture struct {
+	Path    string               `yaml:"path"`
+	Import  string               `yaml:"import"`
+	Doc     string               `yaml:"doc"`
+	Symbols []CodeSymbolFixture  `yaml:"symbols"`
+}
+
+type CodeSymbolFixture struct {
+	Name string `yaml:"name"`
+	Kind string `yaml:"kind"`
+	File string `yaml:"file"`
+	Line int    `yaml:"line"`
+	Doc  string `yaml:"doc"`
 }
 
 // FromFixture loads a workspace.yaml file and returns a Builder configured
@@ -125,9 +148,32 @@ func FromFixture(t *testing.T, path string) *Builder {
 		b.WithNote(n.File, n.Content)
 	}
 
+	for _, pkg := range fix.CodePackages {
+		symbols := make([]codeSymbolDef, 0, len(pkg.Symbols))
+		for _, s := range pkg.Symbols {
+			symbols = append(symbols, codeSymbolDef{
+				Name: s.Name,
+				Kind: s.Kind,
+				File: s.File,
+				Line: s.Line,
+				Doc:  s.Doc,
+			})
+		}
+		b.WithCodePackage(pkg.Path, pkg.Import, pkg.Doc, symbols)
+	}
+
 	if fix.SemanticOverlay != nil {
+		implements := make([]OverlayImplements, 0, len(fix.SemanticOverlay.Implements))
+		for _, e := range fix.SemanticOverlay.Implements {
+			implements = append(implements, OverlayImplements{
+				Concept:  e.Concept,
+				Package:  e.Package,
+				Reviewed: e.Reviewed,
+			})
+		}
 		b.WithSemanticOverlay(SemanticOverlay{
 			Concepts: fix.SemanticOverlay.Concepts,
+			Implements: implements,
 		})
 	}
 

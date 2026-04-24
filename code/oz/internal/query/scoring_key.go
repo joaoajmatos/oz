@@ -158,6 +158,20 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Kind: ScoringKindFloat,
 	},
 	{
+		Key:   "retrieval.max_implementing_packages",
+		Title: "Maximum number of implementing packages",
+		Description: `Hard cap on ranked implementing_packages returned from concept matches. ` +
+			`Lower increases precision; higher increases recall.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.concept_min_relevance",
+		Title: "Minimum concept relevance threshold",
+		Description: `Concepts scoring below this threshold are excluded before walking reviewed ` +
+			`implements edges to packages and symbols.`,
+		Kind: ScoringKindFloat,
+	},
+	{
 		Key:   "retrieval.agent_affinity",
 		Title: "Agent affinity boost",
 		Description: `Multiplier for blocks connected to the winning agent (reads/owns/scope links). ` +
@@ -197,6 +211,20 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Title: "Retrieval weight for symbol kind field",
 		Description: `Weight for symbol kind tokens (func, type, method, etc.) in code-symbol retrieval. ` +
 			`Raise if kind terms are query-significant; lower if they add noise.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.concepts.weight_name",
+		Title: "Concept scoring weight for concept name",
+		Description: `BM25 field weight for semantic concept names when ranking concepts ` +
+			`for implementing package retrieval.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.concepts.weight_description",
+		Title: "Concept scoring weight for concept description",
+		Description: `BM25 field weight for semantic concept descriptions when ranking concepts ` +
+			`for implementing package retrieval.`,
 		Kind: ScoringKindFloat,
 	},
 	{
@@ -289,6 +317,10 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.RetrievalMaxBlocks, nil
 	case "retrieval.max_code_entry_points":
 		return cfg.RetrievalMaxCodeEntryPoints, nil
+	case "retrieval.max_implementing_packages":
+		return cfg.RetrievalMaxImplementingPackages, nil
+	case "retrieval.concept_min_relevance":
+		return cfg.RetrievalConceptMinRelevance, nil
 	case "retrieval.agent_affinity":
 		return cfg.RetrievalAgentAffinity, nil
 	case "retrieval.bm25.k1":
@@ -301,6 +333,10 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.RetrievalWeightBody, nil
 	case "retrieval.fields.weight_kind":
 		return cfg.RetrievalWeightKind, nil
+	case "retrieval.concepts.weight_name":
+		return cfg.RetrievalConceptWeightName, nil
+	case "retrieval.concepts.weight_description":
+		return cfg.RetrievalConceptWeightDescription, nil
 	case "retrieval.trust_boost.specs":
 		return cfg.RetrievalTrustBoostSpecs, nil
 	case "retrieval.trust_boost.docs":
@@ -419,6 +455,12 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 	case "retrieval.max_code_entry_points":
 		x, _ := v.(float64)
 		cfg.RetrievalMaxCodeEntryPoints = x
+	case "retrieval.max_implementing_packages":
+		x, _ := v.(float64)
+		cfg.RetrievalMaxImplementingPackages = x
+	case "retrieval.concept_min_relevance":
+		x, _ := v.(float64)
+		cfg.RetrievalConceptMinRelevance = x
 	case "retrieval.agent_affinity":
 		x, _ := v.(float64)
 		cfg.RetrievalAgentAffinity = x
@@ -437,6 +479,12 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 	case "retrieval.fields.weight_kind":
 		x, _ := v.(float64)
 		cfg.RetrievalWeightKind = x
+	case "retrieval.concepts.weight_name":
+		x, _ := v.(float64)
+		cfg.RetrievalConceptWeightName = x
+	case "retrieval.concepts.weight_description":
+		x, _ := v.(float64)
+		cfg.RetrievalConceptWeightDescription = x
 	case "retrieval.trust_boost.specs":
 		x, _ := v.(float64)
 		cfg.RetrievalTrustBoostSpecs = x

@@ -36,6 +36,7 @@ type Builder struct {
 	decisions []fileDef
 	contexts  []contextDef
 	notes     []fileDef
+	codePkgs  []codePackageDef
 	overlay   *SemanticOverlay
 }
 
@@ -66,17 +67,39 @@ type contextDef struct {
 	Content string
 }
 
+type codePackageDef struct {
+	Path    string
+	Import  string
+	Doc     string
+	Symbols []codeSymbolDef
+}
+
+type codeSymbolDef struct {
+	Name string
+	Kind string
+	File string
+	Line int
+	Doc  string
+}
+
 // SemanticOverlay represents a pre-built context/semantic.json for testing
 // the enriched query path without running oz context enrich.
 type SemanticOverlay struct {
 	GraphHash string          `json:"graph_hash"`
 	Concepts  []OverlayConcept `json:"concepts"`
+	Implements []OverlayImplements `json:"implements,omitempty"`
 }
 
 // OverlayConcept is a concept node in the semantic overlay.
 type OverlayConcept struct {
 	Name    string `json:"name"`
 	OwnedBy string `json:"owned_by"`
+}
+
+type OverlayImplements struct {
+	Concept  string `json:"concept"`
+	Package  string `json:"package"`
+	Reviewed *bool  `json:"reviewed,omitempty"`
 }
 
 // AgentOption configures an agent definition.
@@ -177,6 +200,17 @@ func (b *Builder) WithNote(file, content string) *Builder {
 	return b
 }
 
+// WithCodePackage adds code package and symbol fixture data for context build.
+func (b *Builder) WithCodePackage(path, imp, doc string, symbols []codeSymbolDef) *Builder {
+	b.codePkgs = append(b.codePkgs, codePackageDef{
+		Path:    path,
+		Import:  imp,
+		Doc:     doc,
+		Symbols: append([]codeSymbolDef(nil), symbols...),
+	})
+	return b
+}
+
 // WithSemanticOverlay sets a pre-built semantic overlay for the workspace.
 func (b *Builder) WithSemanticOverlay(overlay SemanticOverlay) *Builder {
 	b.overlay = &overlay
@@ -256,6 +290,11 @@ func (b *Builder) Build() *Workspace {
 		}
 	}
 
+	// Write code packages / symbols fixtures.
+	if err := b.writeCodePackages(dir); err != nil {
+		b.tb.Fatalf("testws: write code fixtures: %v", err)
+	}
+
 	// Write semantic overlay if provided.
 	if b.overlay != nil {
 		if err := b.writeOverlay(dir, b.overlay); err != nil {
@@ -288,6 +327,20 @@ func (b *Builder) writeOverlay(root string, o *SemanticOverlay) error {
 			Type:       semantic.EdgeTypeAgentOwnsConcept,
 			Tag:        semantic.TagExtracted,
 			Confidence: 1.0,
+		})
+	}
+	for _, imp := range o.Implements {
+		reviewed := true
+		if imp.Reviewed != nil {
+			reviewed = *imp.Reviewed
+		}
+		full.Edges = append(full.Edges, semantic.ConceptEdge{
+			From:       "concept:" + slugify(imp.Concept),
+			To:         "code_package:" + imp.Package,
+			Type:       semantic.EdgeTypeImplements,
+			Tag:        semantic.TagExtracted,
+			Confidence: 1.0,
+			Reviewed:   reviewed,
 		})
 	}
 	return semantic.Write(root, full)
@@ -392,6 +445,84 @@ func renderMarkdown(f fileDef) string {
 		if s.Content != "" {
 			fmt.Fprintf(&b, "%s\n\n", s.Content)
 		}
+	}
+	return b.String()
+}
+
+func (b *Builder) writeCodePackages(root string) error {
+	if len(b.codePkgs) == 0 {
+		return nil
+	}
+	moduleRoot := filepath.Join(root, "code", "oz")
+	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
+		return err
+	}
+	goModPath := filepath.Join(moduleRoot, "go.mod")
+	if _, err := os.Stat(goModPath); err != nil {
+		if os.IsNotExist(err) {
+			const mod = "module github.com/example/testws-oz\n\ngo 1.22\n"
+			if err := os.WriteFile(goModPath, []byte(mod), 0644); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	for _, pkg := range b.codePkgs {
+		base := filepath.Join(root, "code", "oz", "internal", pkg.Path)
+		if err := os.MkdirAll(base, 0755); err != nil {
+			return err
+		}
+		packageName := filepath.Base(pkg.Path)
+		docPath := filepath.Join(base, "doc.go")
+		docBody := "package " + packageName + "\n"
+		if pkg.Doc != "" {
+			docBody = "// " + pkg.Doc + "\n" + docBody
+		}
+		if err := os.WriteFile(docPath, []byte(docBody), 0644); err != nil {
+			return err
+		}
+		files := make(map[string][]codeSymbolDef)
+		for _, s := range pkg.Symbols {
+			rel := s.File
+			rel = strings.TrimPrefix(rel, "code/oz/internal/")
+			if rel == "" {
+				rel = filepath.Join(pkg.Path, strings.ToLower(s.Name)+".go")
+			}
+			files[rel] = append(files[rel], s)
+		}
+		for rel, symbols := range files {
+			abs := filepath.Join(root, "code", "oz", "internal", rel)
+			if err := os.MkdirAll(filepath.Dir(abs), 0755); err != nil {
+				return err
+			}
+			src := renderCodeSymbolsSource(packageName, symbols)
+			if err := os.WriteFile(abs, []byte(src), 0644); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func renderCodeSymbolsSource(packageName string, symbols []codeSymbolDef) string {
+	var b strings.Builder
+	b.WriteString("package " + packageName + "\n\n")
+	for _, s := range symbols {
+		if s.Doc != "" {
+			b.WriteString("// " + s.Doc + "\n")
+		}
+		switch strings.ToLower(s.Kind) {
+		case "struct":
+			b.WriteString("type " + s.Name + " struct{}\n")
+		case "interface":
+			b.WriteString("type " + s.Name + " interface{}\n")
+		case "const":
+			b.WriteString("const " + s.Name + " = 1\n")
+		default:
+			b.WriteString("func " + s.Name + "() {}\n")
+		}
+		b.WriteString("\n")
 	}
 	return b.String()
 }

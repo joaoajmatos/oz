@@ -139,12 +139,32 @@ func loadRelevantConcepts(workspacePath, agentName string, _ *graph.Graph) []str
 	return semantic.ConceptsForAgent(o, agentName)
 }
 
-// loadImplementingPackages returns the import paths of code_package nodes that
-// implement concepts relevant to the query terms, via reviewed implements edges.
-// Relevance is determined by token overlap between query terms and concept
-// name+description — so "how is drift detection implemented?" returns audit/drift
-// rather than packages owned by the routed agent.
+type conceptFieldDoc struct {
+	m map[string][]string
+}
+
+func (d conceptFieldDoc) Fields() map[string][]string {
+	return d.m
+}
+
+func conceptFieldTokens(c semantic.Concept, useBigrams bool) map[string][]string {
+	return map[string][]string{
+		"name":        TokenizeMulti(c.Name, useBigrams),
+		"description": TokenizeMulti(c.Description, useBigrams),
+	}
+}
+
+func conceptRetrievalFields(cfg ScoringConfig) []bm25.BM25Field {
+	return []bm25.BM25Field{
+		{Name: "name", Weight: cfg.RetrievalConceptWeightName, B: cfg.BText},
+		{Name: "description", Weight: cfg.RetrievalConceptWeightDescription, B: cfg.BText},
+	}
+}
+
+// loadImplementingPackages returns code packages connected through reviewed
+// semantic implements edges from concepts ranked by query relevance.
 func loadImplementingPackages(workspacePath string, queryTerms []string) []string {
+	cfg := LoadConfig(workspacePath)
 	o, err := semantic.Load(workspacePath)
 	if err != nil || o == nil {
 		return nil
@@ -152,46 +172,56 @@ func loadImplementingPackages(workspacePath string, queryTerms []string) []strin
 	if len(queryTerms) == 0 {
 		return nil
 	}
-	termSet := make(map[string]struct{}, len(queryTerms))
-	for _, t := range queryTerms {
-		termSet[t] = struct{}{}
-	}
-
-	// Find concepts whose name/description shares tokens with the query.
-	relevant := make(map[string]struct{})
-	for _, c := range o.Concepts {
-		conceptTokens := TokenizeMulti(c.Name+" "+c.Description, false)
-		for _, t := range conceptTokens {
-			if _, ok := termSet[t]; ok {
-				relevant[c.ID] = struct{}{}
-				break
-			}
-		}
-	}
-	if len(relevant) == 0 {
+	conceptScores := scoreConcepts(o.Concepts, queryTerms, cfg, false)
+	if len(conceptScores) == 0 {
 		return nil
 	}
-
-	// Collect packages for relevant concepts via reviewed implements edges.
-	seen := make(map[string]struct{})
-	var pkgs []string
+	packageBest := make(map[string]float64)
 	for _, e := range o.Edges {
 		if e.Type != semantic.EdgeTypeImplements || !e.Reviewed {
 			continue
 		}
-		if _, ok := relevant[e.From]; !ok {
+		score, ok := conceptScores[e.From]
+		if !ok || score < cfg.RetrievalConceptMinRelevance {
 			continue
 		}
-		if _, ok := seen[e.To]; !ok {
-			seen[e.To] = struct{}{}
-			pkgs = append(pkgs, e.To)
+		pkg := packageFromImplementsTo(e.To)
+		if pkg == "" {
+			continue
+		}
+		if current, exists := packageBest[pkg]; !exists || score > current {
+			packageBest[pkg] = score
 		}
 	}
-	if len(pkgs) == 0 {
+	if len(packageBest) == 0 {
 		return nil
 	}
-	sort.Strings(pkgs)
-	return pkgs
+	type scoredPkg struct {
+		pkg   string
+		score float64
+	}
+	pkgs := make([]scoredPkg, 0, len(packageBest))
+	for pkg, score := range packageBest {
+		pkgs = append(pkgs, scoredPkg{pkg: pkg, score: score})
+	}
+	sort.SliceStable(pkgs, func(i, j int) bool {
+		if pkgs[i].score != pkgs[j].score {
+			return pkgs[i].score > pkgs[j].score
+		}
+		return pkgs[i].pkg < pkgs[j].pkg
+	})
+	maxPkgs := int(math.Round(cfg.RetrievalMaxImplementingPackages))
+	if maxPkgs < 1 {
+		maxPkgs = 1
+	}
+	if len(pkgs) > maxPkgs {
+		pkgs = pkgs[:maxPkgs]
+	}
+	out := make([]string, len(pkgs))
+	for i := range pkgs {
+		out[i] = pkgs[i].pkg
+	}
+	return out
 }
 
 // codeTrustBoostSymbols is the PRD/ADR default trust multiplier for code-tier
@@ -357,10 +387,11 @@ func eligiblePackagesByConcept(workspacePath string, queryTerms []string, cfg Sc
 	if err != nil || o == nil {
 		return nil
 	}
+	conceptScores := scoreConcepts(o.Concepts, queryTerms, cfg, cfg.UseBigrams)
 	relevantConcepts := make(map[string]bool)
-	for _, c := range o.Concepts {
-		if conceptLexicalScore(c, queryTerms) >= cfg.RetrievalMinRelevance {
-			relevantConcepts[c.ID] = true
+	for id, score := range conceptScores {
+		if score >= cfg.RetrievalConceptMinRelevance {
+			relevantConcepts[id] = true
 		}
 	}
 	if len(relevantConcepts) == 0 {
@@ -381,25 +412,27 @@ func eligiblePackagesByConcept(workspacePath string, queryTerms []string, cfg Sc
 	return out
 }
 
-func conceptLexicalScore(c semantic.Concept, queryTerms []string) float64 {
-	if len(queryTerms) == 0 {
-		return 0
+func scoreConcepts(concepts []semantic.Concept, queryTerms []string, cfg ScoringConfig, useBigrams bool) map[string]float64 {
+	if len(concepts) == 0 || len(queryTerms) == 0 {
+		return nil
 	}
-	terms := make(map[string]bool, len(queryTerms))
-	for _, t := range queryTerms {
-		terms[t] = true
+	fields := conceptRetrievalFields(cfg)
+	docs := make([]bm25.FieldDoc, len(concepts))
+	for i := range concepts {
+		docs[i] = conceptFieldDoc{m: conceptFieldTokens(concepts[i], useBigrams)}
 	}
-	conceptTerms := TokenizeMulti(c.Name+" "+c.Description, false)
-	matches := 0
-	seen := make(map[string]bool)
-	for _, t := range conceptTerms {
-		if !terms[t] || seen[t] {
-			continue
-		}
-		seen[t] = true
-		matches++
+	avgLen := bm25.AvgFieldLengths(docs, fields)
+	df := bm25.ComputeDF(docs)
+	k1 := cfg.RetrievalK1
+	if k1 <= 0 {
+		k1 = 1.2
 	}
-	return float64(matches) / float64(len(queryTerms))
+	out := make(map[string]float64, len(concepts))
+	for i, c := range concepts {
+		score := bm25.BM25Score(queryTerms, docs[i].Fields(), fields, k1, avgLen, df, len(concepts))
+		out[c.ID] = score
+	}
+	return out
 }
 
 func packageFromImplementsTo(to string) string {
