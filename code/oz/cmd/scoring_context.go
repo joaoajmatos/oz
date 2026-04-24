@@ -22,9 +22,10 @@ var (
 
 var contextScoringCmd = &cobra.Command{
 	Use:   "scoring",
-	Short: "Inspect and edit context/scoring.toml (BM25F and routing)",
+	Short: "Inspect and edit context/scoring.toml (routing, retrieval, BM25F)",
 	Long: `Commands to list keys, show effective values, get or set one key, describe tuning,
-and validate the TOML file. See "oz context scoring list" for all keys.`,
+and validate the TOML file. Covers [routing], [retrieval] (and nested retrieval.*), [bm25],
+[fields], [weights], [tokenize]. See "oz context scoring list" for all keys.`,
 }
 
 var contextScoringShowCmd = &cobra.Command{
