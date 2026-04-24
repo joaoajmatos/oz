@@ -34,6 +34,7 @@ type ScoringConfig struct {
 	// Retrieval thresholds and caps.
 	RetrievalMinRelevance float64
 	RetrievalMaxBlocks    float64
+	RetrievalMaxCodeEntryPoints float64
 
 	// Retrieval BM25 and ranking boosts.
 	RetrievalK1                float64
@@ -47,6 +48,7 @@ type ScoringConfig struct {
 	RetrievalWeightTitle float64
 	RetrievalWeightPath  float64
 	RetrievalWeightBody  float64
+	RetrievalWeightKind  float64
 }
 
 // DefaultScoringConfig returns the default parameters.
@@ -68,6 +70,7 @@ func DefaultScoringConfig() ScoringConfig {
 		UseBigrams:             false,
 		RetrievalMinRelevance:  0.05,
 		RetrievalMaxBlocks:     12,
+		RetrievalMaxCodeEntryPoints: 5,
 		RetrievalK1:            1.2,
 		RetrievalAgentAffinity: 1.2,
 		RetrievalTrustBoostSpecs:   1.3,
@@ -77,6 +80,7 @@ func DefaultScoringConfig() ScoringConfig {
 		RetrievalWeightTitle:       2.0,
 		RetrievalWeightPath:        1.5,
 		RetrievalWeightBody:        1.0,
+		RetrievalWeightKind:        1.0,
 	}
 }
 

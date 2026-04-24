@@ -151,6 +151,13 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Kind: ScoringKindFloat,
 	},
 	{
+		Key:   "retrieval.max_code_entry_points",
+		Title: "Maximum number of code entry points",
+		Description: `Hard cap on ranked code_entry_points returned for implementation queries. ` +
+			`Lower keeps packets compact; higher increases recall for larger code surfaces.`,
+		Kind: ScoringKindFloat,
+	},
+	{
 		Key:   "retrieval.agent_affinity",
 		Title: "Agent affinity boost",
 		Description: `Multiplier for blocks connected to the winning agent (reads/owns/scope links). ` +
@@ -183,6 +190,13 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Title: "Retrieval weight for body field",
 		Description: `Weight for section/file body tokens. ` +
 			`Raise when details are in prose/code-adjacent text; lower when body text is verbose and noisy.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.fields.weight_kind",
+		Title: "Retrieval weight for symbol kind field",
+		Description: `Weight for symbol kind tokens (func, type, method, etc.) in code-symbol retrieval. ` +
+			`Raise if kind terms are query-significant; lower if they add noise.`,
 		Kind: ScoringKindFloat,
 	},
 	{
@@ -273,6 +287,8 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.RetrievalMinRelevance, nil
 	case "retrieval.max_blocks":
 		return cfg.RetrievalMaxBlocks, nil
+	case "retrieval.max_code_entry_points":
+		return cfg.RetrievalMaxCodeEntryPoints, nil
 	case "retrieval.agent_affinity":
 		return cfg.RetrievalAgentAffinity, nil
 	case "retrieval.bm25.k1":
@@ -283,6 +299,8 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.RetrievalWeightPath, nil
 	case "retrieval.fields.weight_body":
 		return cfg.RetrievalWeightBody, nil
+	case "retrieval.fields.weight_kind":
+		return cfg.RetrievalWeightKind, nil
 	case "retrieval.trust_boost.specs":
 		return cfg.RetrievalTrustBoostSpecs, nil
 	case "retrieval.trust_boost.docs":
@@ -398,6 +416,9 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 	case "retrieval.max_blocks":
 		x, _ := v.(float64)
 		cfg.RetrievalMaxBlocks = x
+	case "retrieval.max_code_entry_points":
+		x, _ := v.(float64)
+		cfg.RetrievalMaxCodeEntryPoints = x
 	case "retrieval.agent_affinity":
 		x, _ := v.(float64)
 		cfg.RetrievalAgentAffinity = x
@@ -413,6 +434,9 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 	case "retrieval.fields.weight_body":
 		x, _ := v.(float64)
 		cfg.RetrievalWeightBody = x
+	case "retrieval.fields.weight_kind":
+		x, _ := v.(float64)
+		cfg.RetrievalWeightKind = x
 	case "retrieval.trust_boost.specs":
 		x, _ := v.(float64)
 		cfg.RetrievalTrustBoostSpecs = x

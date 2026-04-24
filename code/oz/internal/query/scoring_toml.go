@@ -62,6 +62,7 @@ type scoringTOMLTokenIn struct {
 type scoringTOMLRetrievalIn struct {
 	MinRelevance  *float64                   `toml:"min_relevance"`
 	MaxBlocks     *float64                   `toml:"max_blocks"`
+	MaxCodeEntryPoints *float64              `toml:"max_code_entry_points"`
 	BM25          *scoringTOMLRetrievalBM25  `toml:"bm25"`
 	Fields        *scoringTOMLRetrievalField `toml:"fields"`
 	TrustBoost    *scoringTOMLRetrievalTrust `toml:"trust_boost"`
@@ -76,6 +77,7 @@ type scoringTOMLRetrievalField struct {
 	WeightTitle *float64 `toml:"weight_title"`
 	WeightPath  *float64 `toml:"weight_path"`
 	WeightBody  *float64 `toml:"weight_body"`
+	WeightKind  *float64 `toml:"weight_kind"`
 }
 
 type scoringTOMLRetrievalTrust struct {
@@ -109,7 +111,7 @@ var allowedKeysInSection = map[string]map[string]struct{}{
 		"use_bigrams": {},
 	},
 	"retrieval": {
-		"min_relevance": {}, "max_blocks": {}, "agent_affinity": {},
+		"min_relevance": {}, "max_blocks": {}, "max_code_entry_points": {}, "agent_affinity": {},
 		"bm25": {}, "fields": {}, "trust_boost": {},
 	},
 }
@@ -187,6 +189,9 @@ func mergeScoringTOML(cfg *ScoringConfig, in *scoringTOMLIn) {
 		if in.Retrieval.MaxBlocks != nil {
 			cfg.RetrievalMaxBlocks = *in.Retrieval.MaxBlocks
 		}
+		if in.Retrieval.MaxCodeEntryPoints != nil {
+			cfg.RetrievalMaxCodeEntryPoints = *in.Retrieval.MaxCodeEntryPoints
+		}
 		if in.Retrieval.AgentAffinity != nil {
 			cfg.RetrievalAgentAffinity = *in.Retrieval.AgentAffinity
 		}
@@ -202,6 +207,9 @@ func mergeScoringTOML(cfg *ScoringConfig, in *scoringTOMLIn) {
 			}
 			if in.Retrieval.Fields.WeightBody != nil {
 				cfg.RetrievalWeightBody = *in.Retrieval.Fields.WeightBody
+			}
+			if in.Retrieval.Fields.WeightKind != nil {
+				cfg.RetrievalWeightKind = *in.Retrieval.Fields.WeightKind
 			}
 		}
 		if in.Retrieval.TrustBoost != nil {
@@ -265,6 +273,7 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 		Retrieval struct {
 			MinRelevance  float64 `toml:"min_relevance"`
 			MaxBlocks     float64 `toml:"max_blocks"`
+			MaxCodeEntryPoints float64 `toml:"max_code_entry_points"`
 			AgentAffinity float64 `toml:"agent_affinity"`
 			BM25          struct {
 				K1 float64 `toml:"k1"`
@@ -273,6 +282,7 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 				WeightTitle float64 `toml:"weight_title"`
 				WeightPath  float64 `toml:"weight_path"`
 				WeightBody  float64 `toml:"weight_body"`
+				WeightKind  float64 `toml:"weight_kind"`
 			} `toml:"fields"`
 			TrustBoost struct {
 				Specs   float64 `toml:"specs"`
@@ -298,11 +308,13 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 	enc.Tokenize.UseBigrams = cfg.UseBigrams
 	enc.Retrieval.MinRelevance = cfg.RetrievalMinRelevance
 	enc.Retrieval.MaxBlocks = cfg.RetrievalMaxBlocks
+	enc.Retrieval.MaxCodeEntryPoints = cfg.RetrievalMaxCodeEntryPoints
 	enc.Retrieval.AgentAffinity = cfg.RetrievalAgentAffinity
 	enc.Retrieval.BM25.K1 = cfg.RetrievalK1
 	enc.Retrieval.Fields.WeightTitle = cfg.RetrievalWeightTitle
 	enc.Retrieval.Fields.WeightPath = cfg.RetrievalWeightPath
 	enc.Retrieval.Fields.WeightBody = cfg.RetrievalWeightBody
+	enc.Retrieval.Fields.WeightKind = cfg.RetrievalWeightKind
 	enc.Retrieval.TrustBoost.Specs = cfg.RetrievalTrustBoostSpecs
 	enc.Retrieval.TrustBoost.Docs = cfg.RetrievalTrustBoostDocs
 	enc.Retrieval.TrustBoost.Context = cfg.RetrievalTrustBoostContext
@@ -439,6 +451,9 @@ func ValidateScoringConfig(cfg ScoringConfig) error {
 	if err := validatePositiveFinite("retrieval.max_blocks", cfg.RetrievalMaxBlocks); err != nil {
 		return err
 	}
+	if err := validatePositiveFinite("retrieval.max_code_entry_points", cfg.RetrievalMaxCodeEntryPoints); err != nil {
+		return err
+	}
 	if err := validatePositiveFinite("retrieval.bm25.k1", cfg.RetrievalK1); err != nil {
 		return err
 	}
@@ -452,6 +467,9 @@ func ValidateScoringConfig(cfg ScoringConfig) error {
 		return err
 	}
 	if err := validatePositiveFinite("retrieval.fields.weight_body", cfg.RetrievalWeightBody); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.fields.weight_kind", cfg.RetrievalWeightKind); err != nil {
 		return err
 	}
 	if err := validatePositiveFinite("retrieval.trust_boost.specs", cfg.RetrievalTrustBoostSpecs); err != nil {

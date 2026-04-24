@@ -15,6 +15,8 @@ func TestLoadConfig_RoundTripWrite(t *testing.T) {
 	cfg.ConfidenceThreshold = 0.65
 	cfg.RetrievalMinRelevance = 0.08
 	cfg.RetrievalWeightBody = 1.4
+	cfg.RetrievalMaxCodeEntryPoints = 7
+	cfg.RetrievalWeightKind = 0.9
 	if err := WriteScoringTOML(dir, cfg); err != nil {
 		t.Fatal(err)
 	}
@@ -30,6 +32,12 @@ func TestLoadConfig_RoundTripWrite(t *testing.T) {
 	}
 	if got.RetrievalWeightBody != 1.4 {
 		t.Fatalf("RetrievalWeightBody = %v, want 1.4", got.RetrievalWeightBody)
+	}
+	if got.RetrievalMaxCodeEntryPoints != 7 {
+		t.Fatalf("RetrievalMaxCodeEntryPoints = %v, want 7", got.RetrievalMaxCodeEntryPoints)
+	}
+	if got.RetrievalWeightKind != 0.9 {
+		t.Fatalf("RetrievalWeightKind = %v, want 0.9", got.RetrievalWeightKind)
 	}
 }
 
