@@ -37,9 +37,10 @@ func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, 
 		passed = append(passed, s)
 		if len(blocks) < maxBlocks {
 			blocks = append(blocks, ContextBlock{
-				File:    s.Block.File,
-				Section: s.Block.Section,
-				Trust:   s.Block.Trust,
+				File:      s.Block.File,
+				Section:   s.Block.Section,
+				Trust:     s.Block.Trust,
+				Relevance: s.Relevance,
 			})
 		}
 	}
@@ -88,9 +89,10 @@ func ensureScopeSurvivor(blocks *[]ContextBlock, passed []contextretrieval.Score
 			continue
 		}
 		(*blocks)[len(*blocks)-1] = ContextBlock{
-			File:    s.Block.File,
-			Section: s.Block.Section,
-			Trust:   s.Block.Trust,
+			File:      s.Block.File,
+			Section:   s.Block.Section,
+			Trust:     s.Block.Trust,
+			Relevance: s.Relevance,
 		}
 		return
 	}

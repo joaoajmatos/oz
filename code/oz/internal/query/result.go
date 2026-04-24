@@ -47,6 +47,8 @@ type ContextBlock struct {
 	File    string `json:"file"`
 	Section string `json:"section"`
 	Trust   string `json:"trust"` // "high" (specs), "medium" (docs/context), "low" (notes)
+	// Relevance is the retrieval score used for ranked context_blocks ordering.
+	Relevance float64 `json:"relevance,omitempty"`
 }
 
 // CandidateAgent is an agent with its confidence score for ambiguous results.

@@ -289,6 +289,5 @@ func formatCodeEntryPoints(entries []codeEntryPoint) string {
 // the field lands, returns 0 — which keeps ExpectRelevanceDescending inert on
 // current output instead of falsely failing.
 func blockRelevance(cb query.ContextBlock) float64 {
-	_ = cb
-	return 0
+	return cb.Relevance
 }
