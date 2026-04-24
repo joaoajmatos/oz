@@ -2,6 +2,7 @@ package query
 
 import (
 	"sort"
+	"strings"
 
 	ozcontext "github.com/joaoajmatos/oz/internal/context"
 	"github.com/joaoajmatos/oz/internal/graph"
@@ -82,6 +83,7 @@ func runRouting(workspacePath, queryText string, opts Options) routingState {
 	}
 	st.Result.RelevantConcepts = loadRelevantConcepts(workspacePath, st.Route.Agent, g)
 	st.Result.ImplementingPackages = loadImplementingPackages(workspacePath, st.Terms)
+	st.Result.CodeEntryPoints = loadCodeEntryPoints(workspacePath, g, st.Route.Agent, st.Terms, st.Cfg)
 	return st
 }
 
@@ -188,4 +190,110 @@ func loadImplementingPackages(workspacePath string, queryTerms []string) []strin
 	}
 	sort.Strings(pkgs)
 	return pkgs
+}
+
+// loadCodeEntryPoints returns eligible symbol-level entry points for code-level
+// queries. Sprint 3 Story 3 eligibility:
+//   - symbol file is under winning-agent scope, OR
+//   - symbol package is reachable from reviewed semantic implements edges for
+//     concepts relevant to the query.
+//
+// Ranking/cap behavior is implemented in later stories.
+func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent string, queryTerms []string, cfg ScoringConfig) []CodeEntryPoint {
+	if g == nil || winningAgent == "" {
+		return nil
+	}
+	scope := BuildScopeForAgent(g, winningAgent)
+	eligiblePackages := eligiblePackagesByConcept(workspacePath, queryTerms, cfg)
+	var out []CodeEntryPoint
+	for _, n := range g.Nodes {
+		if n.Type != graph.NodeTypeCodeSymbol {
+			continue
+		}
+		inScope := fileInAnyScope(n.File, scope)
+		byConcept := eligiblePackages[n.Package]
+		if !inScope && !byConcept {
+			continue
+		}
+		out = append(out, CodeEntryPoint{
+			File:    n.File,
+			Symbol:  n.Name,
+			Kind:    n.SymbolKind,
+			Line:    n.Line,
+			Package: n.Package,
+		})
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].File != out[j].File {
+			return out[i].File < out[j].File
+		}
+		if out[i].Symbol != out[j].Symbol {
+			return out[i].Symbol < out[j].Symbol
+		}
+		return out[i].Line < out[j].Line
+	})
+	return out
+}
+
+func eligiblePackagesByConcept(workspacePath string, queryTerms []string, cfg ScoringConfig) map[string]bool {
+	if len(queryTerms) == 0 {
+		return nil
+	}
+	o, err := semantic.Load(workspacePath)
+	if err != nil || o == nil {
+		return nil
+	}
+	relevantConcepts := make(map[string]bool)
+	for _, c := range o.Concepts {
+		if conceptLexicalScore(c, queryTerms) >= cfg.RetrievalMinRelevance {
+			relevantConcepts[c.ID] = true
+		}
+	}
+	if len(relevantConcepts) == 0 {
+		return nil
+	}
+	out := make(map[string]bool)
+	for _, e := range o.Edges {
+		if e.Type != semantic.EdgeTypeImplements || !e.Reviewed {
+			continue
+		}
+		if !relevantConcepts[e.From] {
+			continue
+		}
+		if pkg := packageFromImplementsTo(e.To); pkg != "" {
+			out[pkg] = true
+		}
+	}
+	return out
+}
+
+func conceptLexicalScore(c semantic.Concept, queryTerms []string) float64 {
+	if len(queryTerms) == 0 {
+		return 0
+	}
+	terms := make(map[string]bool, len(queryTerms))
+	for _, t := range queryTerms {
+		terms[t] = true
+	}
+	conceptTerms := TokenizeMulti(c.Name+" "+c.Description, false)
+	matches := 0
+	seen := make(map[string]bool)
+	for _, t := range conceptTerms {
+		if !terms[t] || seen[t] {
+			continue
+		}
+		seen[t] = true
+		matches++
+	}
+	return float64(matches) / float64(len(queryTerms))
+}
+
+func packageFromImplementsTo(to string) string {
+	if strings.HasPrefix(to, "code_package:") {
+		return strings.TrimPrefix(to, "code_package:")
+	}
+	return to
 }
