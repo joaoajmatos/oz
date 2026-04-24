@@ -12,6 +12,7 @@ type Block struct {
 	File    string
 	Section string
 	Trust   string // "high", "medium", "low"
+	Tier    string // "specs", "docs", "context", "notes" (for trust_boost lookup)
 
 	TokenFields map[string][]string
 
@@ -74,7 +75,9 @@ func Score(queryTokens []string, blocks []Block, cfg RetrievalConfig, winningAge
 			len(blocks),
 		)
 		trustBoost := 1.0
-		if v, ok := cfg.TrustBoost[b.Trust]; ok {
+		if v, ok := cfg.TrustBoost[b.Tier]; ok {
+			trustBoost = v
+		} else if v, ok := cfg.TrustBoost[b.Trust]; ok {
 			trustBoost = v
 		}
 		affinityBoost := 1.0

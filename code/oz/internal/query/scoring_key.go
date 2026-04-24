@@ -136,6 +136,83 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 			`Can help compound phrases; may over-index on large corpora. Off by default.`,
 		Kind: ScoringKindBool,
 	},
+	{
+		Key:   "retrieval.min_relevance",
+		Title: "Minimum retrieval relevance threshold",
+		Description: `Blocks scoring below this value are removed before top-K truncation. ` +
+			`Raise to return fewer, higher-signal blocks; lower to increase recall when queries are broad.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.max_blocks",
+		Title: "Maximum number of context blocks",
+		Description: `Hard cap on ranked context_blocks after thresholding. ` +
+			`Lower reduces token load; higher gives more coverage at the cost of potential noise.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.agent_affinity",
+		Title: "Agent affinity boost",
+		Description: `Multiplier for blocks connected to the winning agent (reads/owns/scope links). ` +
+			`Raise to prefer agent-local context; lower if read-chain breadth starts overpowering query relevance.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.bm25.k1",
+		Title: "Retrieval BM25 term frequency saturation",
+		Description: `BM25 k1 used only for block retrieval (independent from routing). ` +
+			`Higher values reward repeated term matches more; lower values saturate earlier.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.fields.weight_title",
+		Title: "Retrieval weight for title field",
+		Description: `Weight for section headings/titles. ` +
+			`Raise when query intent is usually captured by headings; lower when headings are generic.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.fields.weight_path",
+		Title: "Retrieval weight for path field",
+		Description: `Weight for file path tokens (directories, filenames). ` +
+			`Raise when users query by package/path terms; lower if path tokens bias ranking too much.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.fields.weight_body",
+		Title: "Retrieval weight for body field",
+		Description: `Weight for section/file body tokens. ` +
+			`Raise when details are in prose/code-adjacent text; lower when body text is verbose and noisy.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.trust_boost.specs",
+		Title: "Retrieval trust boost for specs tier",
+		Description: `Trust multiplier for blocks from specs/decisions. ` +
+			`Typically highest, so canonical policy/spec sources win ties on similar relevance.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.trust_boost.docs",
+		Title: "Retrieval trust boost for docs tier",
+		Description: `Trust multiplier for docs/ architecture material. ` +
+			`Use to tune how strongly practical docs compete against specs and notes.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.trust_boost.context",
+		Title: "Retrieval trust boost for context tier",
+		Description: `Trust multiplier for context snapshots under context/. ` +
+			`Raise if snapshots are highly curated; lower if they are stale or secondary evidence.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.trust_boost.notes",
+		Title: "Retrieval trust boost for notes tier",
+		Description: `Trust multiplier for notes/ planning rationale. ` +
+			`Keep below specs/docs to avoid polluting top slots, but high enough for “why” queries to surface notes.`,
+		Kind: ScoringKindFloat,
+	},
 }
 
 // scoringKeyIndex maps "section.name" to metadata.
@@ -192,6 +269,28 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.IncludeNotes, nil
 	case "tokenize.use_bigrams":
 		return cfg.UseBigrams, nil
+	case "retrieval.min_relevance":
+		return cfg.RetrievalMinRelevance, nil
+	case "retrieval.max_blocks":
+		return cfg.RetrievalMaxBlocks, nil
+	case "retrieval.agent_affinity":
+		return cfg.RetrievalAgentAffinity, nil
+	case "retrieval.bm25.k1":
+		return cfg.RetrievalK1, nil
+	case "retrieval.fields.weight_title":
+		return cfg.RetrievalWeightTitle, nil
+	case "retrieval.fields.weight_path":
+		return cfg.RetrievalWeightPath, nil
+	case "retrieval.fields.weight_body":
+		return cfg.RetrievalWeightBody, nil
+	case "retrieval.trust_boost.specs":
+		return cfg.RetrievalTrustBoostSpecs, nil
+	case "retrieval.trust_boost.docs":
+		return cfg.RetrievalTrustBoostDocs, nil
+	case "retrieval.trust_boost.context":
+		return cfg.RetrievalTrustBoostContext, nil
+	case "retrieval.trust_boost.notes":
+		return cfg.RetrievalTrustBoostNotes, nil
 	default:
 		return nil, fmt.Errorf("unknown key %q (oz context scoring list)", key)
 	}
@@ -293,6 +392,39 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 	case "tokenize.use_bigrams":
 		x, _ := v.(bool)
 		cfg.UseBigrams = x
+	case "retrieval.min_relevance":
+		x, _ := v.(float64)
+		cfg.RetrievalMinRelevance = x
+	case "retrieval.max_blocks":
+		x, _ := v.(float64)
+		cfg.RetrievalMaxBlocks = x
+	case "retrieval.agent_affinity":
+		x, _ := v.(float64)
+		cfg.RetrievalAgentAffinity = x
+	case "retrieval.bm25.k1":
+		x, _ := v.(float64)
+		cfg.RetrievalK1 = x
+	case "retrieval.fields.weight_title":
+		x, _ := v.(float64)
+		cfg.RetrievalWeightTitle = x
+	case "retrieval.fields.weight_path":
+		x, _ := v.(float64)
+		cfg.RetrievalWeightPath = x
+	case "retrieval.fields.weight_body":
+		x, _ := v.(float64)
+		cfg.RetrievalWeightBody = x
+	case "retrieval.trust_boost.specs":
+		x, _ := v.(float64)
+		cfg.RetrievalTrustBoostSpecs = x
+	case "retrieval.trust_boost.docs":
+		x, _ := v.(float64)
+		cfg.RetrievalTrustBoostDocs = x
+	case "retrieval.trust_boost.context":
+		x, _ := v.(float64)
+		cfg.RetrievalTrustBoostContext = x
+	case "retrieval.trust_boost.notes":
+		x, _ := v.(float64)
+		cfg.RetrievalTrustBoostNotes = x
 	default:
 		return fmt.Errorf("unknown key %q", key)
 	}

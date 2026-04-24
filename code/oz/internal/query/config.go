@@ -30,6 +30,23 @@ type ScoringConfig struct {
 	IncludeNotes bool
 	// When true, tokenization emits adjacent stem bigrams as "a_b" after unigrams.
 	UseBigrams bool
+
+	// Retrieval thresholds and caps.
+	RetrievalMinRelevance float64
+	RetrievalMaxBlocks    float64
+
+	// Retrieval BM25 and ranking boosts.
+	RetrievalK1                float64
+	RetrievalAgentAffinity     float64
+	RetrievalTrustBoostSpecs   float64
+	RetrievalTrustBoostDocs    float64
+	RetrievalTrustBoostContext float64
+	RetrievalTrustBoostNotes   float64
+
+	// Retrieval field weights.
+	RetrievalWeightTitle float64
+	RetrievalWeightPath  float64
+	RetrievalWeightBody  float64
 }
 
 // DefaultScoringConfig returns the default parameters.
@@ -49,6 +66,17 @@ func DefaultScoringConfig() ScoringConfig {
 		MinCandidateConfidence: 0.2,
 		IncludeNotes:           false,
 		UseBigrams:             false,
+		RetrievalMinRelevance:  0.05,
+		RetrievalMaxBlocks:     12,
+		RetrievalK1:            1.2,
+		RetrievalAgentAffinity: 1.2,
+		RetrievalTrustBoostSpecs:   1.3,
+		RetrievalTrustBoostDocs:    1.0,
+		RetrievalTrustBoostContext: 1.0,
+		RetrievalTrustBoostNotes:   0.6,
+		RetrievalWeightTitle:       2.0,
+		RetrievalWeightPath:        1.5,
+		RetrievalWeightBody:        1.0,
 	}
 }
 

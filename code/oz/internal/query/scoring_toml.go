@@ -22,11 +22,12 @@ func ScoringTOMLPath(workspaceRoot string) string {
 // scoringTOMLIn is the on-disk shape. Pointer fields mean "key was present" for merge
 // and for distinguishing explicit false in booleans.
 type scoringTOMLIn struct {
-	BM25     *scoringTOMLBM25In    `toml:"bm25"`
-	Fields   *scoringTOMLFieldsIn  `toml:"fields"`
-	Weights  *scoringTOMLWeightsIn `toml:"weights"`
-	Routing  *scoringTOMLRoutingIn `toml:"routing"`
-	Tokenize *scoringTOMLTokenIn   `toml:"tokenize"`
+	BM25      *scoringTOMLBM25In      `toml:"bm25"`
+	Fields    *scoringTOMLFieldsIn    `toml:"fields"`
+	Weights   *scoringTOMLWeightsIn   `toml:"weights"`
+	Routing   *scoringTOMLRoutingIn   `toml:"routing"`
+	Tokenize  *scoringTOMLTokenIn     `toml:"tokenize"`
+	Retrieval *scoringTOMLRetrievalIn `toml:"retrieval"`
 }
 
 type scoringTOMLBM25In struct {
@@ -58,9 +59,35 @@ type scoringTOMLTokenIn struct {
 	UseBigrams *bool `toml:"use_bigrams"`
 }
 
+type scoringTOMLRetrievalIn struct {
+	MinRelevance  *float64                   `toml:"min_relevance"`
+	MaxBlocks     *float64                   `toml:"max_blocks"`
+	BM25          *scoringTOMLRetrievalBM25  `toml:"bm25"`
+	Fields        *scoringTOMLRetrievalField `toml:"fields"`
+	TrustBoost    *scoringTOMLRetrievalTrust `toml:"trust_boost"`
+	AgentAffinity *float64                   `toml:"agent_affinity"`
+}
+
+type scoringTOMLRetrievalBM25 struct {
+	K1 *float64 `toml:"k1"`
+}
+
+type scoringTOMLRetrievalField struct {
+	WeightTitle *float64 `toml:"weight_title"`
+	WeightPath  *float64 `toml:"weight_path"`
+	WeightBody  *float64 `toml:"weight_body"`
+}
+
+type scoringTOMLRetrievalTrust struct {
+	Specs   *float64 `toml:"specs"`
+	Docs    *float64 `toml:"docs"`
+	Context *float64 `toml:"context"`
+	Notes   *float64 `toml:"notes"`
+}
+
 // knownTopLevelTables lists allowed [section] names in scoring.toml.
 var knownTopLevelTables = map[string]struct{}{
-	"bm25": {}, "fields": {}, "weights": {}, "routing": {}, "tokenize": {},
+	"bm25": {}, "fields": {}, "weights": {}, "routing": {}, "tokenize": {}, "retrieval": {},
 }
 
 // allowedKeysInSection maps TOML section (table) name to allowed key names.
@@ -80,6 +107,10 @@ var allowedKeysInSection = map[string]map[string]struct{}{
 	},
 	"tokenize": {
 		"use_bigrams": {},
+	},
+	"retrieval": {
+		"min_relevance": {}, "max_blocks": {}, "agent_affinity": {},
+		"bm25": {}, "fields": {}, "trust_boost": {},
 	},
 }
 
@@ -149,6 +180,45 @@ func mergeScoringTOML(cfg *ScoringConfig, in *scoringTOMLIn) {
 	if in.Tokenize != nil && in.Tokenize.UseBigrams != nil {
 		cfg.UseBigrams = *in.Tokenize.UseBigrams
 	}
+	if in.Retrieval != nil {
+		if in.Retrieval.MinRelevance != nil {
+			cfg.RetrievalMinRelevance = *in.Retrieval.MinRelevance
+		}
+		if in.Retrieval.MaxBlocks != nil {
+			cfg.RetrievalMaxBlocks = *in.Retrieval.MaxBlocks
+		}
+		if in.Retrieval.AgentAffinity != nil {
+			cfg.RetrievalAgentAffinity = *in.Retrieval.AgentAffinity
+		}
+		if in.Retrieval.BM25 != nil && in.Retrieval.BM25.K1 != nil {
+			cfg.RetrievalK1 = *in.Retrieval.BM25.K1
+		}
+		if in.Retrieval.Fields != nil {
+			if in.Retrieval.Fields.WeightTitle != nil {
+				cfg.RetrievalWeightTitle = *in.Retrieval.Fields.WeightTitle
+			}
+			if in.Retrieval.Fields.WeightPath != nil {
+				cfg.RetrievalWeightPath = *in.Retrieval.Fields.WeightPath
+			}
+			if in.Retrieval.Fields.WeightBody != nil {
+				cfg.RetrievalWeightBody = *in.Retrieval.Fields.WeightBody
+			}
+		}
+		if in.Retrieval.TrustBoost != nil {
+			if in.Retrieval.TrustBoost.Specs != nil {
+				cfg.RetrievalTrustBoostSpecs = *in.Retrieval.TrustBoost.Specs
+			}
+			if in.Retrieval.TrustBoost.Docs != nil {
+				cfg.RetrievalTrustBoostDocs = *in.Retrieval.TrustBoost.Docs
+			}
+			if in.Retrieval.TrustBoost.Context != nil {
+				cfg.RetrievalTrustBoostContext = *in.Retrieval.TrustBoost.Context
+			}
+			if in.Retrieval.TrustBoost.Notes != nil {
+				cfg.RetrievalTrustBoostNotes = *in.Retrieval.TrustBoost.Notes
+			}
+		}
+	}
 }
 
 // WriteScoringTOML writes cfg to context/scoring.toml using a canonical section order
@@ -192,6 +262,25 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 		Tokenize struct {
 			UseBigrams bool `toml:"use_bigrams"`
 		} `toml:"tokenize"`
+		Retrieval struct {
+			MinRelevance  float64 `toml:"min_relevance"`
+			MaxBlocks     float64 `toml:"max_blocks"`
+			AgentAffinity float64 `toml:"agent_affinity"`
+			BM25          struct {
+				K1 float64 `toml:"k1"`
+			} `toml:"bm25"`
+			Fields struct {
+				WeightTitle float64 `toml:"weight_title"`
+				WeightPath  float64 `toml:"weight_path"`
+				WeightBody  float64 `toml:"weight_body"`
+			} `toml:"fields"`
+			TrustBoost struct {
+				Specs   float64 `toml:"specs"`
+				Docs    float64 `toml:"docs"`
+				Context float64 `toml:"context"`
+				Notes   float64 `toml:"notes"`
+			} `toml:"trust_boost"`
+		} `toml:"retrieval"`
 	}{}
 	enc.BM25.K1 = cfg.K1
 	enc.Fields.BText = cfg.BText
@@ -207,6 +296,17 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 	enc.Routing.MinCandidateConfidence = cfg.MinCandidateConfidence
 	enc.Routing.IncludeNotes = cfg.IncludeNotes
 	enc.Tokenize.UseBigrams = cfg.UseBigrams
+	enc.Retrieval.MinRelevance = cfg.RetrievalMinRelevance
+	enc.Retrieval.MaxBlocks = cfg.RetrievalMaxBlocks
+	enc.Retrieval.AgentAffinity = cfg.RetrievalAgentAffinity
+	enc.Retrieval.BM25.K1 = cfg.RetrievalK1
+	enc.Retrieval.Fields.WeightTitle = cfg.RetrievalWeightTitle
+	enc.Retrieval.Fields.WeightPath = cfg.RetrievalWeightPath
+	enc.Retrieval.Fields.WeightBody = cfg.RetrievalWeightBody
+	enc.Retrieval.TrustBoost.Specs = cfg.RetrievalTrustBoostSpecs
+	enc.Retrieval.TrustBoost.Docs = cfg.RetrievalTrustBoostDocs
+	enc.Retrieval.TrustBoost.Context = cfg.RetrievalTrustBoostContext
+	enc.Retrieval.TrustBoost.Notes = cfg.RetrievalTrustBoostNotes
 	b, err := toml.Marshal(enc)
 	if err != nil {
 		panic("toml.Marshal scoring config: " + err.Error())
@@ -272,7 +372,7 @@ func walkUnknownRoot(m map[string]any) error {
 	for k, v := range m {
 		if _, known := knownTopLevelTables[k]; !known {
 			if _, isTable := v.(map[string]any); isTable {
-				return fmt.Errorf("unknown top-level table %q (allowed: bm25, fields, weights, routing, tokenize)", k)
+				return fmt.Errorf("unknown top-level table %q (allowed: bm25, fields, weights, routing, tokenize, retrieval)", k)
 			}
 		}
 		allow, ok := allowedKeysInSection[k]
@@ -331,6 +431,39 @@ func ValidateScoringConfig(cfg ScoringConfig) error {
 		return err
 	}
 	if err := validate01("routing.min_candidate_confidence", cfg.MinCandidateConfidence, true); err != nil {
+		return err
+	}
+	if err := validateNonnegFinite("retrieval.min_relevance", cfg.RetrievalMinRelevance); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.max_blocks", cfg.RetrievalMaxBlocks); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.bm25.k1", cfg.RetrievalK1); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.agent_affinity", cfg.RetrievalAgentAffinity); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.fields.weight_title", cfg.RetrievalWeightTitle); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.fields.weight_path", cfg.RetrievalWeightPath); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.fields.weight_body", cfg.RetrievalWeightBody); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.trust_boost.specs", cfg.RetrievalTrustBoostSpecs); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.trust_boost.docs", cfg.RetrievalTrustBoostDocs); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.trust_boost.context", cfg.RetrievalTrustBoostContext); err != nil {
+		return err
+	}
+	if err := validatePositiveFinite("retrieval.trust_boost.notes", cfg.RetrievalTrustBoostNotes); err != nil {
 		return err
 	}
 	return nil

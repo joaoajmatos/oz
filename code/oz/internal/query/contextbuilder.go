@@ -1,6 +1,7 @@
 package query
 
 import (
+	"math"
 	"path/filepath"
 	"strings"
 
@@ -24,8 +25,12 @@ func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, 
 	candidates := buildRetrievalCandidates(workspacePath, g, cfg)
 	retrievalCfg := defaultRetrievalConfig(cfg)
 	scored := contextretrieval.Score(queryTerms, candidates, retrievalCfg, agentName)
+	maxBlocks := int(math.Round(cfg.RetrievalMaxBlocks))
+	if maxBlocks < 1 {
+		maxBlocks = 1
+	}
 	for _, s := range scored {
-		if s.Relevance < retrievalMinRelevanceDefault {
+		if s.Relevance < cfg.RetrievalMinRelevance {
 			continue
 		}
 		blocks = append(blocks, ContextBlock{
@@ -33,7 +38,7 @@ func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, 
 			Section: s.Block.Section,
 			Trust:   s.Block.Trust,
 		})
-		if len(blocks) == retrievalMaxBlocksDefault {
+		if len(blocks) == maxBlocks {
 			break
 		}
 	}
@@ -81,25 +86,24 @@ func tierToTrust(tier convention.Tier) string {
 	}
 }
 
-const (
-	retrievalMinRelevanceDefault = 0.05
-	retrievalMaxBlocksDefault    = 12
-)
-
 func defaultRetrievalConfig(cfg ScoringConfig) contextretrieval.RetrievalConfig {
 	return contextretrieval.RetrievalConfig{
-		K1: cfg.K1,
+		K1: cfg.RetrievalK1,
 		Fields: []bm25.BM25Field{
-			{Name: "title", Weight: 2.0, B: cfg.BText},
-			{Name: "path", Weight: 1.5, B: cfg.BPath},
-			{Name: "body", Weight: 1.0, B: cfg.BText},
+			{Name: "title", Weight: cfg.RetrievalWeightTitle, B: cfg.BText},
+			{Name: "path", Weight: cfg.RetrievalWeightPath, B: cfg.BPath},
+			{Name: "body", Weight: cfg.RetrievalWeightBody, B: cfg.BText},
 		},
 		TrustBoost: map[string]float64{
-			"high":   1.3,
-			"medium": 1.0,
-			"low":    0.6,
+			"specs":   cfg.RetrievalTrustBoostSpecs,
+			"docs":    cfg.RetrievalTrustBoostDocs,
+			"context": cfg.RetrievalTrustBoostContext,
+			"notes":   cfg.RetrievalTrustBoostNotes,
+			"high":    cfg.RetrievalTrustBoostSpecs,
+			"medium":  cfg.RetrievalTrustBoostDocs,
+			"low":     cfg.RetrievalTrustBoostNotes,
 		},
-		AgentAffinityBoost: 1.2,
+		AgentAffinityBoost: cfg.RetrievalAgentAffinity,
 	}
 }
 
@@ -131,6 +135,7 @@ func buildRetrievalCandidates(workspacePath string, g *graph.Graph, cfg ScoringC
 			File:    n.File,
 			Section: n.Section,
 			Trust:   tierToTrust(n.Tier),
+			Tier:    string(n.Tier),
 			TokenFields: map[string][]string{
 				"title": TokenizeMulti(title, cfg.UseBigrams),
 				"path":  TokenizePathsMulti([]string{n.File}, cfg.UseBigrams),

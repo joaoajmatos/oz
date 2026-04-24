@@ -13,6 +13,8 @@ func TestLoadConfig_RoundTripWrite(t *testing.T) {
 	}
 	cfg := DefaultScoringConfig()
 	cfg.ConfidenceThreshold = 0.65
+	cfg.RetrievalMinRelevance = 0.08
+	cfg.RetrievalWeightBody = 1.4
 	if err := WriteScoringTOML(dir, cfg); err != nil {
 		t.Fatal(err)
 	}
@@ -22,6 +24,12 @@ func TestLoadConfig_RoundTripWrite(t *testing.T) {
 	}
 	if got.K1 != cfg.K1 {
 		t.Fatalf("K1 drift after round-trip")
+	}
+	if got.RetrievalMinRelevance != 0.08 {
+		t.Fatalf("RetrievalMinRelevance = %v, want 0.08", got.RetrievalMinRelevance)
+	}
+	if got.RetrievalWeightBody != 1.4 {
+		t.Fatalf("RetrievalWeightBody = %v, want 1.4", got.RetrievalWeightBody)
 	}
 }
 
