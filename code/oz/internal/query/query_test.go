@@ -1,6 +1,7 @@
 package query_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/joaoajmatos/oz/internal/query"
@@ -243,5 +244,60 @@ func mapTrustTier(tier string) string {
 		return "low"
 	default:
 		return tier
+	}
+}
+
+// TestRetrievalForProposal_GoldenTopK pins the top context blocks returned by
+// RetrievalForProposal on the 05_semantic fixture for an MFA query. Re-running
+// this test detects T1 divergence (retrieval-only path drifting from expected
+// block membership) in CI.
+func TestRetrievalForProposal_GoldenTopK(t *testing.T) {
+	suites, err := testws.LoadGoldenSuites(t, "testdata/golden")
+	if err != nil {
+		t.Fatalf("load golden suites: %v", err)
+	}
+	var suite *testws.GoldenSuite
+	for _, s := range suites {
+		if s.Name == "05_semantic" {
+			suite = s
+			break
+		}
+	}
+	if suite == nil {
+		t.Skip("05_semantic suite not found")
+	}
+	ws := suite.Build(t)
+	if err := query.WriteScoringTOML(ws.Path(), query.DefaultScoringConfig()); err != nil {
+		t.Fatalf("write scoring: %v", err)
+	}
+
+	r, err := query.RetrievalForProposal(ws.Path(), "add TOTP-based MFA for organization admin accounts")
+	if err != nil {
+		t.Fatalf("RetrievalForProposal: %v", err)
+	}
+	if len(r.ContextBlocks) == 0 {
+		t.Fatal("expected non-empty context_blocks for MFA query")
+	}
+
+	// Golden pin: an auth or security spec must appear in the top 3.
+	top := r.ContextBlocks
+	if len(top) > 3 {
+		top = top[:3]
+	}
+	found := false
+	for _, b := range top {
+		if strings.Contains(b.File, "auth") || strings.Contains(b.File, "security") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("auth/security spec not in top-3 for MFA query; blocks = %v", r.ContextBlocks)
+	}
+
+	// Trust property: top block must be a spec (high trust) for this query.
+	if r.ContextBlocks[0].Trust != "high" {
+		t.Errorf("expected top block to be high-trust (spec); got trust=%s file=%s",
+			r.ContextBlocks[0].Trust, r.ContextBlocks[0].File)
 	}
 }

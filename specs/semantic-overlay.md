@@ -52,6 +52,7 @@ The shipped edge types are:
 - `implements_spec`
 - `drifted_from`
 - `semantically_similar_to`
+- `implements` — a concept is implemented by a code package (direction: `concept:<slug>` → `code_package:<import-path>`)
 
 ## Staleness contract
 

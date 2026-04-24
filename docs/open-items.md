@@ -60,3 +60,18 @@ AT-03 is considered **not triggered** (3 warnings ≤ threshold of 3).
 ## Pending Decisions
 
 <!-- No pending decisions. -->
+
+## CCA-0 Token Budget Spike (CCA-0-06)
+
+Before the first internal dogfood of `oz context concept add`, measure the maximum
+prompt size produced by the proposal flow on this repo:
+
+- Retrieval slice: up to `retrieval.max_blocks` context blocks (current default 12).
+- Node-ID allowlist: graph node IDs filtered to edge-eligible types (`concept:`, `agent:`,
+  `spec_section:`, `decision:`, `code_package:`).
+- Single-concept JSON response target.
+
+**Action**: run a dry-run prompt builder (CCA-1-01) against `context/graph.json` with
+the current `scoring.toml` defaults and log token counts. Cap allowlist intelligently
+if the total exceeds ~8k tokens. Document the chosen cap approach and default for
+`--retrieval-k` before merging CCA-1.

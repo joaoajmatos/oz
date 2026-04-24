@@ -22,6 +22,12 @@ import (
 // Blocks are ordered by relevance with deterministic tie-breakers.
 // When cfg.IncludeNotes is false, note nodes are omitted from the retrieval corpus
 // and "notes/" is added to Excluded when the graph has notes.
+//
+// Proposal mode: pass agentName="" to disable agent routing effects.
+// With an empty agentName: affinity boost is 1.0 for all blocks (no connected-agent
+// boost), and ensureScopeSurvivor is a no-op (BuildScopeForAgent returns nil).
+// ensureCodePackageSurvivor still fires for code-suggesting queries. Trust boosts
+// still apply. This is the retrieval contract used by RetrievalForProposal (CCA-0).
 func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, queryTerms []string, cfg ScoringConfig) (blocks []ContextBlock, excluded []string, scored []contextretrieval.ScoredBlock) {
 	candidates := buildRetrievalCandidates(workspacePath, g, cfg)
 	retrievalCfg := defaultRetrievalConfig(cfg)
