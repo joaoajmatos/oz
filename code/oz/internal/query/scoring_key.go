@@ -86,10 +86,32 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Kind: ScoringKindFloat,
 	},
 	{
+		Key:   "weights.skills",
+		Title: "Weight for skills (backtick path lines)",
+		Description: `Boost for tokens from the agent Skills section. Fills routing gaps for terms that ` +
+			`only appear there (e.g. “graph”, “MCP”) without raising readchain IDF noise.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "weights.context_topics",
+		Title: "Weight for context topics list",
+		Description: `Boost for the Context topics section. Use for query hints that are deliberately ` +
+			`authored for oz context query without duplicating the whole role text.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "weights.rules",
+		Title: "Weight for rules file paths",
+		Description: `Boost for path tokens from the Rules section. Lower than role; useful when ` +
+			`rules paths disambiguate agents.`,
+		Kind: ScoringKindFloat,
+	},
+	{
 		Key:   "weights.out_of_scope_penalty",
 		Title: "Out-of-scope penalty per term",
-		Description: `Subtracted for each query term that matches the agent’s out-of-scope list. ` +
-			`Higher values push “wrong topic” traffic away from that agent even when other fields match.`,
+		Description: `Subtracted for each query term that matches the agent’s out-of-scope list, unless ` +
+			`the same term also appears in a positive routing field (role, scope, skills, etc.). ` +
+			`Higher values push “wrong topic” traffic away when the term is OOS-only.`,
 		Kind: ScoringKindFloat,
 	},
 	{
@@ -320,6 +342,12 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.WeightResponsibilities, nil
 	case "weights.readchain":
 		return cfg.WeightReadchain, nil
+	case "weights.skills":
+		return cfg.WeightSkills, nil
+	case "weights.context_topics":
+		return cfg.WeightContextTopics, nil
+	case "weights.rules":
+		return cfg.WeightRules, nil
 	case "weights.out_of_scope_penalty":
 		return cfg.OutOfScopePenalty, nil
 	case "routing.confidence_threshold":
@@ -451,6 +479,15 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 	case "weights.readchain":
 		x, _ := v.(float64)
 		cfg.WeightReadchain = x
+	case "weights.skills":
+		x, _ := v.(float64)
+		cfg.WeightSkills = x
+	case "weights.context_topics":
+		x, _ := v.(float64)
+		cfg.WeightContextTopics = x
+	case "weights.rules":
+		x, _ := v.(float64)
+		cfg.WeightRules = x
 	case "weights.out_of_scope_penalty":
 		x, _ := v.(float64)
 		cfg.OutOfScopePenalty = x

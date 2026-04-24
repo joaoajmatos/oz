@@ -15,6 +15,10 @@ type ScoringConfig struct {
 	WeightRole             float64
 	WeightResponsibilities float64
 	WeightReadchain        float64
+	// BM25F weights for agent Skills, Context topics, and Rules (path tokens).
+	WeightSkills        float64
+	WeightContextTopics float64
+	WeightRules         float64
 	// Out-of-scope penalty subtracted per matching query term.
 	OutOfScopePenalty float64
 
@@ -72,6 +76,9 @@ func DefaultScoringConfig() ScoringConfig {
 		WeightRole:                        2.5,
 		WeightResponsibilities:            2.5,
 		WeightReadchain:                   0.0, // shared readchains pollute IDF; disabled
+		WeightSkills:                      0.6,
+		WeightContextTopics:               0.6,
+		WeightRules:                       0.5,
 		OutOfScopePenalty:                 2.5,
 		ConfidenceThreshold:               0.7,
 		MinScore:                          0.01, // low threshold: prefer routing to best guess

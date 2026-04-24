@@ -89,7 +89,18 @@ for the design rationale.
 ### Routing (unchanged)
 
 - The BM25F **routing** corpus is agent-only; code nodes and context blocks
-  do not participate in agent selection.
+  do not participate in agent selection. This is intentional: package and file
+  names under `code/` are not part of the router. The router tokenizes the
+  full **Skills** and **Context topics** section bodies (not only backtick
+  path lines), plus Role, Responsibilities, scope, read-chain, and Rules
+  paths. After changing this behavior, run `oz context build` so
+  `context/graph.json` includes the new `skills_body` and
+  `context_topics_body` fields. Workspace-wide code retrieval is the separate
+  retrieval pipeline.
+- The out-of-scope penalty does **not** apply to a query term when that same
+  stem also appears in a positive routing field (role, scope, skills, etc.),
+  so shared words like `code` in “do not write code” lists do not zero the
+  score for queries that also match in-scope text.
 - `scope` is the full declared scope of the winning agent, not a
   query-specific subset.
 

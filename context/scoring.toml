@@ -14,6 +14,9 @@ scope = 4.0
 role = 2.5
 responsibilities = 2.5
 readchain = 0.0
+skills = 0.6
+context_topics = 0.6
+rules = 0.5
 out_of_scope_penalty = 2.5
 
 [routing]

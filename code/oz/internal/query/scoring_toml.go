@@ -44,6 +44,9 @@ type scoringTOMLWeightsIn struct {
 	Role             *float64 `toml:"role"`
 	Responsibilities *float64 `toml:"responsibilities"`
 	Readchain        *float64 `toml:"readchain"`
+	Skills           *float64 `toml:"skills"`
+	ContextTopics    *float64 `toml:"context_topics"`
+	Rules            *float64 `toml:"rules"`
 	OutOfScope       *float64 `toml:"out_of_scope_penalty"`
 }
 
@@ -112,7 +115,8 @@ var allowedKeysInSection = map[string]map[string]struct{}{
 	},
 	"weights": {
 		"scope": {}, "role": {}, "responsibilities": {},
-		"readchain": {}, "out_of_scope_penalty": {},
+		"readchain": {}, "skills": {}, "context_topics": {}, "rules": {},
+		"out_of_scope_penalty": {},
 	},
 	"routing": {
 		"confidence_threshold": {}, "min_score": {},
@@ -171,6 +175,15 @@ func mergeScoringTOML(cfg *ScoringConfig, in *scoringTOMLIn) {
 		}
 		if in.Weights.Readchain != nil {
 			cfg.WeightReadchain = *in.Weights.Readchain
+		}
+		if in.Weights.Skills != nil {
+			cfg.WeightSkills = *in.Weights.Skills
+		}
+		if in.Weights.ContextTopics != nil {
+			cfg.WeightContextTopics = *in.Weights.ContextTopics
+		}
+		if in.Weights.Rules != nil {
+			cfg.WeightRules = *in.Weights.Rules
 		}
 		if in.Weights.OutOfScope != nil {
 			cfg.OutOfScopePenalty = *in.Weights.OutOfScope
@@ -291,11 +304,14 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 			BPath float64 `toml:"b_path"`
 		} `toml:"fields"`
 		Weights struct {
-			Scope             float64 `toml:"scope"`
-			Role              float64 `toml:"role"`
-			Responsibilities  float64 `toml:"responsibilities"`
-			Readchain         float64 `toml:"readchain"`
-			OutOfScopePenalty float64 `toml:"out_of_scope_penalty"`
+			Scope              float64 `toml:"scope"`
+			Role               float64 `toml:"role"`
+			Responsibilities   float64 `toml:"responsibilities"`
+			Readchain          float64 `toml:"readchain"`
+			Skills             float64 `toml:"skills"`
+			ContextTopics      float64 `toml:"context_topics"`
+			Rules              float64 `toml:"rules"`
+			OutOfScopePenalty  float64 `toml:"out_of_scope_penalty"`
 		} `toml:"weights"`
 		Routing struct {
 			Confidence             float64 `toml:"confidence_threshold"`
@@ -344,6 +360,9 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 	enc.Weights.Role = cfg.WeightRole
 	enc.Weights.Responsibilities = cfg.WeightResponsibilities
 	enc.Weights.Readchain = cfg.WeightReadchain
+	enc.Weights.Skills = cfg.WeightSkills
+	enc.Weights.ContextTopics = cfg.WeightContextTopics
+	enc.Weights.Rules = cfg.WeightRules
 	enc.Weights.OutOfScopePenalty = cfg.OutOfScopePenalty
 	enc.Routing.Confidence = cfg.ConfidenceThreshold
 	enc.Routing.MinScore = cfg.MinScore
@@ -479,6 +498,15 @@ func ValidateScoringConfig(cfg ScoringConfig) error {
 		return err
 	}
 	if err := validateNonnegFinite("weights.readchain", cfg.WeightReadchain); err != nil {
+		return err
+	}
+	if err := validateNonnegFinite("weights.skills", cfg.WeightSkills); err != nil {
+		return err
+	}
+	if err := validateNonnegFinite("weights.context_topics", cfg.WeightContextTopics); err != nil {
+		return err
+	}
+	if err := validateNonnegFinite("weights.rules", cfg.WeightRules); err != nil {
 		return err
 	}
 	if err := validatePositiveFinite("weights.out_of_scope_penalty", cfg.OutOfScopePenalty); err != nil {

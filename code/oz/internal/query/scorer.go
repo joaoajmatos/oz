@@ -36,11 +36,18 @@ func ComputeBM25F(terms []string, docs []AgentDoc, cfg ScoringConfig) []Score {
 		score := bm25.BM25Score(terms, doc.Fields(), fields, cfg.K1, avgLen, df, len(docs))
 
 		// Out-of-scope penalty: subtract for each query term that appears
-		// in the agent's out-of-scope declaration.
+		// in the agent's out-of-scope declaration, unless the same term also
+		// appears in a positive routing field (role, scope, etc.). That avoids
+		// zeroing generic stems like "code" that appear in both in-scope prose
+		// and "do not do X" bullets.
 		for _, term := range terms {
-			if containsTerm(term, doc.OutOfScope) {
-				score -= cfg.OutOfScopePenalty * (1.0 / float64(len(terms)))
+			if !containsTerm(term, doc.OutOfScope) {
+				continue
 			}
+			if doc.termMatchesPositiveRoutingFields(term) {
+				continue
+			}
+			score -= cfg.OutOfScopePenalty * (1.0 / float64(len(terms)))
 		}
 		if score < 0 {
 			score = 0
@@ -59,6 +66,9 @@ func agentBM25Fields(cfg ScoringConfig) []bm25.BM25Field {
 		{Name: AgentFieldRole, Weight: cfg.WeightRole, B: cfg.BText},
 		{Name: AgentFieldResponsibilities, Weight: cfg.WeightResponsibilities, B: cfg.BText},
 		{Name: AgentFieldReadChain, Weight: cfg.WeightReadchain, B: cfg.BPath},
+		{Name: AgentFieldSkills, Weight: cfg.WeightSkills, B: cfg.BPath},
+		{Name: AgentFieldContextTopics, Weight: cfg.WeightContextTopics, B: cfg.BText},
+		{Name: AgentFieldRules, Weight: cfg.WeightRules, B: cfg.BPath},
 	}
 }
 

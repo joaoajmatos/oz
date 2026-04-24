@@ -13,15 +13,17 @@ import (
 // ParsedAgent holds all fields extracted from an AGENT.md file.
 // All fields are optional — the parser is tolerant and returns what it finds.
 type ParsedAgent struct {
-	Name             string
-	Role             string
-	ReadChain        []string
-	Rules            []string
-	Skills           []string
-	Responsibilities string
-	Scope            []string // extracted from Responsibilities bullet items
-	OutOfScope       string
-	ContextTopics    []string
+	Name              string
+	Role              string
+	ReadChain         []string
+	Rules             []string
+	Skills            []string
+	Responsibilities  string
+	Scope             []string // extracted from Responsibilities bullet items
+	OutOfScope        string
+	SkillsBody        string // full Skills section (prose + lists; for routing)
+	ContextTopics     []string
+	ContextTopicsBody string // full Context topics section (for routing)
 }
 
 // ParsedSection is a single heading + content block from a markdown file.
@@ -55,6 +57,7 @@ func ParseAgentMD(absPath, agentName string) (*ParsedAgent, error) {
 
 		case "skills":
 			a.Skills = extractBacktickPaths(sec.Content)
+			a.SkillsBody = strings.TrimSpace(sec.Content)
 
 		case "responsibilities":
 			a.Responsibilities, a.Scope = parseResponsibilities(sec.Content)
@@ -64,6 +67,7 @@ func ParseAgentMD(absPath, agentName string) (*ParsedAgent, error) {
 
 		case "context topics", "context-topics":
 			a.ContextTopics = extractListItems(sec.Content)
+			a.ContextTopicsBody = strings.TrimSpace(sec.Content)
 		}
 	}
 
@@ -84,18 +88,20 @@ func ParseMarkdownSections(absPath string) ([]ParsedSection, error) {
 func AgentNode(a *ParsedAgent, file string) graph.Node {
 	id := "agent:" + a.Name
 	return graph.Node{
-		ID:               id,
-		Type:             graph.NodeTypeAgent,
-		File:             file,
-		Name:             a.Name,
-		Role:             a.Role,
-		Scope:            nilIfEmpty(a.Scope),
-		Responsibilities: a.Responsibilities,
-		OutOfScope:       a.OutOfScope,
-		ReadChain:        nilIfEmpty(a.ReadChain),
-		Rules:            nilIfEmpty(a.Rules),
-		Skills:           nilIfEmpty(a.Skills),
-		ContextTopics:    nilIfEmpty(a.ContextTopics),
+		ID:                id,
+		Type:              graph.NodeTypeAgent,
+		File:              file,
+		Name:              a.Name,
+		Role:              a.Role,
+		Scope:             nilIfEmpty(a.Scope),
+		Responsibilities:  a.Responsibilities,
+		OutOfScope:        a.OutOfScope,
+		ReadChain:         nilIfEmpty(a.ReadChain),
+		Rules:             nilIfEmpty(a.Rules),
+		Skills:            nilIfEmpty(a.Skills),
+		SkillsBody:        a.SkillsBody,
+		ContextTopics:     nilIfEmpty(a.ContextTopics),
+		ContextTopicsBody: a.ContextTopicsBody,
 	}
 }
 

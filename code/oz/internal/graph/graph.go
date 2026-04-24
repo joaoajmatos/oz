@@ -95,7 +95,13 @@ type Node struct {
 	ReadChain        []string `json:"read_chain,omitempty"`
 	Rules            []string `json:"rules,omitempty"`
 	Skills           []string `json:"skills,omitempty"`
-	ContextTopics    []string `json:"context_topics,omitempty"`
+	// SkillsBody is the full Skills section text (for routing); paths in Skills
+	// are a subset extracted for display and tooling.
+	SkillsBody    string   `json:"skills_body,omitempty"`
+	ContextTopics []string `json:"context_topics,omitempty"`
+	// ContextTopicsBody is the full Context topics section (for routing). List
+	// items in ContextTopics are also used by audit/orphans.
+	ContextTopicsBody string `json:"context_topics_body,omitempty"`
 }
 
 // Edge is a directed relationship between two nodes.

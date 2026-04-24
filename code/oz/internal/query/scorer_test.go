@@ -75,6 +75,38 @@ func TestComputeBM25F_BigramInQueryMatchesDoc(t *testing.T) {
 	}
 }
 
+func TestComputeBM25F_OOSSkippedWhenTermAlsoInPositiveField(t *testing.T) {
+	// "code" appears in both out_of_scope and role — penalty must not fire for "code",
+	// or the net score collapses to zero (regression: generic stems in OOS lists).
+	docs := []AgentDoc{
+		{
+			Name:             "worker",
+			Scope:            nil,
+			Role:             TokenizeMulti("Implements Go code in internal packages", false),
+			Responsibilities: TokenizeMulti("Run tests and ship", false),
+			OutOfScope:       TokenizeMulti("Modifying other teams code in legacy repos", false),
+		},
+		{
+			Name:             "docs",
+			Scope:            nil,
+			Role:             TokenizeMulti("Writes prose documentation only", false),
+			Responsibilities: TokenizeMulti("Edit mkdocs and tutorials", false),
+			OutOfScope:       TokenizeMulti("implementation code in services", false),
+		},
+	}
+	terms := Tokenize("code")
+	cfg := DefaultScoringConfig()
+	scores := ComputeBM25F(terms, docs, cfg)
+	worker := scoreFor(scores, "worker")
+	docsScore := scoreFor(scores, "docs")
+	if worker <= docsScore {
+		t.Errorf("expected worker to outrank docs on 'code' when OOS does not penalize in-scope 'code': worker=%.4f docs=%.4f", worker, docsScore)
+	}
+	if worker < cfg.MinScore {
+		t.Errorf("expected worker score >= min_score (%.4f), got %.4f", cfg.MinScore, worker)
+	}
+}
+
 func TestComputeBM25F_OutOfScopePenalty(t *testing.T) {
 	docs := []AgentDoc{
 		{
