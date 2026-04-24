@@ -30,6 +30,10 @@ type Result struct {
 	// implements edges exist.
 	ImplementingPackages []string `json:"implementing_packages,omitempty"`
 
+	// CodeEntryPoints lists ranked symbols relevant to code-level queries.
+	// Omitted when no eligible symbols are found.
+	CodeEntryPoints []CodeEntryPoint `json:"code_entry_points,omitempty"`
+
 	// Excluded lists path prefixes that were filtered from context blocks.
 	// notes/ is excluded by default unless --include-notes is set.
 	Excluded []string `json:"excluded,omitempty"`
@@ -55,4 +59,14 @@ type ContextBlock struct {
 type CandidateAgent struct {
 	Name       string  `json:"name"`
 	Confidence float64 `json:"confidence"`
+}
+
+// CodeEntryPoint is a symbol-level retrieval hit for implementation queries.
+type CodeEntryPoint struct {
+	File      string  `json:"file"`
+	Symbol    string  `json:"symbol"`
+	Kind      string  `json:"kind"`
+	Line      int     `json:"line"`
+	Package   string  `json:"package"`
+	Relevance float64 `json:"relevance,omitempty"`
 }
