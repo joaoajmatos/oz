@@ -199,16 +199,22 @@ func effectiveConceptRelevanceThreshold(scores map[string]float64, cfg ScoringCo
 	return eff
 }
 
-func loadImplementingPackages(workspacePath string, queryTerms []string) []string {
-	cfg := LoadConfig(workspacePath)
+// packageBestConceptReachScores returns, for each code package import path, the
+// maximum query→concept BM25 score among concepts that (a) pass the
+// effective relevance floor and (b) have a reviewed implements edge to that
+// package. Matches loadImplementingPackages ranking input; conceptUseBigrams
+// mirrors scoreConcepts (loadImplementingPackages uses false; code entry
+// points use cfg.UseBigrams to stay aligned with previous eligiblePackages
+// behavior).
+func packageBestConceptReachScores(workspacePath string, queryTerms []string, cfg ScoringConfig, conceptUseBigrams bool) map[string]float64 {
+	if len(queryTerms) == 0 {
+		return nil
+	}
 	o, err := semantic.Load(workspacePath)
 	if err != nil || o == nil {
 		return nil
 	}
-	if len(queryTerms) == 0 {
-		return nil
-	}
-	conceptScores := scoreConcepts(o.Concepts, queryTerms, cfg, false)
+	conceptScores := scoreConcepts(o.Concepts, queryTerms, cfg, conceptUseBigrams)
 	if len(conceptScores) == 0 {
 		return nil
 	}
@@ -230,6 +236,15 @@ func loadImplementingPackages(workspacePath string, queryTerms []string) []strin
 			packageBest[pkg] = score
 		}
 	}
+	if len(packageBest) == 0 {
+		return nil
+	}
+	return packageBest
+}
+
+func loadImplementingPackages(workspacePath string, queryTerms []string) []string {
+	cfg := LoadConfig(workspacePath)
+	packageBest := packageBestConceptReachScores(workspacePath, queryTerms, cfg, false)
 	if len(packageBest) == 0 {
 		return nil
 	}
@@ -264,6 +279,13 @@ func loadImplementingPackages(workspacePath string, queryTerms []string) []strin
 // codeTrustBoostSymbols is the PRD/ADR default trust multiplier for code-tier
 // material (not yet a separate scoring.toml key).
 const codeTrustBoostSymbols = 0.9
+
+// codeEntryRelevanceTieMaxDelta: when two symbols' raw relevance scores are
+// within this absolute gap, the engine treats the first sort key as tied and
+// uses pkgConceptScore, then import-path specificity, then file/symbol order.
+// This is what lets .../drift and .../drift/specscan (often ~0.1 apart on path
+// length) be ordered by the semantic package list instead of raw BM25 only.
+const codeEntryRelevanceTieMaxDelta = 0.12
 
 // codeSymbolFieldDoc adapts a code_symbol node to bm25.FieldDoc.
 type codeSymbolFieldDoc struct {
@@ -305,7 +327,7 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 		return nil
 	}
 	scope := BuildScopeForAgent(g, winningAgent)
-	eligiblePackages := eligiblePackagesByConcept(workspacePath, queryTerms, cfg)
+	packageConceptReach := eligiblePackagesByConcept(workspacePath, queryTerms, cfg)
 
 	var nodes []graph.Node
 	for _, n := range g.Nodes {
@@ -313,7 +335,7 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 			continue
 		}
 		inScope := fileInAnyScope(n.File, scope)
-		byConcept := eligiblePackages[n.Package]
+		_, byConcept := packageConceptReach[n.Package]
 		if !inScope && !byConcept {
 			continue
 		}
@@ -338,14 +360,16 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 	}
 
 	type scored struct {
-		point CodeEntryPoint
-		rel   float64
-		orig  int
+		point           CodeEntryPoint
+		rel             float64
+		pkgConceptScore float64
+		orig            int
 	}
 	scoredList := make([]scored, 0, len(nodes))
 	for i, n := range nodes {
 		inScope := fileInAnyScope(n.File, scope)
-		byConcept := eligiblePackages[n.Package]
+		pkgCS, inConceptMap := packageConceptReach[n.Package]
+		byConcept := inConceptMap
 		bm := bm25.BM25Score(
 			queryTerms,
 			codeSymbolFieldTokens(n, cfg.UseBigrams),
@@ -371,12 +395,14 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 				Package:   n.Package,
 				Relevance: rel,
 			},
-			rel:  rel,
-			orig: i,
+			rel:             rel,
+			pkgConceptScore: pkgCS,
+			orig:            i,
 		})
 	}
 
-	// Drop below min_relevance, then sort by relevance DESC with deterministic ties.
+	// Drop below min_relevance, then sort with near-tie clustering (see
+	// codeEntryRelevanceTieMaxDelta).
 	passed := scoredList[:0]
 	for _, s := range scoredList {
 		if s.rel >= cfg.RetrievalMinRelevance {
@@ -387,8 +413,19 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 		return nil
 	}
 	sort.SliceStable(passed, func(i, j int) bool {
-		if passed[i].rel != passed[j].rel {
-			return passed[i].rel > passed[j].rel
+		ri, rj := passed[i].rel, passed[j].rel
+		d := math.Abs(ri - rj)
+		if d > 1e-9 && d > codeEntryRelevanceTieMaxDelta {
+			return ri > rj
+		}
+		if passed[i].pkgConceptScore != passed[j].pkgConceptScore {
+			return passed[i].pkgConceptScore > passed[j].pkgConceptScore
+		}
+		// When BM25 and concept-reach match, prefer more specific import paths
+		// (e.g. .../drift/specscan over .../drift) so subpackage entry points
+		// are not always cut off by file-path lexicographic order.
+		if passed[i].point.Package != passed[j].point.Package {
+			return passed[i].point.Package > passed[j].point.Package
 		}
 		if passed[i].point.File != passed[j].point.File {
 			return passed[i].point.File < passed[j].point.File
@@ -416,38 +453,12 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 	return out
 }
 
-func eligiblePackagesByConcept(workspacePath string, queryTerms []string, cfg ScoringConfig) map[string]bool {
-	if len(queryTerms) == 0 {
-		return nil
-	}
-	o, err := semantic.Load(workspacePath)
-	if err != nil || o == nil {
-		return nil
-	}
-	conceptScores := scoreConcepts(o.Concepts, queryTerms, cfg, cfg.UseBigrams)
-	threshold := effectiveConceptRelevanceThreshold(conceptScores, cfg)
-	relevantConcepts := make(map[string]bool)
-	for id, score := range conceptScores {
-		if score >= threshold {
-			relevantConcepts[id] = true
-		}
-	}
-	if len(relevantConcepts) == 0 {
-		return nil
-	}
-	out := make(map[string]bool)
-	for _, e := range o.Edges {
-		if e.Type != semantic.EdgeTypeImplements || !e.Reviewed {
-			continue
-		}
-		if !relevantConcepts[e.From] {
-			continue
-		}
-		if pkg := packageFromImplementsTo(e.To); pkg != "" {
-			out[pkg] = true
-		}
-	}
-	return out
+// eligiblePackagesByConcept returns the maximum query→concept relevance score
+// for each import path reachable via a passing concept. Used to rank
+// same-BM25 code symbols (tie-break) and to determine concept eligibility in
+// loadCodeEntryPoints.
+func eligiblePackagesByConcept(workspacePath string, queryTerms []string, cfg ScoringConfig) map[string]float64 {
+	return packageBestConceptReachScores(workspacePath, queryTerms, cfg, cfg.UseBigrams)
 }
 
 func scoreConcepts(concepts []semantic.Concept, queryTerms []string, cfg ScoringConfig, useBigrams bool) map[string]float64 {

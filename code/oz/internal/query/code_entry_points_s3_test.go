@@ -198,3 +198,58 @@ func TestLoadCodeEntryPoints_RankedByRelevanceDesc(t *testing.T) {
 		t.Fatalf("expected descending relevance, got %v then %v", got[0].Relevance, got[1].Relevance)
 	}
 }
+
+// When BM25 relevance ties (e.g. path weight 0, same symbol name), a more
+// specific import path (subpackage) may rank before the parent so scan.go is
+// not always cut by lexicographic file order under a low max_code_entry_points cap.
+func TestLoadCodeEntryPoints_TieBreakDeeperPackageFirst(t *testing.T) {
+	workspace := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(workspace, "context"), 0755); err != nil {
+		t.Fatalf("mkdir context: %v", err)
+	}
+	overlay := &semantic.Overlay{
+		SchemaVersion: semantic.SchemaVersion,
+		Concepts: []semantic.Concept{
+			{
+				ID: "concept:drift", Name: "drift", Description: "drift in audit",
+			},
+		},
+		Edges: []semantic.ConceptEdge{
+			{From: "concept:drift", To: "code_package:example.com/parent/drift", Type: semantic.EdgeTypeImplements, Reviewed: true},
+			{From: "concept:drift", To: "code_package:example.com/parent/drift/specscan", Type: semantic.EdgeTypeImplements, Reviewed: true},
+		},
+	}
+	if err := semantic.Write(workspace, overlay); err != nil {
+		t.Fatalf("write semantic: %v", err)
+	}
+
+	// All symbols share the same name/kind; path field disabled so BM25 matches tie.
+	// parent has three files (sorted before specscan/ only by file path in old order).
+	// one child — must land first with deeper-package tie-break.
+	pDrift := "example.com/parent/drift"
+	pSpec := "example.com/parent/drift/specscan"
+	g := &graph.Graph{
+		Nodes: []graph.Node{
+			{ID: "a", Type: graph.NodeTypeAgent, Name: "a", Scope: []string{"code/**"}},
+			{ID: "1", Type: graph.NodeTypeCodeSymbol, File: "code/aa.go", Name: "F", SymbolKind: "func", Line: 1, Package: pDrift},
+			{ID: "2", Type: graph.NodeTypeCodeSymbol, File: "code/bb.go", Name: "F", SymbolKind: "func", Line: 1, Package: pDrift},
+			{ID: "3", Type: graph.NodeTypeCodeSymbol, File: "code/cc.go", Name: "F", SymbolKind: "func", Line: 1, Package: pDrift},
+			{ID: "4", Type: graph.NodeTypeCodeSymbol, File: "code/dd/scan.go", Name: "F", SymbolKind: "func", Line: 1, Package: pSpec},
+		},
+	}
+
+	cfg := DefaultScoringConfig()
+	cfg.UseBigrams = false
+	cfg.RetrievalMinRelevance = 0
+	cfg.RetrievalMaxCodeEntryPoints = 1
+	cfg.RetrievalWeightPath = 0
+	// Drift in query so the overlay concept is relevant; path weight 0 so symbol
+	// rows tie (title "F" only).
+	got := loadCodeEntryPoints(workspace, g, "a", []string{"drift"}, cfg)
+	if len(got) != 1 {
+		t.Fatalf("expected 1, got %d: %+v", len(got), got)
+	}
+	if got[0].Package != pSpec {
+		t.Fatalf("expected subpackage first on tie, got %q (want %q): %#v", got[0].Package, pSpec, got[0])
+	}
+}
