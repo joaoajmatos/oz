@@ -3,7 +3,7 @@ package contextretrieval
 import (
 	"sort"
 
-	"github.com/joaoajmatos/oz/internal/query"
+	"github.com/joaoajmatos/oz/internal/query/bm25"
 )
 
 // Block is one retrieval candidate for context_blocks ranking.
@@ -27,7 +27,7 @@ func (b Block) Fields() map[string][]string {
 // RetrievalConfig configures BM25 and multiplicative boosts for retrieval scoring.
 type RetrievalConfig struct {
 	K1     float64
-	Fields []query.BM25Field
+	Fields []bm25.BM25Field
 
 	TrustBoost         map[string]float64
 	AgentAffinityBoost float64
@@ -55,16 +55,16 @@ func Score(queryTokens []string, blocks []Block, cfg RetrievalConfig, winningAge
 		return nil
 	}
 
-	docs := make([]query.FieldDoc, len(blocks))
+	docs := make([]bm25.FieldDoc, len(blocks))
 	for i := range blocks {
 		docs[i] = blocks[i]
 	}
-	avgLen := query.AvgFieldLengths(docs, cfg.Fields)
-	df := query.ComputeDF(docs)
+	avgLen := bm25.AvgFieldLengths(docs, cfg.Fields)
+	df := bm25.ComputeDF(docs)
 
 	scored := make([]ScoredBlock, len(blocks))
 	for i, b := range blocks {
-		bm25 := query.BM25Score(
+		bm25 := bm25.BM25Score(
 			queryTokens,
 			b.Fields(),
 			cfg.Fields,

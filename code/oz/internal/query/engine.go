@@ -68,7 +68,7 @@ func runRouting(workspacePath, queryText string, opts Options) routingState {
 		return st
 	}
 
-	blocks, excluded := BuildContextBlocks(g, st.Route.Agent, st.Cfg)
+	blocks, excluded := BuildContextBlocks(g, st.Route.Agent, st.Terms, st.Cfg)
 	scope := BuildScopeForAgent(g, st.Route.Agent)
 	st.Result = Result{
 		Agent:         st.Route.Agent,

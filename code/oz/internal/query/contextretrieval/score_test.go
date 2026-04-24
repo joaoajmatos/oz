@@ -3,13 +3,13 @@ package contextretrieval
 import (
 	"testing"
 
-	"github.com/joaoajmatos/oz/internal/query"
+	"github.com/joaoajmatos/oz/internal/query/bm25"
 )
 
 func TestScore_DeterministicTieBreak(t *testing.T) {
 	cfg := RetrievalConfig{
 		K1: 1.2,
-		Fields: []query.BM25Field{
+		Fields: []bm25.BM25Field{
 			{Name: "title", Weight: 1.0, B: 0.75},
 		},
 		TrustBoost: map[string]float64{
@@ -67,7 +67,7 @@ func TestScore_DeterministicTieBreak(t *testing.T) {
 func TestScore_StableAcrossRepeatedRuns(t *testing.T) {
 	cfg := RetrievalConfig{
 		K1: 1.2,
-		Fields: []query.BM25Field{
+		Fields: []bm25.BM25Field{
 			{Name: "title", Weight: 2.0, B: 0.75},
 			{Name: "body", Weight: 1.0, B: 0.75},
 		},

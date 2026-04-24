@@ -3,6 +3,8 @@ package query
 import (
 	"math"
 	"sort"
+
+	"github.com/joaoajmatos/oz/internal/query/bm25"
 )
 
 // Score holds the BM25F score for one agent before softmax.
@@ -22,16 +24,16 @@ func ComputeBM25F(terms []string, docs []AgentDoc, cfg ScoringConfig) []Score {
 
 	fields := agentBM25Fields(cfg)
 
-	generic := make([]FieldDoc, len(docs))
+	generic := make([]bm25.FieldDoc, len(docs))
 	for i, d := range docs {
 		generic[i] = d
 	}
-	avgLen := AvgFieldLengths(generic, fields)
-	df := ComputeDF(generic)
+	avgLen := bm25.AvgFieldLengths(generic, fields)
+	df := bm25.ComputeDF(generic)
 
 	scores := make([]Score, len(docs))
 	for i, doc := range docs {
-		score := BM25Score(terms, doc.Fields(), fields, cfg.K1, avgLen, df, len(docs))
+		score := bm25.BM25Score(terms, doc.Fields(), fields, cfg.K1, avgLen, df, len(docs))
 
 		// Out-of-scope penalty: subtract for each query term that appears
 		// in the agent's out-of-scope declaration.
@@ -51,8 +53,8 @@ func ComputeBM25F(terms []string, docs []AgentDoc, cfg ScoringConfig) []Score {
 
 // agentBM25Fields returns the field set used to score the agent-routing
 // corpus, in a stable order (matters for floating-point reproducibility).
-func agentBM25Fields(cfg ScoringConfig) []BM25Field {
-	return []BM25Field{
+func agentBM25Fields(cfg ScoringConfig) []bm25.BM25Field {
+	return []bm25.BM25Field{
 		{Name: AgentFieldScope, Weight: cfg.WeightScope, B: cfg.BPath},
 		{Name: AgentFieldRole, Weight: cfg.WeightRole, B: cfg.BText},
 		{Name: AgentFieldResponsibilities, Weight: cfg.WeightResponsibilities, B: cfg.BText},

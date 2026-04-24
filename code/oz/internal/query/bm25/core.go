@@ -1,18 +1,13 @@
-package query
+package bm25
 
 import "math"
 
-// FieldDoc is the generic shape consumed by the BM25 core. Any document that
-// exposes named tokenised fields can be scored — agents via AgentDoc, retrieval
-// blocks via the Sprint 2 contextretrieval corpus, and so on.
-//
-// Implementations should return a stable map per call; the core does not mutate it.
+// FieldDoc is the generic shape consumed by the BM25 core.
 type FieldDoc interface {
 	Fields() map[string][]string
 }
 
-// BM25Field describes one scored field: its name in the FieldDoc map, its
-// weight in the pseudo-TF sum, and its B length-normalisation factor.
+// BM25Field describes one scored field.
 type BM25Field struct {
 	Name   string
 	Weight float64
@@ -20,8 +15,6 @@ type BM25Field struct {
 }
 
 // NormTF returns the BM25F normalised term frequency for one field.
-// tf is the raw count; fieldLen is the token length of this field in the doc;
-// avgLen is the mean field length across the corpus; b is the normalisation factor.
 func NormTF(tf, fieldLen int, avgLen, b float64) float64 {
 	if tf == 0 || fieldLen == 0 {
 		return 0
@@ -33,8 +26,7 @@ func NormTF(tf, fieldLen int, avgLen, b float64) float64 {
 	return float64(tf) / norm
 }
 
-// AvgFieldLengths returns the mean token length of each configured field
-// across the corpus. Floors at 1 to avoid divide-by-zero downstream.
+// AvgFieldLengths returns the mean token length of each configured field.
 func AvgFieldLengths(docs []FieldDoc, fields []BM25Field) map[string]float64 {
 	out := make(map[string]float64, len(fields))
 	if len(docs) == 0 {
@@ -58,7 +50,6 @@ func AvgFieldLengths(docs []FieldDoc, fields []BM25Field) map[string]float64 {
 }
 
 // ComputeDF returns how many documents contain each term across any field.
-// A term that appears in multiple fields of the same doc counts once.
 func ComputeDF(docs []FieldDoc) map[string]int {
 	df := make(map[string]int)
 	for _, d := range docs {
@@ -75,9 +66,7 @@ func ComputeDF(docs []FieldDoc) map[string]int {
 	return df
 }
 
-// BM25Score computes the BM25F pseudo-TF score for a single document against
-// query terms. Fields are summed in the order given by fields (so callers
-// that need reproducible floating-point output pass a stable slice).
+// BM25Score computes the BM25F pseudo-TF score for one document.
 func BM25Score(
 	terms []string,
 	docFields map[string][]string,
@@ -110,3 +99,14 @@ func BM25Score(
 	}
 	return score
 }
+
+func termFreq(term string, tokens []string) int {
+	tf := 0
+	for _, tok := range tokens {
+		if tok == term {
+			tf++
+		}
+	}
+	return tf
+}
+
