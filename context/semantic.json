@@ -346,6 +346,14 @@
       "reviewed": true
     },
     {
+      "from": "concept:spec-code-drift-detection",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/audit/drift/specscan",
+      "type": "implements",
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
       "from": "concept:routing-packet",
       "to": "spec_section:specs/routing-packet.md:Routing packet object",
       "type": "implements_spec",
