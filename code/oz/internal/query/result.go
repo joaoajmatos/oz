@@ -34,8 +34,8 @@ type Result struct {
 	// Omitted when no eligible symbols are found.
 	CodeEntryPoints []CodeEntryPoint `json:"code_entry_points,omitempty"`
 
-	// Excluded lists path prefixes that were filtered from context blocks.
-	// notes/ is excluded by default unless --include-notes is set.
+	// Excluded lists path prefixes not part of the retrieval corpus (e.g. notes/ when
+	// retrieval.include_notes is false). Empty with shipped defaults (include_notes true).
 	Excluded []string `json:"excluded,omitempty"`
 
 	// Reason is set when Agent is empty. Currently: "no_clear_owner".

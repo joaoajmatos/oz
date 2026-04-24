@@ -60,6 +60,7 @@ type scoringTOMLTokenIn struct {
 }
 
 type scoringTOMLRetrievalIn struct {
+	IncludeNotes  *bool                      `toml:"include_notes"`
 	MinRelevance  *float64                   `toml:"min_relevance"`
 	MaxBlocks     *float64                   `toml:"max_blocks"`
 	MaxCodeEntryPoints *float64              `toml:"max_code_entry_points"`
@@ -119,6 +120,7 @@ var allowedKeysInSection = map[string]map[string]struct{}{
 		"use_bigrams": {},
 	},
 	"retrieval": {
+		"include_notes": {},
 		"min_relevance": {}, "max_blocks": {}, "max_code_entry_points": {},
 		"max_implementing_packages": {}, "concept_min_relevance": {}, "agent_affinity": {},
 		"bm25": {}, "fields": {}, "concepts": {}, "trust_boost": {},
@@ -192,6 +194,9 @@ func mergeScoringTOML(cfg *ScoringConfig, in *scoringTOMLIn) {
 		cfg.UseBigrams = *in.Tokenize.UseBigrams
 	}
 	if in.Retrieval != nil {
+		if in.Retrieval.IncludeNotes != nil {
+			cfg.IncludeNotes = *in.Retrieval.IncludeNotes
+		}
 		if in.Retrieval.MinRelevance != nil {
 			cfg.RetrievalMinRelevance = *in.Retrieval.MinRelevance
 		}
@@ -288,12 +293,12 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 			MinScore               float64 `toml:"min_score"`
 			Temperature            float64 `toml:"temperature"`
 			MinCandidateConfidence float64 `toml:"min_candidate_confidence"`
-			IncludeNotes           bool    `toml:"include_notes"`
 		} `toml:"routing"`
 		Tokenize struct {
 			UseBigrams bool `toml:"use_bigrams"`
 		} `toml:"tokenize"`
 		Retrieval struct {
+			IncludeNotes  bool    `toml:"include_notes"`
 			MinRelevance  float64 `toml:"min_relevance"`
 			MaxBlocks     float64 `toml:"max_blocks"`
 			MaxCodeEntryPoints float64 `toml:"max_code_entry_points"`
@@ -333,8 +338,8 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 	enc.Routing.MinScore = cfg.MinScore
 	enc.Routing.Temperature = cfg.Temperature
 	enc.Routing.MinCandidateConfidence = cfg.MinCandidateConfidence
-	enc.Routing.IncludeNotes = cfg.IncludeNotes
 	enc.Tokenize.UseBigrams = cfg.UseBigrams
+	enc.Retrieval.IncludeNotes = cfg.IncludeNotes
 	enc.Retrieval.MinRelevance = cfg.RetrievalMinRelevance
 	enc.Retrieval.MaxBlocks = cfg.RetrievalMaxBlocks
 	enc.Retrieval.MaxCodeEntryPoints = cfg.RetrievalMaxCodeEntryPoints

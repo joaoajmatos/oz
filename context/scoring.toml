@@ -21,7 +21,9 @@ confidence_threshold = 0.7
 min_score = 0.01
 temperature = 0.2
 min_candidate_confidence = 0.2
-include_notes = false
+
+[retrieval]
+include_notes = true
 
 [tokenize]
 # Adjacent stem bigrams (e.g. rest_api); can over-index — off by default per sprint risk.

@@ -70,7 +70,7 @@ func DefaultScoringConfig() ScoringConfig {
 		MinScore:               0.01, // low threshold: prefer routing to best guess
 		Temperature:            0.2,  // decisive routing
 		MinCandidateConfidence: 0.2,
-		IncludeNotes:           false,
+		IncludeNotes:           true,
 		UseBigrams:             false,
 		RetrievalMinRelevance:  0.05,
 		RetrievalMaxBlocks:     12,

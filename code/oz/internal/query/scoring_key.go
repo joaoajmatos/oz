@@ -123,10 +123,10 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 	},
 	{
 		Key:   "routing.include_notes",
-		Title: "Include notes/ in context blocks",
-		Description: `When true, note-tier nodes can appear in context blocks. ` +
-			`The “oz context query --include-notes” flag OR this setting can enable notes (union). ` +
-			`Set via file for a workspace default, or use the flag for a one-off query.`,
+		Title: "Include notes/ in context blocks (legacy key)",
+		Description: `Same as retrieval.include_notes. Kept for older workspace files. ` +
+			`If both are set, retrieval.include_notes wins. ` +
+			`The "oz context query --include-notes" flag ORs with this (union).`,
 		Kind: ScoringKindBool,
 	},
 	{
@@ -134,6 +134,14 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Title: "Emit adjacent stem bigrams",
 		Description: `When true, the tokenizer adds stem bigrams (e.g. rest_api) after unigrams. ` +
 			`Can help compound phrases; may over-index on large corpora. Off by default.`,
+		Kind: ScoringKindBool,
+	},
+	{
+		Key:   "retrieval.include_notes",
+		Title: "Include note-tier nodes in the retrieval corpus",
+		Description: `When true, nodes under notes/ are scored in the same ranked pipeline as other tiers and ` +
+			`downweighted by retrieval.trust_boost.notes. When false, they are hard-excluded and the ` +
+			`"notes/" prefix is added to excluded. Default true. "oz context query --include-notes" ORs on top (union).`,
 		Kind: ScoringKindBool,
 	},
 	{
@@ -309,6 +317,8 @@ func getScoringValue(cfg ScoringConfig, key string) (any, error) {
 		return cfg.MinCandidateConfidence, nil
 	case "routing.include_notes":
 		return cfg.IncludeNotes, nil
+	case "retrieval.include_notes":
+		return cfg.IncludeNotes, nil
 	case "tokenize.use_bigrams":
 		return cfg.UseBigrams, nil
 	case "retrieval.min_relevance":
@@ -438,6 +448,12 @@ func ApplyScoringValue(cfg *ScoringConfig, key string, v any) error {
 		x, _ := v.(float64)
 		cfg.MinCandidateConfidence = x
 	case "routing.include_notes":
+		x, ok := v.(bool)
+		if !ok {
+			return fmt.Errorf("internal: bool expected for %s", key)
+		}
+		cfg.IncludeNotes = x
+	case "retrieval.include_notes":
 		x, ok := v.(bool)
 		if !ok {
 			return fmt.Errorf("internal: bool expected for %s", key)

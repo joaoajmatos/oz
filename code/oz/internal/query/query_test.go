@@ -68,7 +68,7 @@ func TestRetrievalAccuracy(t *testing.T) {
 			for _, q := range suite.Queries {
 				q := q
 				t.Run(q.Query, func(t *testing.T) {
-					result := query.RunWithOptions(ws.Path(), q.Query, query.Options{IncludeNotes: true})
+					result := query.Run(ws.Path(), q.Query)
 
 					for _, b := range q.ExpectBlocksInTopK {
 						testws.ExpectBlockInTopK(t, result, b.File, b.Section, b.K)

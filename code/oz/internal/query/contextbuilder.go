@@ -19,8 +19,8 @@ import (
 //  3. Drop scores below min_relevance and cap at max_blocks.
 //
 // Blocks are ordered by relevance with deterministic tie-breakers.
-// Notes are excluded unless cfg.IncludeNotes is true.
-// Notes are always listed in Excluded when not included.
+// When cfg.IncludeNotes is false, note nodes are omitted from the retrieval corpus
+// and "notes/" is added to Excluded when the graph has notes.
 func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, queryTerms []string, cfg ScoringConfig) (blocks []ContextBlock, excluded []string) {
 	candidates := buildRetrievalCandidates(workspacePath, g, cfg)
 	retrievalCfg := defaultRetrievalConfig(cfg)
