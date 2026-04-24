@@ -47,7 +47,7 @@ Single Go binary built with `go build`. No runtime dependencies. Subcommands:
 | `oz validate` | `cmd/validate.go` + `internal/validate/` | Lint workspace against the convention |
 | `oz audit` | `cmd/audit.go` + `internal/audit/*` | Structural + drift checks over `graph.json` and workspace; JSON and human reports |
 | `oz context build` | `internal/context/` | Build the structural graph |
-| `oz context query` | `internal/query/` | Route a task to the best-matching agent |
+| `oz context query` | `internal/query/` | **Route** a task to the best-matching agent, then **retrieve** ranked context (see below) |
 | `oz context enrich` | `internal/enrich/` | LLM enrichment pass via OpenRouter |
 | `oz context review` | `internal/review/` | Human review of semantic overlay |
 | `oz context serve` | `internal/mcp/` | MCP stdio server for LLM tool calls |
@@ -62,7 +62,7 @@ Single Go binary built with `go build`. No runtime dependencies. Subcommands:
 | `internal/validate` | Validation rules: required files, required AGENT.md sections, semantic warnings |
 | `internal/graph` | `Graph`, `Node`, and `Edge` types; schema version constant |
 | `internal/context` | Walker → parsers → indexer → extractor → serializer |
-| `internal/query` | Tokenizer → BM25F scorer → softmax → context block builder |
+| `internal/query` | Tokenize → **routing** (BM25F on agent docs, softmax) → **retrieval** (ranked `context_blocks`, `code_entry_points`, packages; separate corpus) |
 | `internal/enrich` | Prompt builder → OpenRouter client → response parser → overlay writer |
 | `internal/review` | Diff view + interactive accept/reject → semantic.json writer |
 | `internal/mcp` | MCP stdio server: JSON-RPC 2.0 framing, four tool implementations |
@@ -124,20 +124,25 @@ flowchart TD
 
 ### oz context query
 
+`oz context query` runs two pipelines that share the same query string and `context/scoring.toml` config, but use **disjoint corpora**: **routing** picks the winning agent; **retrieval** ranks what to read (`context_blocks`, code entry points, and implementing packages). The split is normative in [`specs/routing-packet.md`](../specs/routing-packet.md) and the rationale is [`specs/decisions/0004-context-retrieval-ranking.md`](../specs/decisions/0004-context-retrieval-ranking.md).
+
 ```mermaid
 flowchart TD
   q[Query_text]
-  q --> load[LoadGraph_or_Build_if_absent]
-  load --> cfg[LoadConfig_scoring_toml_or_defaults]
-  cfg --> tok[TokenizeQuery_Porter_optional_bigrams]
-  tok --> docs[BuildAgentDocs_five_BM25F_fields]
-  docs --> bm25[ComputeBM25F_IDF_floor]
-  bm25 --> sm[Softmax_temperature_T]
-  sm --> route[Route_min_score_and_confidence_threshold]
-  route --> blocks[BuildContextBlocks_trust_tier_sort]
-  blocks --> pack[Assemble_routing_packet]
-  pack --> concepts[loadRelevantConcepts_from_semantic_json]
+  q --> load[Load_graph]
+  load --> cfg[Load_scoring_toml]
+  cfg --> tok[Tokenize]
+  tok --> rdocs[BuildAgentDocs]
+  rdocs --> rb25[BM25F_on_agents]
+  rb25 --> sm[Softmax_and_thresholds]
+  sm -->|no winner| pack1[Packet: no_clear_owner]
+  sm -->|winner| ret[Retrieval: score_corpus_BM25_trust_affinity]
+  ret --> cap[min_relevance_and_caps]
+  cap --> pack2[Packet: agent_scope_blocks_code_packages]
+  pack2 --> sem[load_semantic_concepts]
 ```
+
+`oz context query --raw` returns a **debug JSON envelope** (not the routing packet): routing scores, a query-relevant **subgraph** of `graph.json`, and a **`retrieval` array** with per-candidate `bm25`, `trust_boost`, `agent_affinity`, and `relevance` (see the same ADR).
 
 ### oz context enrich
 
@@ -233,11 +238,13 @@ warning: semantic overlay may be stale — run 'oz context enrich' to update
 
 ---
 
-## Query pipeline: BM25F scoring
+## Query pipeline: routing and retrieval
 
-The query engine scores agents using multi-field BM25F. All parameters are configurable in `context/scoring.toml` (falls back to defaults if absent). The `oz context scoring` command group lists valid keys, prints effective values, and validates the file; see `docs/implementation.md` for subcommands.
+The query engine first **routes** (multi-field BM25F over each agent’s AGENT.md-derived “document”), then **retrieves** (BM25 over graph-backed fields for `spec_section`, `decision`, `doc`, `context_snapshot`, `note`, `code_package` / `code_symbol` nodes, with trust and agent-affinity multipliers, then threshold + caps). Tuning for both lives in `context/scoring.toml`: top-level and `[bm25]` / `[fields]` / `[weights]` / `[routing]` for **routing**; `[retrieval]` and nested `retrieval.*` for **retrieval** (and `retrieval.include_notes` for the notes corpus gate). The `oz context scoring` command group lists valid keys, prints effective values, and validates the file; see `docs/implementation.md` for subcommands.
 
-### BM25F fields (per agent)
+**ADR-0004** (Context retrieval ranking) records why retrieval is separate from routing. **Normative field names and semantics** for the JSON packet are in [`specs/routing-packet.md`](../specs/routing-packet.md).
+
+### BM25F fields (routing, per agent)
 
 | Field | Weight (default) | Source |
 |-------|-----------------|--------|
@@ -254,10 +261,16 @@ IDF is floored at 1.0 to prevent degenerate scores on small corpora (3–5 agent
 ### Routing decision
 
 1. Compute raw BM25F scores for all agents.
-2. Apply temperature-scaled softmax (`T = 1.0` default) to convert to confidence values.
-3. If top score < `MIN_SCORE` (default 0.0): return `no_clear_owner`.
-4. If top confidence < `CONFIDENCE_THRESHOLD` (default 0.5): include `candidate_agents`.
-5. Otherwise: route to the top-scoring agent.
+2. Apply temperature-scaled softmax to obtain confidences.
+3. If the best raw score is below `routing.min_score` (or equivalent defaults): return `no_clear_owner`.
+4. If top confidence is below `routing.confidence_threshold`: include `candidate_agents`.
+5. Otherwise: the top softmax winner is the routed agent. (Exact defaults ship with the binary; override via `context/scoring.toml` or `oz context scoring`.)
+
+### Retrieval (after a winner)
+
+1. Build a **retrieval candidate set** from the graph (excludes notes when `retrieval.include_notes` is false; see packet `excluded`).
+2. Score each candidate with BM25 (retrieval field weights) × trust boost × agent affinity, sort, drop below `retrieval.min_relevance`, cap (`max_blocks`, `max_code_entry_points`, `max_implementing_packages`, and concept threshold for packages).
+3. If **no** context block clears `min_relevance` but an agent is still returned, the packet may set `reason` to `no_relevant_context` and omit `context_blocks` (see `specs/routing-packet.md`).
 
 ---
 

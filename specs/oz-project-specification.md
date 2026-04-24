@@ -244,14 +244,20 @@ The knowledge graph engine. Shipped as V1 with the following subcommands:
 cross-references, and writes a deterministic `context/graph.json`. Byte-identical output on
 repeated runs with no changes (SHA-256 content hash embedded).
 
-**`oz context query <text>`** — loads `graph.json`, scores agents using multi-field BM25F
-with Porter stemming and temperature-scaled softmax, and returns a JSON routing packet:
-agent, confidence, scope paths, context blocks (sorted by trust tier), and relevant concepts
-from the semantic overlay when present. Supports `--raw` for debug output and `--include-notes`
-(the flag OR `routing.include_notes` in `context/scoring.toml` enables notes in context blocks).
+**`oz context query <text>`** — loads `graph.json`, **routes** agents with multi-field BM25F
+(Porter stemming, temperature-scaled softmax, thresholds), then **retrieves** ranked context on
+a separate graph-backed corpus: `context_blocks` (relevance, `min_relevance`, `max_blocks`),
+`code_entry_points` and `implementing_packages` when applicable, plus scope and `excluded` / `reason`
+as defined in `specs/routing-packet.md`. Relevant concepts from the semantic overlay are included
+when present. The packet may include `reason: "no_relevant_context"` when an agent is chosen but
+no block clears the retrieval floor. Supports `--raw` (debug JSON: routing scores, subgraph, and
+per-candidate retrieval math) and `--include-notes` (OR with `retrieval.include_notes` in
+`context/scoring.toml` to include the `notes/` tier in the retrieval corpus).
 
-**`oz context scoring`** — inspect and edit BM25F / routing parameters in `context/scoring.toml`
-without hand-editing: `show`, `get`, `set`, `list`, `describe`, and `validate` (see `docs/implementation.md`).
+**`oz context scoring`** — inspect and edit `context/scoring.toml` (BM25F and **routing** keys under
+`[bm25]`, `[fields]`, `[weights]`, `[routing]`, **retrieval** keys under `[retrieval]` and nested
+`retrieval.*`, plus `tokenize`) without hand-editing: `show`, `get`, `set`, `list`, `describe`, and
+`validate` (see `docs/implementation.md`).
 
 **`oz context enrich`** — sends the structural graph to an LLM via OpenRouter and writes
 `context/semantic.json` with extracted concept nodes and typed relationships. Requires
@@ -347,7 +353,7 @@ All `oz add` subcommands resolve the workspace root by walking ancestor director
 - **oz init**: complete — scaffolds a full oz-compliant workspace from embedded templates.
 - **oz validate**: complete — enforces all 7 required AGENT.md sections, checks required files/directories, warns on unreviewed semantic nodes.
 - **oz audit**: V1 complete — orphans, coverage, staleness, drift, JSON report, deterministic ordering, `graph-summary` stub preserved. Multi-language / tree-sitter drift is deferred.
-- **oz context**: V1 complete — `build`, `query`, `scoring`, `enrich`, `review`, and `serve` all ship. MCP server validated. BM25F scoring with Porter stemming and softmax routing.
+- **oz context**: V1 complete — `build`, `query`, `scoring`, `enrich`, `review`, and `serve` all ship. MCP server validated. BM25F **routing** (agent selection) and BM25-based **retrieval** (ranked `context_blocks` and related fields per `specs/routing-packet.md`).
 - **oz crystallize**: V1 report-first complete — classification table + dry-run diffs; no direct promotion writes.
 - **oz repair**: complete — restores missing default workspace files without overwriting existing ones; idempotent; excludes `CLAUDE.md` (opt-in only).
 - **oz add**: complete — `oz add claude`, `oz add cursor` for editor integrations; `oz add <package-id>` for optional bundled agent+skill packages; `oz add list` enumerates available packages.
