@@ -204,11 +204,12 @@ func TestValidate_TestwsFixture_Valid(t *testing.T) {
 // TestValidate_SemanticOverlay_UnreviewedItems verifies that semantic.json with
 // unreviewed items produces a warning (S6-04).
 func TestValidate_SemanticOverlay_UnreviewedItems(t *testing.T) {
+	unreviewed := false
 	ws := testws.New(t).
 		WithAgent("backend", testws.Role("Builds REST endpoints")).
 		WithSemanticOverlay(testws.SemanticOverlay{
 			Concepts: []testws.OverlayConcept{
-				{Name: "REST API", OwnedBy: "backend"},
+				{Name: "REST API", OwnedBy: "backend", Reviewed: &unreviewed},
 			},
 		}).
 		Build()

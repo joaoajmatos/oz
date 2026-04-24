@@ -96,6 +96,8 @@ type OverlayConcept struct {
 	OwnedBy     string   `json:"owned_by"`
 	Description string   `json:"description,omitempty"`
 	SourceFiles []string `json:"source_files,omitempty"`
+	// Reviewed controls the concept and its agent_owns_concept edge. When nil, both are reviewed (true).
+	Reviewed *bool `json:"reviewed,omitempty"`
 }
 
 type OverlayImplements struct {
@@ -317,6 +319,10 @@ func (b *Builder) writeOverlay(root string, o *SemanticOverlay) error {
 	for _, c := range o.Concepts {
 		conceptID := "concept:" + slugify(c.Name)
 		agentNodeID := "agent:" + c.OwnedBy
+		reviewed := true
+		if c.Reviewed != nil {
+			reviewed = *c.Reviewed
+		}
 		full.Concepts = append(full.Concepts, semantic.Concept{
 			ID:          conceptID,
 			Name:        c.Name,
@@ -324,7 +330,7 @@ func (b *Builder) writeOverlay(root string, o *SemanticOverlay) error {
 			SourceFiles: c.SourceFiles,
 			Tag:         semantic.TagExtracted,
 			Confidence:  1.0,
-			Reviewed:    true,
+			Reviewed:    reviewed,
 		})
 		full.Edges = append(full.Edges, semantic.ConceptEdge{
 			From:       conceptID,
@@ -332,7 +338,7 @@ func (b *Builder) writeOverlay(root string, o *SemanticOverlay) error {
 			Type:       semantic.EdgeTypeAgentOwnsConcept,
 			Tag:        semantic.TagExtracted,
 			Confidence: 1.0,
-			Reviewed:   true,
+			Reviewed:   reviewed,
 		})
 	}
 	for _, imp := range o.Implements {

@@ -35,6 +35,7 @@ type OverlayConceptFixture struct {
 	OwnedBy     string   `yaml:"owned_by"`
 	Description string   `yaml:"description,omitempty"`
 	SourceFiles []string `yaml:"source_files,omitempty"`
+	Reviewed    *bool    `yaml:"reviewed,omitempty"`
 }
 
 type OverlayImplementsFixture struct {
@@ -195,6 +196,7 @@ func FromFixture(t *testing.T, path string) *Builder {
 				OwnedBy:     c.OwnedBy,
 				Description: c.Description,
 				SourceFiles: c.SourceFiles,
+				Reviewed:    c.Reviewed,
 			})
 		}
 		b.WithSemanticOverlay(SemanticOverlay{
