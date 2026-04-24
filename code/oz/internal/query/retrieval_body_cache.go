@@ -20,6 +20,15 @@ var bodyTokenCache = &retrievalBodyCache{
 	tokenByBlock: make(map[string][]string),
 }
 
+// ResetRetrievalBodyCacheForBenchmark clears the in-process retrieval body cache.
+// Used by benchmarks to approximate cold-cache query runs.
+func ResetRetrievalBodyCacheForBenchmark() {
+	bodyTokenCache.mu.Lock()
+	defer bodyTokenCache.mu.Unlock()
+	bodyTokenCache.graphHash = ""
+	bodyTokenCache.tokenByBlock = make(map[string][]string)
+}
+
 func loadRetrievalBodyTokens(workspacePath, graphHash string, n graph.Node, useBigrams bool) []string {
 	if workspacePath == "" || n.File == "" {
 		return nil
