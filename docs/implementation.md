@@ -146,7 +146,9 @@ The following items were deferred from V1 but are tracked:
 
 1. **`oz audit` Tier-B extensions**: `DRIFT004` / parse-error surfacing (`DRIFT900`), additional
    languages (likely tree-sitter once non-Go code is indexed). See `docs/open-items.md`.
-2. **`oz crystallize`**: promotes `notes/` content up the hierarchy. Not implemented.
+2. **`oz crystallize` promotion workflow hardening**: command is implemented and report-first.
+   Fast-follow focuses on improving classification quality, richer dry-run review ergonomics,
+   and clearer promotion guidance for large note sets.
 3. **Bigrams**: tokenizer supports `use_bigrams = true` in `scoring.toml` but off by default (can over-index; needs validation on a wider corpus first).
 4. **Interactive `oz context review`**: shipped. Edge case: if user quits mid-review, partial state is written. A transaction-style approach (write only on completion) is a fast-follow.
 

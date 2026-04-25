@@ -27,11 +27,14 @@ oz context build
 oz audit
 ```
 
-1. Introduce hooks/integrations once baseline health is stable.
+1. Discover and install integrations / optional packages deliberately.
 
 ```bash
+oz add list
 oz add cursor
 oz add claude
+# optional package examples
+oz add maintainer
 ```
 
 ## Verify
@@ -39,6 +42,7 @@ oz add claude
 - `oz validate` passes.
 - `oz audit` has no unexpected errors.
 - `context/graph.json` reflects current docs/agents/code references.
+- `oz add list` output matches what was installed (integrations vs optional packages).
 - If using submodules, each code repository remains independently versioned while `oz` manages shared workspace conventions at the root.
 
 ## Common pitfalls
