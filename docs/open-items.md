@@ -61,17 +61,49 @@ AT-03 is considered **not triggered** (3 warnings ≤ threshold of 3).
 
 <!-- No pending decisions. -->
 
-## CCA-0 Token Budget Spike (CCA-0-06)
+## CCA-0 Token Budget Spike (CCA-0-06) — RESOLVED
 
-Before the first internal dogfood of `oz context concept add`, measure the maximum
-prompt size produced by the proposal flow on this repo:
+Measured against this repo's `context/graph.json` (651 nodes, 522 edges) with
+`scoring.toml` defaults (`max_blocks = 12`).
 
-- Retrieval slice: up to `retrieval.max_blocks` context blocks (current default 12).
-- Node-ID allowlist: graph node IDs filtered to edge-eligible types (`concept:`, `agent:`,
-  `spec_section:`, `decision:`, `code_package:`).
-- Single-concept JSON response target.
+### Prompt component breakdown
 
-**Action**: run a dry-run prompt builder (CCA-1-01) against `context/graph.json` with
-the current `scoring.toml` defaults and log token counts. Cap allowlist intelligently
-if the total exceeds ~8k tokens. Document the chosen cap approach and default for
-`--retrieval-k` before merging CCA-1.
+| Component | Chars | Est. tokens |
+|-----------|-------|-------------|
+| Instruction template | 203 | ~50 |
+| Retrieval slice (12 blocks) | 1,000 | ~250 |
+| Allowlist section (72 IDs) | 4,042 | ~1,010 |
+| Existing reviewed concepts | 332 | ~83 |
+| Schema + rules tail | 743 | ~185 |
+| **Static subtotal** | **6,320** | **~1,580** |
+| + seed text (user, ~200 words) | — | ~270 |
+| + response (1 concept) | — | ~150 |
+| **Grand total** | — | **~2,000** |
+
+### Allowlist breakdown (current repo)
+
+| Type | Count |
+|------|-------|
+| `agent:` | 4 |
+| `spec_section:` + `decision:` | 34 |
+| `code_package:` | 34 |
+| **Total** | **72** |
+
+### Decisions for CCA-1
+
+1. **No trimming needed now.** ~2k tokens is comfortably under the 8k target. The
+   full allowlist (all `agent:`, `spec_section:`, `decision:`, `code_package:` IDs) ships
+   in V1 — same set as `enrich` uses today.
+
+2. **Default `--retrieval-k = 5`.** Half of `max_blocks` (12). Keeps the retrieval
+   slice at ~100 tokens for a focused concept proposal, while `--retrieval-k 12` stays
+   available for queries that benefit from broader context.
+
+3. **Growth trigger for trimming:** `code_package:` IDs are the primary growth vector
+   (~1 per Go package). At ~150 packages the allowlist hits ~3k tokens (still fine).
+   Add allowlist trimming to concept-relevant packages only when the grand total
+   approaches 6k tokens (roughly 3× current repo size). Track in the CCA-0-06 item.
+
+4. **Retrieval blocks as text labels only** (file + section + trust tier, no body
+   content). Including body content would add ~500–2000 tokens per block — defer to
+   a flag if users request richer grounding.
