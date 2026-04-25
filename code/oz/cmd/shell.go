@@ -65,6 +65,22 @@ var shellReadCmd = &cobra.Command{
 
 var shellRewriteExclude []string
 
+type shellReadEnvelope struct {
+	SchemaVersion     string   `json:"schema_version"`
+	Path              string   `json:"path"`
+	Lang              string   `json:"lang"`
+	MatchedFilter     string   `json:"matched_filter"`
+	ExitCode          int      `json:"exit_code"`
+	DurationMs        int64    `json:"duration_ms"`
+	TokenEstBefore    int      `json:"token_est_before"`
+	TokenEstAfter     int      `json:"token_est_after"`
+	TokenEstSaved     int      `json:"token_est_saved"`
+	TokenReductionPct float64  `json:"token_reduction_pct"`
+	Stdout            string   `json:"stdout"`
+	Stderr            string   `json:"stderr"`
+	Warnings          []string `json:"warnings"`
+}
+
 var shellRewriteCmd = &cobra.Command{
 	Use:          "rewrite <command>",
 	Short:        "Rewrite a command through shell compression hooks",
@@ -246,6 +262,7 @@ func runShellRead(cmd *cobra.Command, args []string) error {
 	stdinContent := ""
 	results := make([]readfilter.Result, 0, len(args))
 	missing := make([]string, 0)
+	globalWarnings := make([]string, 0)
 	for _, target := range args {
 		content := ""
 		path := target
@@ -254,11 +271,7 @@ func runShellRead(cmd *cobra.Command, args []string) error {
 			stdin = true
 			path = "-"
 			if stdinConsumed {
-				results = append(results, readfilter.Result{
-					Path:     path,
-					Language: "generic",
-					Warnings: []string{"duplicate stdin marker '-' ignored"},
-				})
+				globalWarnings = append(globalWarnings, "duplicate stdin marker '-' ignored")
 				continue
 			}
 			if stdinContent == "" {
@@ -303,18 +316,27 @@ func runShellRead(cmd *cobra.Command, args []string) error {
 	}
 
 	if shellReadJSON {
-		payload := make([]map[string]any, 0, len(results))
+		payload := make([]shellReadEnvelope, 0, len(results))
 		for _, res := range results {
 			saved := res.TokenEstBefore - res.TokenEstAfter
-			payload = append(payload, map[string]any{
-				"schema_version":   "1",
-				"path":             res.Path,
-				"language":         res.Language,
-				"token_est_before": res.TokenEstBefore,
-				"token_est_after":  res.TokenEstAfter,
-				"token_est_saved":  saved,
-				"warnings":         res.Warnings,
-				"content":          res.Content,
+			reduction := 0.0
+			if res.TokenEstBefore > 0 {
+				reduction = (float64(saved) / float64(res.TokenEstBefore)) * 100
+			}
+			payload = append(payload, shellReadEnvelope{
+				SchemaVersion:     "1",
+				Path:              res.Path,
+				Lang:              res.Language,
+				MatchedFilter:     "read." + res.Language,
+				ExitCode:          0,
+				DurationMs:        time.Since(start).Milliseconds(),
+				TokenEstBefore:    res.TokenEstBefore,
+				TokenEstAfter:     res.TokenEstAfter,
+				TokenEstSaved:     saved,
+				TokenReductionPct: reduction,
+				Stdout:            res.Content,
+				Stderr:            "",
+				Warnings:          append([]string(nil), res.Warnings...),
 			})
 		}
 		data, err := json.MarshalIndent(payload, "", "  ")
@@ -337,6 +359,9 @@ func runShellRead(cmd *cobra.Command, args []string) error {
 				fmt.Fprintln(cmd.OutOrStdout())
 			}
 		}
+		for _, warning := range globalWarnings {
+			fmt.Fprintf(cmd.ErrOrStderr(), "warning: %s\n", warning)
+		}
 	}
 
 	if !shellReadNoTrack {
@@ -351,9 +376,9 @@ func runShellRead(cmd *cobra.Command, args []string) error {
 			for _, res := range results {
 				langs = append(langs, res.Language)
 			}
-			matched = "read:" + strings.Join(langs, ",")
+			matched = "read." + strings.Join(langs, ",")
 		}
-		_ = insertShellTrackRow(strings.Join(args, " "), beforeTotal, afterTotal, time.Since(start).Milliseconds(), matched, len(missing))
+		_ = insertShellTrackRow(formatShellReadTrackedCommand(args), beforeTotal, afterTotal, time.Since(start).Milliseconds(), matched, len(missing))
 	}
 
 	for _, miss := range missing {
@@ -383,7 +408,7 @@ func insertShellTrackRow(command string, before, after int64, durationMs int64, 
 		reduction = (float64(saved) / float64(before)) * 100
 	}
 	return store.Insert(track.Run{
-		Command:       "read " + command,
+		Command:       command,
 		RecordedAt:    time.Now().Unix(),
 		DurationMs:    durationMs,
 		TokenBefore:   before,
@@ -393,6 +418,13 @@ func insertShellTrackRow(command string, before, after int64, durationMs int64, 
 		MatchedFilter: matchedFilter,
 		ExitCode:      exitCode,
 	})
+}
+
+func formatShellReadTrackedCommand(args []string) string {
+	if len(args) == 0 {
+		return "oz shell read"
+	}
+	return "oz shell read -- " + strings.Join(args, " ")
 }
 
 type shellExitError struct {

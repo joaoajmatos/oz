@@ -70,9 +70,15 @@ func saveShellGlobals(t *testing.T) {
 }
 
 func addShellReadFlagsForTest(cmd *cobra.Command) {
-	cmd.Flags().Int("max-lines", 0, "")
-	cmd.Flags().Int("tail-lines", 0, "")
-	cmd.Flags().Bool("line-numbers", false, "")
+	if cmd.Flags().Lookup("max-lines") == nil {
+		cmd.Flags().Int("max-lines", 0, "")
+	}
+	if cmd.Flags().Lookup("tail-lines") == nil {
+		cmd.Flags().Int("tail-lines", 0, "")
+	}
+	if cmd.Flags().Lookup("line-numbers") == nil {
+		cmd.Flags().Bool("line-numbers", false, "")
+	}
 }
 
 func TestRunShellRewriteKnownCommand(t *testing.T) {
@@ -221,6 +227,7 @@ func TestRunShellRunRawPassthrough(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.SetOut(stdout)
 	cmd.SetErr(stderr)
+	addShellReadFlagsForTest(cmd)
 	addShellReadFlagsForTest(cmd)
 
 	shellMode = string(shellrun.ModeRaw)
@@ -607,5 +614,122 @@ func TestRunShellReadLineNumbers(t *testing.T) {
 	}
 	if !strings.Contains(out, "100|x") {
 		t.Fatalf("expected line 100, got %q", out)
+	}
+}
+
+func TestRunShellReadJSONEnvelopeFields(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	path := filepath.Join(t.TempDir(), "sample.go")
+	content := "package main\n\n// comment\nfunc main() {}\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	addShellReadFlagsForTest(cmd)
+
+	shellReadNoTrack = true
+	shellReadJSON = true
+	if err := runShellRead(cmd, []string{path}); err != nil {
+		t.Fatalf("runShellRead: %v", err)
+	}
+
+	var payload []map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("unmarshal json: %v", err)
+	}
+	if len(payload) != 1 {
+		t.Fatalf("len(payload)=%d want 1", len(payload))
+	}
+	item := payload[0]
+	if item["schema_version"] != "1" {
+		t.Fatalf("schema_version=%v want 1", item["schema_version"])
+	}
+	if item["lang"] != "go" {
+		t.Fatalf("lang=%v want go", item["lang"])
+	}
+	if item["matched_filter"] != "read.go" {
+		t.Fatalf("matched_filter=%v want read.go", item["matched_filter"])
+	}
+	if _, ok := item["stdout"].(string); !ok {
+		t.Fatalf("stdout missing or non-string: %#v", item["stdout"])
+	}
+}
+
+func TestRunShellReadDuplicateStdinWarnsOnce(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(stderr)
+	cmd.SetIn(strings.NewReader("hello\nworld\n"))
+	addShellReadFlagsForTest(cmd)
+
+	shellReadNoTrack = true
+	if err := runShellRead(cmd, []string{"-", "-"}); err != nil {
+		t.Fatalf("runShellRead: %v", err)
+	}
+	if !strings.Contains(stderr.String(), "duplicate stdin marker") {
+		t.Fatalf("expected duplicate stdin warning, got %q", stderr.String())
+	}
+}
+
+func TestRunShellReadTracksCanonicalCommand(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	customDataHome := t.TempDir()
+	original := os.Getenv("XDG_DATA_HOME")
+	t.Cleanup(func() {
+		if original == "" {
+			_ = os.Unsetenv("XDG_DATA_HOME")
+		} else {
+			_ = os.Setenv("XDG_DATA_HOME", original)
+		}
+	})
+	if err := os.Setenv("XDG_DATA_HOME", customDataHome); err != nil {
+		t.Fatalf("set XDG_DATA_HOME: %v", err)
+	}
+
+	path := filepath.Join(t.TempDir(), "tracked.txt")
+	if err := os.WriteFile(path, []byte("tracked\n"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	addShellReadFlagsForTest(cmd)
+
+	shellReadNoTrack = false
+	if err := runShellRead(cmd, []string{path}); err != nil {
+		t.Fatalf("runShellRead: %v", err)
+	}
+
+	store, err := track.Open(track.DefaultPath())
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = store.Close()
+	})
+	runs, err := store.Query(track.QueryOpts{Limit: 1})
+	if err != nil {
+		t.Fatalf("query runs: %v", err)
+	}
+	if len(runs) == 0 {
+		t.Fatalf("expected at least one tracked run")
+	}
+	want := "oz shell read -- " + path
+	if runs[0].Command != want {
+		t.Fatalf("tracked command=%q, want %q", runs[0].Command, want)
 	}
 }
