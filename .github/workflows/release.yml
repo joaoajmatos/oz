@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (for example: v0.2.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: code/oz/go.mod
+          cache-dependency-path: code/oz/go.sum
+
+      - name: Build binary
+        env:
+          CGO_ENABLED: "0"
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ github.event.inputs.tag || github.ref_name }}"
+          OUT_DIR="dist"
+          mkdir -p "${OUT_DIR}"
+
+          BIN_NAME="oz"
+          if [ "${GOOS}" = "windows" ]; then
+            BIN_NAME="oz.exe"
+          fi
+
+          go build -trimpath -ldflags="-s -w" -o "${OUT_DIR}/${BIN_NAME}" ./code/oz
+
+          ASSET_BASENAME="oz_${VERSION}_${GOOS}_${GOARCH}"
+          if [ "${GOOS}" = "windows" ]; then
+            cd "${OUT_DIR}" && zip "${ASSET_BASENAME}.zip" "${BIN_NAME}"
+          else
+            cd "${OUT_DIR}" && tar -czf "${ASSET_BASENAME}.tar.gz" "${BIN_NAME}"
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Assemble release files
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          find dist -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec cp {} release/ \;
+          cd release
+          shasum -a 256 *.tar.gz *.zip > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release/*.tar.gz
+            release/*.zip
+            release/checksums.txt

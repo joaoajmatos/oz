@@ -62,6 +62,12 @@ go install .
 
 Add `oz` to your `PATH`, or invoke the binary by path.
 
+### Release binaries
+
+The repository ships a tag-driven release workflow at `.github/workflows/release.yml`.
+Pushing a tag like `v0.2.0` builds `oz` for Linux, macOS, and Windows (amd64/arm64),
+then publishes a GitHub Release with archives and `checksums.txt`.
+
 ### Shell completion
 
 Shell completion is optional. It enables tab-completion for `oz` commands, subcommands, and flags.
