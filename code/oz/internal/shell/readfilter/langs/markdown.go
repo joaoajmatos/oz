@@ -40,7 +40,9 @@ func (markdownReader) Filter(content string, opts readfilter.Options) (string, e
 				out = append(out, lines[fenceStart:i+1]...)
 			} else {
 				out = append(out, lines[fenceStart])
-				out = append(out, fmt.Sprintf("... (%d lines omitted)", blockLen))
+				firstOmitted := fenceStart + 2
+				lastOmitted := i
+				out = append(out, fmt.Sprintf("... (%d lines omitted, lines %d-%d)", blockLen, firstOmitted, lastOmitted))
 				out = append(out, line)
 			}
 			inFence = false

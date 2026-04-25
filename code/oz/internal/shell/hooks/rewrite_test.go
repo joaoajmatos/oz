@@ -134,9 +134,9 @@ func TestDecideRewriteCatToOzShellRead(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"cat foo.go", "oz shell read foo.go"},
-		{"cat a.go b.go", "oz shell read a.go b.go"},
-		{"cat -", "oz shell read -"},
+		{"cat foo.go", "oz shell read --line-numbers foo.go"},
+		{"cat a.go b.go", "oz shell read --line-numbers a.go b.go"},
+		{"cat -", "oz shell read --line-numbers -"},
 	}
 	for _, tc := range cases {
 		decision := hooks.Decide(tc.in, hooks.RewriteConfig())

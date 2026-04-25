@@ -3,7 +3,7 @@
 Intro text.
 
 ```unknownlang
-... (100 lines omitted)
+... (100 lines omitted, lines 6-105)
 ```
 
 ## Keep this heading

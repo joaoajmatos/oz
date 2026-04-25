@@ -157,7 +157,7 @@ func rewriteCatRead(fields []string) (string, bool) {
 			return "", false // unsupported flag
 		}
 	}
-	return "oz shell read " + strings.Join(args, " "), true
+	return "oz shell read --line-numbers " + strings.Join(args, " "), true
 }
 
 // rewriteWindowedRead handles head/tail with optional -n N or -N line count.

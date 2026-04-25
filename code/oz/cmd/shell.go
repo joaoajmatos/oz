@@ -371,6 +371,12 @@ func runShellRead(cmd *cobra.Command, args []string) error {
 			for _, warning := range res.Warnings {
 				fmt.Fprintf(cmd.ErrOrStderr(), "warning: %s\n", warning)
 			}
+			if !shellReadNoFilter && res.TokenEstBefore > res.TokenEstAfter {
+				saved := res.TokenEstBefore - res.TokenEstAfter
+				pct := int((float64(saved) / float64(res.TokenEstBefore)) * 100)
+				fmt.Fprintf(cmd.ErrOrStderr(), "[oz] %s: %dt omitted (%d%%) — full: oz shell read --no-filter --line-numbers %s\n",
+					res.Path, saved, pct, res.Path)
+			}
 			if i < len(results)-1 {
 				fmt.Fprintln(cmd.OutOrStdout())
 			}

@@ -75,14 +75,16 @@ func structuralFilterGo(content string, ultra bool) (string, error) {
 			}
 			bodyLines := closeBrace - openBrace - 1
 			if ultra {
-				out = append(out, "\t...")
+				out = append(out, fmt.Sprintf("\t... (lines %d-%d)", openBrace+1, closeBrace-1))
 			} else {
 				preview := min(bodyPreviewLines, bodyLines)
 				for ln := openBrace + 1; ln <= openBrace+preview; ln++ {
 					out = append(out, stripInlineComment(lineAt(ln)))
 				}
 				if bodyLines > preview {
-					out = append(out, fmt.Sprintf("\t... (%d lines omitted)", bodyLines-preview))
+					firstOmitted := openBrace + 1 + preview
+					lastOmitted := closeBrace - 1
+					out = append(out, fmt.Sprintf("\t... (%d lines omitted, lines %d-%d)", bodyLines-preview, firstOmitted, lastOmitted))
 				}
 			}
 			out = append(out, lineAt(closeBrace))

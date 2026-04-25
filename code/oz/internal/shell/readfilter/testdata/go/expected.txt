@@ -22,7 +22,7 @@ func (s *Store) Set(key, value string) error {
 		return fmt.Errorf("empty key")
 	}
 	if _, exists := s.items[key]; exists {
-	... (5 lines omitted)
+	... (5 lines omitted, lines 25-29)
 }
 
 func (s *Store) Get(key string) (string, error) {
@@ -30,7 +30,7 @@ func (s *Store) Get(key string) (string, error) {
 	if !ok {
 		return "", ErrNotFound
 	}
-	... (1 lines omitted)
+	... (1 lines omitted, lines 37-37)
 }
 
 func (s *Store) Keys() []string {
@@ -38,7 +38,7 @@ func (s *Store) Keys() []string {
 	for k := range s.items {
 		out = append(out, k)
 	}
-	... (1 lines omitted)
+	... (1 lines omitted, lines 45-45)
 }
 
 func (s *Store) String() string {
@@ -46,5 +46,5 @@ func (s *Store) String() string {
 	for k, v := range s.items {
 		parts = append(parts, fmt.Sprintf("%s=%s", k, v))
 	}
-	... (1 lines omitted)
+	... (1 lines omitted, lines 53-53)
 }
