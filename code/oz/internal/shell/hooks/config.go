@@ -20,3 +20,11 @@ func DefaultConfig() Config {
 		ExcludeCommands: nil,
 	}
 }
+
+func RewriteConfig() Config {
+	return Config{
+		Enabled:         true,
+		Mode:            ModeRewrite,
+		ExcludeCommands: nil,
+	}
+}

@@ -232,7 +232,7 @@ func WriteCursorHooks(root string) error {
 	return writeTemplate(filepath.Join(root, ".cursor/hooks.json"), "templates/hooks/cursor-hooks.json.tmpl", nil)
 }
 
-// writeHookScripts writes the three shared hook scripts to .oz/hooks/ with 0755.
+// writeHookScripts writes the shared hook scripts to .oz/hooks/ with 0755.
 func writeHookScripts(root string) error {
 	hooksDir := filepath.Join(root, ".oz", "hooks")
 	if err := os.MkdirAll(hooksDir, 0755); err != nil {
@@ -242,6 +242,7 @@ func writeHookScripts(root string) error {
 		{".oz/hooks/oz-session-init.sh", "templates/hooks/oz-session-init.sh.tmpl"},
 		{".oz/hooks/oz-after-edit.sh", "templates/hooks/oz-after-edit.sh.tmpl"},
 		{".oz/hooks/oz-pre-commit.sh", "templates/hooks/oz-pre-commit.sh.tmpl"},
+		{".oz/hooks/oz-shell-rewrite.sh", "templates/hooks/oz-shell-rewrite.sh.tmpl"},
 	}
 	for _, s := range scripts {
 		if err := writeTemplateMode(filepath.Join(root, s.dest), s.tmpl, nil, 0755); err != nil {
@@ -275,6 +276,7 @@ func createCodeDir(root, mode string, data templateData) error {
 //   - .cursor/hooks/oz-session-init.sh  (executable)
 //   - .cursor/hooks/oz-after-edit.sh    (executable)
 //   - .cursor/hooks/oz-pre-commit.sh    (executable)
+//   - .cursor/hooks/oz-shell-rewrite.sh (executable)
 //   - .cursor/hooks.json
 //   - .claude/settings.json             (merged if file already exists)
 func createHooksFiles(root string) error {

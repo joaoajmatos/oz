@@ -37,6 +37,7 @@ func saveShellGlobals(t *testing.T) {
 	prevGainDays := shellGainDays
 	prevGainPeriod := shellGainPeriod
 	prevVerbosity := shellVerbosity
+	prevRewriteExclude := append([]string(nil), shellRewriteExclude...)
 	t.Cleanup(func() {
 		shellMode = prevMode
 		shellTee = prevTee
@@ -48,7 +49,115 @@ func saveShellGlobals(t *testing.T) {
 		shellGainDays = prevGainDays
 		shellGainPeriod = prevGainPeriod
 		shellVerbosity = prevVerbosity
+		shellRewriteExclude = prevRewriteExclude
 	})
+}
+
+func TestRunShellRewriteKnownCommand(t *testing.T) {
+	t.Parallel()
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+
+	shellRewriteExclude = nil
+	err := runShellRewrite(cmd, []string{"git status"})
+	if err != nil {
+		t.Fatalf("runShellRewrite returned error: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "oz shell run -- git status") {
+		t.Fatalf("expected rewritten command, got %q", stdout.String())
+	}
+}
+
+func TestRunShellRewriteAlreadyWrappedExitCode(t *testing.T) {
+	t.Parallel()
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+
+	err := runShellRewrite(cmd, []string{"oz shell run -- git status"})
+	if err == nil {
+		t.Fatalf("expected non-nil error for already wrapped command")
+	}
+	var withCode interface{ ExitCode() int }
+	if !errors.As(err, &withCode) {
+		t.Fatalf("expected exit-code carrying error, got %T", err)
+	}
+	if withCode.ExitCode() != 1 {
+		t.Fatalf("ExitCode=%d, want 1", withCode.ExitCode())
+	}
+}
+
+func TestRunShellRewriteCompound(t *testing.T) {
+	t.Parallel()
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+
+	err := runShellRewrite(cmd, []string{"git status && go test ./..."})
+	if err != nil {
+		t.Fatalf("runShellRewrite returned error: %v", err)
+	}
+	out := strings.TrimSpace(stdout.String())
+	want := "oz shell run -- git status && oz shell run -- go test ./..."
+	if out != want {
+		t.Fatalf("rewritten=%q, want %q", out, want)
+	}
+}
+
+func TestRunShellRewritePipeOnlyLeftSide(t *testing.T) {
+	t.Parallel()
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+
+	err := runShellRewrite(cmd, []string{"git status | wc -l"})
+	if err != nil {
+		t.Fatalf("runShellRewrite returned error: %v", err)
+	}
+	out := strings.TrimSpace(stdout.String())
+	want := "oz shell run -- git status | wc -l"
+	if out != want {
+		t.Fatalf("rewritten=%q, want %q", out, want)
+	}
+}
+
+func TestRunShellRewriteExcludedExitCode(t *testing.T) {
+	t.Parallel()
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	shellRewriteExclude = []string{"git"}
+
+	err := runShellRewrite(cmd, []string{"git status"})
+	if err == nil {
+		t.Fatalf("expected non-nil error for excluded command")
+	}
+	var withCode interface{ ExitCode() int }
+	if !errors.As(err, &withCode) {
+		t.Fatalf("expected exit-code carrying error, got %T", err)
+	}
+	if withCode.ExitCode() != 2 {
+		t.Fatalf("ExitCode=%d, want 2", withCode.ExitCode())
+	}
 }
 
 func TestRunShellRunExitCodePropagation(t *testing.T) {

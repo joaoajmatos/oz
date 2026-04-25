@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/joaoajmatos/oz/internal/shell/gain"
+	"github.com/joaoajmatos/oz/internal/shell/hooks"
 	shellrun "github.com/joaoajmatos/oz/internal/shell/run"
 	"github.com/joaoajmatos/oz/internal/shell/track"
 	"github.com/spf13/cobra"
@@ -39,6 +40,16 @@ var shellGainCmd = &cobra.Command{
 	Use:   "gain",
 	Short: "Show cumulative token savings from tracked shell runs",
 	RunE:  runShellGain,
+}
+
+var shellRewriteExclude []string
+
+var shellRewriteCmd = &cobra.Command{
+	Use:          "rewrite <command>",
+	Short:        "Rewrite a command through shell compression hooks",
+	Args:         cobra.ExactArgs(1),
+	SilenceUsage: true,
+	RunE:         runShellRewrite,
 }
 
 func runShellRun(cmd *cobra.Command, args []string) error {
@@ -176,6 +187,26 @@ func runShellGain(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
+func runShellRewrite(cmd *cobra.Command, args []string) error {
+	cfg := hooks.RewriteConfig()
+	if len(shellRewriteExclude) > 0 {
+		cfg.ExcludeCommands = append([]string(nil), shellRewriteExclude...)
+	}
+
+	decision := hooks.Decide(args[0], cfg)
+	if decision.Allowed && decision.Rewritten != "" {
+		fmt.Fprintln(cmd.OutOrStdout(), decision.Rewritten)
+		return nil
+	}
+
+	switch decision.Reason {
+	case "command excluded", "hooks disabled":
+		return shellExitError{code: 2}
+	default:
+		return shellExitError{code: 1}
+	}
+}
+
 type shellExitError struct {
 	code int
 }
@@ -199,7 +230,8 @@ func init() {
 	shellGainCmd.Flags().IntVar(&shellGainDays, "days", 90, "retention window in days (0 = all)")
 	shellGainCmd.Flags().BoolVar(&shellGainAllTime, "all-time", false, "use all tracked history")
 	shellGainCmd.Flags().StringVar(&shellGainPeriod, "period", "daily", "trend period: daily|weekly|monthly")
-	shellCmd.AddCommand(shellRunCmd, shellGainCmd)
+	shellRewriteCmd.Flags().StringSliceVar(&shellRewriteExclude, "exclude", nil, "commands to bypass rewrite")
+	shellCmd.AddCommand(shellRunCmd, shellGainCmd, shellRewriteCmd)
 }
 
 func truncateRunes(s string, n int) string {
