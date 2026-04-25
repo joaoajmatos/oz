@@ -42,6 +42,7 @@ These files govern your behavior. Read them and follow them without exception:
 You are authorized to invoke these skills:
 
 - `skills/oz/` — run the `oz` binary: validate, context build/query/serve (routing + MCP), audit, optional enrich/review; use for dogfooding and scoped context from the graph
+- `skills/oz-shell/` — operational playbook for `oz shell run|rewrite|gain` and transparent hook interception checks
 
 ---
 

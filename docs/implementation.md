@@ -17,6 +17,16 @@ Shell compression is now implemented in staged form under `internal/shell/`:
 - `oz shell gain` now aggregates local tracking store data (invocations, before/after/saved tokens, average reduction and duration) with both human and JSON output.
 - Transparent interception scaffolding is implemented via hook decision logic (`suggest` default, explicit `rewrite` opt-in, per-command exclusions, fail-open no-op).
 
+### Operational usage guidance for agents
+
+To make shell compression active in daily LLM execution (not only passively hook-driven):
+
+- Use explicit wrapper mode for command-heavy flows: `oz shell run -- <command...>`.
+- Use rewrite mode when validating transparent interception: `oz shell rewrite "<command string>"`.
+- Confirm hook wiring in integrated workspaces (`.oz/hooks/oz-shell-rewrite.sh` and `.claude/settings.json` `PreToolUse`/`Bash` hook entry).
+- Use `oz shell gain` periodically to validate reduction impact over tracked runs.
+- Agent playbook: `skills/oz-shell/SKILL.md`.
+
 ---
 
 ## What shipped in V1
