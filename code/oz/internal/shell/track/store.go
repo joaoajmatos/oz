@@ -38,6 +38,12 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite db: %w", err)
 	}
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	if _, err := db.Exec(`PRAGMA busy_timeout = 5000;`); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("configure sqlite busy timeout: %w", err)
+	}
 
 	if _, err := db.Exec(createRunsTable); err != nil {
 		_ = db.Close()
@@ -86,7 +92,7 @@ func (s *Store) Query(opts QueryOpts) ([]Run, error) {
 
 	query := `SELECT id, command, recorded_at, duration_ms, token_before, token_after, token_saved, reduction_pct, matched_filter, exit_code FROM runs WHERE ` +
 		strings.Join(clauses, " AND ") +
-		` ORDER BY recorded_at DESC`
+		` ORDER BY recorded_at DESC, id DESC`
 	if opts.Limit > 0 {
 		query += " LIMIT ?"
 		args = append(args, opts.Limit)

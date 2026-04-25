@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,8 +15,42 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var shellTestMu sync.Mutex
+
+func lockShellTest(t *testing.T) {
+	t.Helper()
+	shellTestMu.Lock()
+	t.Cleanup(func() {
+		shellTestMu.Unlock()
+	})
+}
+
+func saveShellGlobals(t *testing.T) {
+	t.Helper()
+	prevMode := shellMode
+	prevTee := shellTee
+	prevJSON := shellJSON
+	prevNoTrack := shellNoTrack
+	prevUltra := shellUltraCompact
+	prevGainJSON := shellGainJSON
+	prevGainDays := shellGainDays
+	prevVerbosity := shellVerbosity
+	t.Cleanup(func() {
+		shellMode = prevMode
+		shellTee = prevTee
+		shellJSON = prevJSON
+		shellNoTrack = prevNoTrack
+		shellUltraCompact = prevUltra
+		shellGainJSON = prevGainJSON
+		shellGainDays = prevGainDays
+		shellVerbosity = prevVerbosity
+	})
+}
+
 func TestRunShellRunExitCodePropagation(t *testing.T) {
 	t.Parallel()
+	lockShellTest(t)
+	saveShellGlobals(t)
 
 	cmd := &cobra.Command{}
 	cmd.SetOut(&bytes.Buffer{})
@@ -43,6 +78,8 @@ func TestRunShellRunExitCodePropagation(t *testing.T) {
 
 func TestRunShellRunRawPassthrough(t *testing.T) {
 	t.Parallel()
+	lockShellTest(t)
+	saveShellGlobals(t)
 
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
@@ -70,6 +107,8 @@ func TestRunShellRunRawPassthrough(t *testing.T) {
 
 func TestRunShellRunCompactFailureVisibility(t *testing.T) {
 	t.Parallel()
+	lockShellTest(t)
+	saveShellGlobals(t)
 
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
@@ -93,6 +132,8 @@ func TestRunShellRunCompactFailureVisibility(t *testing.T) {
 }
 
 func TestRunShellGainEmptyState(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
 	customDataHome := t.TempDir()
 	original := os.Getenv("XDG_DATA_HOME")
 	t.Cleanup(func() {
@@ -122,6 +163,8 @@ func TestRunShellGainEmptyState(t *testing.T) {
 }
 
 func TestRunShellGainJSON(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
 	customDataHome := t.TempDir()
 	original := os.Getenv("XDG_DATA_HOME")
 	t.Cleanup(func() {

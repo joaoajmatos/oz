@@ -3,6 +3,7 @@ package track
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
@@ -142,6 +143,52 @@ func TestStoreQuerySinceDaysBoundary(t *testing.T) {
 	}
 	if runs[0].Command != "after" || runs[1].Command != "at-cutoff" {
 		t.Fatalf("unexpected retained runs: %#v", []string{runs[0].Command, runs[1].Command})
+	}
+}
+
+func TestStoreConcurrentInsertAndQuery(t *testing.T) {
+	t.Parallel()
+
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	now := time.Now().Unix()
+	var wg sync.WaitGroup
+	errCh := make(chan error, 40)
+	for i := 0; i < 20; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errCh <- store.Insert(Run{
+				Command:       "c",
+				RecordedAt:    now + int64(i),
+				DurationMs:    1,
+				TokenBefore:   4,
+				TokenAfter:    2,
+				TokenSaved:    2,
+				ReductionPct:  50,
+				MatchedFilter: "generic",
+				ExitCode:      0,
+			})
+			_, queryErr := store.Query(QueryOpts{Limit: 5})
+			errCh <- queryErr
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		if err != nil {
+			t.Fatalf("concurrent store operation failed: %v", err)
+		}
+	}
+
+	runs, err := store.Query(QueryOpts{})
+	if err != nil {
+		t.Fatalf("final query: %v", err)
+	}
+	if len(runs) != 20 {
+		t.Fatalf("expected 20 runs after concurrent inserts, got %d", len(runs))
 	}
 }
 

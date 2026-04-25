@@ -42,6 +42,8 @@ func Execute(args []string, opts Options) (Result, error) {
 				outStdout = fallbackStdout
 				outStderr = fallbackStderr
 				matchedFilter = filter.FilterGeneric
+			} else {
+				warnings = append(warnings, fmt.Sprintf("generic fallback failed: %v", fallbackErr))
 			}
 		} else {
 			outStdout = compactStdout

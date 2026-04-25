@@ -139,6 +139,15 @@ directory. They assert on exit behaviour and filesystem state.
 | excluded command | command bypasses suggestion/rewrite |
 | hooks disabled or config error | fail-open behavior leaves command unchanged |
 
+### `oz shell` stabilization gates (SHL-4)
+
+| Scenario | Assertion |
+|---|---|
+| repeated shell package test runs | no flaky failures across repeated CI-style runs |
+| specialized filter failure | deterministic generic fallback and explicit warning metadata |
+| concurrent tracking access | inserts/queries remain stable without sqlite lock failures |
+| shell command tests | global CLI flag/env state is isolated per test |
+
 ### `oz shell run` unit and golden tests (planned)
 
 | Behaviour | Test type |

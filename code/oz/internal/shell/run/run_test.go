@@ -1,6 +1,7 @@
 package run_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -109,6 +110,18 @@ func TestExecuteMatchedFilterID(t *testing.T) {
 
 func TestExecuteSpecializedFallbackWarning(t *testing.T) {
 	t.Parallel()
+
+	original := os.Getenv("OZ_SHELL_TEST_FORCE_FILTER_ERROR")
+	t.Cleanup(func() {
+		if original == "" {
+			_ = os.Unsetenv("OZ_SHELL_TEST_FORCE_FILTER_ERROR")
+		} else {
+			_ = os.Setenv("OZ_SHELL_TEST_FORCE_FILTER_ERROR", original)
+		}
+	})
+	if err := os.Setenv("OZ_SHELL_TEST_FORCE_FILTER_ERROR", "1"); err != nil {
+		t.Fatalf("set env: %v", err)
+	}
 
 	second, secondErr := shellrun.Execute([]string{"go", "test", "__OZ_FORCE_SPECIALIZED_FILTER_ERROR__"}, shellrun.Options{
 		Mode:    "compact",

@@ -24,7 +24,7 @@ func Decide(command string, cfg Config) Decision {
 			return Decision{Allowed: false, Mode: cfg.Mode, Reason: "command excluded"}
 		}
 	}
-	if strings.HasPrefix(trimmed, "oz shell run --") {
+	if isAlreadyWrapped(trimmed) {
 		return Decision{Allowed: false, Mode: cfg.Mode, Reason: "already wrapped"}
 	}
 
@@ -50,5 +50,13 @@ func firstToken(command string) string {
 	if len(fields) == 0 {
 		return ""
 	}
-	return fields[0]
+	return strings.Trim(fields[0], `"'`)
+}
+
+func isAlreadyWrapped(command string) bool {
+	fields := strings.Fields(strings.ToLower(strings.TrimSpace(command)))
+	if len(fields) < 4 {
+		return false
+	}
+	return fields[0] == "oz" && fields[1] == "shell" && fields[2] == "run" && fields[3] == "--"
 }

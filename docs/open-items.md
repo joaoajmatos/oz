@@ -27,6 +27,7 @@ Remaining risks to manage in rollout:
 1. preserving full failure signal while aggressively reducing tokens
 2. maintaining deterministic compact output across tool versions
 3. keeping wrapper overhead within the v1 SLO targets
+4. broad real-world parser drift coverage for non-MVP command families (fast-follow beyond SHL-4)
 
 ### oz audit — performance baseline (Sprint A6, 2026-04-20)
 

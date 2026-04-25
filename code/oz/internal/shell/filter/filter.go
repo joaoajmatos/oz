@@ -1,10 +1,14 @@
 package filter
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 func Apply(args []string, stdout, stderr string, exitCode int, ultraCompact bool) (compactStdout, compactStderr, matched string, err error) {
 	matched = Classify(args)
-	if matched != FilterGeneric && hasArg(args, "__OZ_FORCE_SPECIALIZED_FILTER_ERROR__") {
+	if matched != FilterGeneric && os.Getenv("OZ_SHELL_TEST_FORCE_FILTER_ERROR") == "1" &&
+		hasArg(args, "__OZ_FORCE_SPECIALIZED_FILTER_ERROR__") {
 		return "", "", matched, fmt.Errorf("forced specialized filter error")
 	}
 	switch matched {
