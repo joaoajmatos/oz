@@ -143,9 +143,10 @@ func runAddClaude(_ *cobra.Command, args []string) error {
 	fmt.Printf("  %s %s\n", termstyle.Subtle.Render("workspace"), root)
 	fmt.Println("  CLAUDE.md")
 	fmt.Println("  .claude/settings.json")
-	fmt.Println("  .cursor/hooks/oz-session-init.sh")
-	fmt.Println("  .cursor/hooks/oz-after-edit.sh")
-	fmt.Println("  .cursor/hooks/oz-pre-commit.sh")
+	fmt.Println("  .oz/hooks/oz-session-init.sh")
+	fmt.Println("  .oz/hooks/oz-after-edit.sh")
+	fmt.Println("  .oz/hooks/oz-pre-commit.sh")
+	fmt.Println("  .oz/hooks/oz-shell-rewrite.sh")
 	return nil
 }
 
@@ -162,9 +163,10 @@ func runAddCursor(_ *cobra.Command, args []string) error {
 	fmt.Printf("%s %s\n", termstyle.OK.Render("✓"), termstyle.Subtle.Render("Added Cursor integration"))
 	fmt.Printf("  %s %s\n", termstyle.Subtle.Render("workspace"), root)
 	fmt.Println("  .cursor/hooks.json")
-	fmt.Println("  .cursor/hooks/oz-session-init.sh")
-	fmt.Println("  .cursor/hooks/oz-after-edit.sh")
-	fmt.Println("  .cursor/hooks/oz-pre-commit.sh")
+	fmt.Println("  .oz/hooks/oz-session-init.sh")
+	fmt.Println("  .oz/hooks/oz-after-edit.sh")
+	fmt.Println("  .oz/hooks/oz-pre-commit.sh")
+	fmt.Println("  .oz/hooks/oz-shell-rewrite.sh")
 	return nil
 }
 
