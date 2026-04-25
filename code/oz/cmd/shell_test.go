@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/joaoajmatos/oz/internal/shell/gain"
+	shellrun "github.com/joaoajmatos/oz/internal/shell/run"
 	"github.com/joaoajmatos/oz/internal/shell/track"
 	"github.com/spf13/cobra"
 )
@@ -169,8 +171,8 @@ func TestRunShellRunExitCodePropagation(t *testing.T) {
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 
-	shellMode = "raw"
-	shellTee = "never"
+	shellMode = string(shellrun.ModeRaw)
+	shellTee = string(shellrun.TeeModeNever)
 	shellNoTrack = true
 	shellJSON = false
 	shellUltraCompact = false
@@ -200,8 +202,8 @@ func TestRunShellRunRawPassthrough(t *testing.T) {
 	cmd.SetOut(stdout)
 	cmd.SetErr(stderr)
 
-	shellMode = "raw"
-	shellTee = "never"
+	shellMode = string(shellrun.ModeRaw)
+	shellTee = string(shellrun.TeeModeNever)
 	shellNoTrack = true
 	shellJSON = false
 	shellUltraCompact = false
@@ -229,8 +231,8 @@ func TestRunShellRunCompactFailureVisibility(t *testing.T) {
 	cmd.SetOut(stdout)
 	cmd.SetErr(stderr)
 
-	shellMode = "compact"
-	shellTee = "never"
+	shellMode = string(shellrun.ModeCompact)
+	shellTee = string(shellrun.TeeModeNever)
 	shellNoTrack = true
 	shellJSON = false
 	shellUltraCompact = false
@@ -268,7 +270,7 @@ func TestRunShellGainEmptyState(t *testing.T) {
 	shellGainJSON = false
 	shellGainAllTime = false
 	shellGainDays = 90
-	shellGainPeriod = "daily"
+	shellGainPeriod = string(gain.PeriodDaily)
 	if err := runShellGain(cmd, nil); err != nil {
 		t.Fatalf("runShellGain returned error: %v", err)
 	}
@@ -321,7 +323,7 @@ func TestRunShellGainJSON(t *testing.T) {
 	shellGainJSON = true
 	shellGainAllTime = true
 	shellGainDays = 90
-	shellGainPeriod = "weekly"
+	shellGainPeriod = string(gain.PeriodWeekly)
 	if err := runShellGain(cmd, nil); err != nil {
 		t.Fatalf("runShellGain returned error: %v", err)
 	}
@@ -337,7 +339,7 @@ func TestRunShellGainJSON(t *testing.T) {
 	if got := int(summary["invocation_count"].(float64)); got != 1 {
 		t.Fatalf("invocation_count=%d, want 1", got)
 	}
-	if payload["period"].(string) != "weekly" {
+	if payload["period"].(string) != string(gain.PeriodWeekly) {
 		t.Fatalf("period=%q, want weekly", payload["period"])
 	}
 }
@@ -376,7 +378,7 @@ func TestRunShellGainHumanOutputIncludesSections(t *testing.T) {
 	shellGainJSON = false
 	shellGainAllTime = true
 	shellGainDays = 90
-	shellGainPeriod = "daily"
+	shellGainPeriod = string(gain.PeriodDaily)
 	if err := runShellGain(cmd, nil); err != nil {
 		t.Fatalf("runShellGain returned error: %v", err)
 	}

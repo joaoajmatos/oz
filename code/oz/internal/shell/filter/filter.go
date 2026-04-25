@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-func Apply(args []string, stdout, stderr string, exitCode int, ultraCompact bool) (compactStdout, compactStderr, matched string, err error) {
+func Apply(args []string, stdout, stderr string, exitCode int, ultraCompact bool) (compactStdout, compactStderr string, matched ID, err error) {
 	matched = Classify(args)
 	if matched != FilterGeneric && os.Getenv("OZ_SHELL_TEST_FORCE_FILTER_ERROR") == "1" &&
 		hasArg(args, "__OZ_FORCE_SPECIALIZED_FILTER_ERROR__") {

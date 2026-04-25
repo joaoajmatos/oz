@@ -7,44 +7,55 @@ type Decision struct {
 	Mode      Mode
 	Suggested string
 	Rewritten string
-	Reason    string
+	Reason    Reason
 }
+
+type Reason string
+
+const (
+	ReasonEmptyCommand       Reason = "empty command"
+	ReasonHooksDisabled      Reason = "hooks disabled"
+	ReasonCommandExcluded    Reason = "command excluded"
+	ReasonAlreadyWrapped     Reason = "already wrapped"
+	ReasonRewriteOptIn       Reason = "rewrite opt-in enabled"
+	ReasonSuggestModeDefault Reason = "suggest mode default"
+)
 
 func Decide(command string, cfg Config) Decision {
 	trimmed := strings.TrimSpace(command)
 	if trimmed == "" {
-		return Decision{Allowed: false, Mode: cfg.Mode, Reason: "empty command"}
+		return Decision{Allowed: false, Mode: cfg.Mode, Reason: ReasonEmptyCommand}
 	}
 	if !cfg.Enabled {
-		return Decision{Allowed: false, Mode: cfg.Mode, Reason: "hooks disabled"}
+		return Decision{Allowed: false, Mode: cfg.Mode, Reason: ReasonHooksDisabled}
 	}
 	base := firstToken(trimmed)
 	for _, excluded := range cfg.ExcludeCommands {
 		if strings.EqualFold(strings.TrimSpace(excluded), base) {
-			return Decision{Allowed: false, Mode: cfg.Mode, Reason: "command excluded"}
+			return Decision{Allowed: false, Mode: cfg.Mode, Reason: ReasonCommandExcluded}
 		}
 	}
 	if isAlreadyWrapped(trimmed) {
-		return Decision{Allowed: false, Mode: cfg.Mode, Reason: "already wrapped"}
+		return Decision{Allowed: false, Mode: cfg.Mode, Reason: ReasonAlreadyWrapped}
 	}
 
 	wrapped := rewriteCompound(trimmed, cfg)
 	if wrapped == trimmed {
-		return Decision{Allowed: false, Mode: cfg.Mode, Reason: "command excluded"}
+		return Decision{Allowed: false, Mode: cfg.Mode, Reason: ReasonCommandExcluded}
 	}
 	if cfg.Mode == ModeRewrite {
 		return Decision{
 			Allowed:   true,
 			Mode:      cfg.Mode,
 			Rewritten: wrapped,
-			Reason:    "rewrite opt-in enabled",
+			Reason:    ReasonRewriteOptIn,
 		}
 	}
 	return Decision{
 		Allowed:   true,
 		Mode:      ModeSuggest,
 		Suggested: wrapped,
-		Reason:    "suggest mode default",
+		Reason:    ReasonSuggestModeDefault,
 	}
 }
 

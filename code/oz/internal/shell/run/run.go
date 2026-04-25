@@ -26,13 +26,13 @@ func Execute(args []string, opts Options) (Result, error) {
 	warnings := make([]string, 0)
 	outStdout := execResult.Stdout
 	outStderr := execResult.Stderr
-	matchedFilter := "none"
+	matchedFilter := filter.FilterNone
 	mode := opts.Mode
 	if mode == "" {
-		mode = "compact"
+		mode = ModeCompact
 	}
 
-	if mode == "compact" {
+	if mode == ModeCompact {
 		compactStdout, compactStderr, detectedFilter, compactErr := filter.Apply(args, execResult.Stdout, execResult.Stderr, execResult.ExitCode, opts.UltraCompact)
 		matchedFilter = detectedFilter
 		if compactErr != nil {
@@ -64,8 +64,8 @@ func Execute(args []string, opts Options) (Result, error) {
 	runEnvelope := envelope.RunResult{
 		SchemaVersion:  "1",
 		Command:        command,
-		Mode:           mode,
-		MatchedFilter:  matchedFilter,
+		Mode:           string(mode),
+		MatchedFilter:  string(matchedFilter),
 		ExitCode:       execResult.ExitCode,
 		DurationMs:     execResult.DurationMs,
 		TokenEstBefore: envelope.EstimateTokens(execResult.Stdout + execResult.Stderr),
@@ -92,13 +92,13 @@ func Execute(args []string, opts Options) (Result, error) {
 	}, nil
 }
 
-func shouldTee(mode string, exitCode int) bool {
+func shouldTee(mode TeeMode, exitCode int) bool {
 	switch mode {
-	case "always":
+	case TeeModeAlways:
 		return true
-	case "never":
+	case TeeModeNever:
 		return false
-	case "failures":
+	case TeeModeFailures:
 		return exitCode != 0
 	default:
 		return exitCode != 0

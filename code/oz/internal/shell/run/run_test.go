@@ -12,8 +12,8 @@ func TestExecuteCompactGeneric(t *testing.T) {
 	t.Parallel()
 
 	result, err := shellrun.Execute([]string{"sh", "-c", "echo hello; echo hello; echo err >&2"}, shellrun.Options{
-		Mode:    "compact",
-		TeeMode: "never",
+		Mode:    shellrun.ModeCompact,
+		TeeMode: shellrun.TeeModeNever,
 		NoTrack: true,
 	})
 	if err != nil {
@@ -31,8 +31,8 @@ func TestExecuteCompactFallbackToRaw(t *testing.T) {
 	t.Parallel()
 
 	result, err := shellrun.Execute([]string{"sh", "-c", "echo __OZ_COMPACT_ERROR__"}, shellrun.Options{
-		Mode:    "compact",
-		TeeMode: "never",
+		Mode:    shellrun.ModeCompact,
+		TeeMode: shellrun.TeeModeNever,
 		NoTrack: true,
 	})
 	if err != nil {
@@ -50,8 +50,8 @@ func TestExecuteTeeFailuresOnly(t *testing.T) {
 	t.Parallel()
 
 	okResult, err := shellrun.Execute([]string{"sh", "-c", "echo ok"}, shellrun.Options{
-		Mode:    "raw",
-		TeeMode: "failures",
+		Mode:    shellrun.ModeRaw,
+		TeeMode: shellrun.TeeModeFailures,
 		NoTrack: true,
 	})
 	if err != nil {
@@ -62,8 +62,8 @@ func TestExecuteTeeFailuresOnly(t *testing.T) {
 	}
 
 	failResult, err := shellrun.Execute([]string{"sh", "-c", "echo fail >&2; exit 3"}, shellrun.Options{
-		Mode:    "raw",
-		TeeMode: "failures",
+		Mode:    shellrun.ModeRaw,
+		TeeMode: shellrun.TeeModeFailures,
 		NoTrack: true,
 	})
 	if err != nil {
@@ -80,8 +80,8 @@ func TestExecuteLargeOutputNoPanic(t *testing.T) {
 	builder := strings.Repeat("line\n", 5000)
 	cmd := "cat <<'EOF'\n" + builder + "EOF"
 	result, err := shellrun.Execute([]string{"sh", "-c", cmd}, shellrun.Options{
-		Mode:    "compact",
-		TeeMode: "never",
+		Mode:    shellrun.ModeCompact,
+		TeeMode: shellrun.TeeModeNever,
 		NoTrack: true,
 	})
 	if err != nil {
@@ -96,8 +96,8 @@ func TestExecuteMatchedFilterID(t *testing.T) {
 	t.Parallel()
 
 	result, err := shellrun.Execute([]string{"go", "test", "-run", "^$", "./internal/shell/envelope"}, shellrun.Options{
-		Mode:    "compact",
-		TeeMode: "never",
+		Mode:    shellrun.ModeCompact,
+		TeeMode: shellrun.TeeModeNever,
 		NoTrack: true,
 	})
 	if err != nil {
@@ -124,8 +124,8 @@ func TestExecuteSpecializedFallbackWarning(t *testing.T) {
 	}
 
 	second, secondErr := shellrun.Execute([]string{"go", "test", "__OZ_FORCE_SPECIALIZED_FILTER_ERROR__"}, shellrun.Options{
-		Mode:    "compact",
-		TeeMode: "never",
+		Mode:    shellrun.ModeCompact,
+		TeeMode: shellrun.TeeModeNever,
 		NoTrack: true,
 	})
 	if secondErr != nil {

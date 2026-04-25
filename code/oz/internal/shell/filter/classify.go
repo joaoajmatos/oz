@@ -2,15 +2,18 @@ package filter
 
 import "strings"
 
+type ID string
+
 const (
-	FilterGeneric   = "generic"
-	FilterGitStatus = "git.status"
-	FilterGitDiff   = "git.diff"
-	FilterRG        = "rg"
-	FilterGoTest    = "go.test"
+	FilterNone      ID = "none"
+	FilterGeneric   ID = "generic"
+	FilterGitStatus ID = "git.status"
+	FilterGitDiff   ID = "git.diff"
+	FilterRG        ID = "rg"
+	FilterGoTest    ID = "go.test"
 )
 
-func Classify(args []string) string {
+func Classify(args []string) ID {
 	if len(args) < 1 {
 		return FilterGeneric
 	}

@@ -59,17 +59,17 @@ func runShellRun(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("missing command after --")
 	}
-	mode := strings.TrimSpace(shellMode)
+	mode := shellrun.Mode(strings.TrimSpace(shellMode))
 	if mode == "" {
-		mode = "compact"
+		mode = shellrun.ModeCompact
 	}
-	if mode != "compact" && mode != "raw" {
+	if mode != shellrun.ModeCompact && mode != shellrun.ModeRaw {
 		return fmt.Errorf("invalid mode %q (must be compact|raw)", mode)
 	}
 
 	result, err := shellrun.Execute(args, shellrun.Options{
 		Mode:         mode,
-		TeeMode:      shellTee,
+		TeeMode:      shellrun.TeeMode(shellTee),
 		NoTrack:      shellNoTrack,
 		UltraCompact: shellUltraCompact,
 	})
@@ -200,7 +200,7 @@ func runShellRewrite(cmd *cobra.Command, args []string) error {
 	}
 
 	switch decision.Reason {
-	case "command excluded", "hooks disabled":
+	case hooks.ReasonCommandExcluded, hooks.ReasonHooksDisabled:
 		return shellExitError{code: 2}
 	default:
 		return shellExitError{code: 1}
@@ -220,16 +220,16 @@ func (e shellExitError) ExitCode() int {
 }
 
 func init() {
-	shellRunCmd.Flags().StringVar(&shellMode, "mode", "compact", "output mode: compact|raw")
+	shellRunCmd.Flags().StringVar(&shellMode, "mode", string(shellrun.ModeCompact), "output mode: compact|raw")
 	shellRunCmd.Flags().BoolVar(&shellJSON, "json", false, "emit JSON envelope")
 	shellRunCmd.Flags().BoolVar(&shellNoTrack, "no-track", false, "skip tracking DB write")
-	shellRunCmd.Flags().StringVar(&shellTee, "tee", "failures", "tee raw output: failures|always|never")
+	shellRunCmd.Flags().StringVar(&shellTee, "tee", string(shellrun.TeeModeFailures), "tee raw output: failures|always|never")
 	shellRunCmd.Flags().CountVarP(&shellVerbosity, "verbose", "v", "verbosity (-v, -vv, -vvv)")
 	shellRunCmd.Flags().BoolVarP(&shellUltraCompact, "ultra-compact", "u", false, "maximum token reduction")
 	shellGainCmd.Flags().BoolVar(&shellGainJSON, "json", false, "emit JSON")
 	shellGainCmd.Flags().IntVar(&shellGainDays, "days", 90, "retention window in days (0 = all)")
 	shellGainCmd.Flags().BoolVar(&shellGainAllTime, "all-time", false, "use all tracked history")
-	shellGainCmd.Flags().StringVar(&shellGainPeriod, "period", "daily", "trend period: daily|weekly|monthly")
+	shellGainCmd.Flags().StringVar(&shellGainPeriod, "period", string(gain.PeriodDaily), "trend period: daily|weekly|monthly")
 	shellRewriteCmd.Flags().StringSliceVar(&shellRewriteExclude, "exclude", nil, "commands to bypass rewrite")
 	shellCmd.AddCommand(shellRunCmd, shellGainCmd, shellRewriteCmd)
 }

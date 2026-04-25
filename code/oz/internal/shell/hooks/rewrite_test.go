@@ -78,7 +78,7 @@ func TestDecideAlreadyWrappedVariants(t *testing.T) {
 		if decision.Allowed {
 			t.Fatalf("expected already-wrapped command to be blocked: %q", in)
 		}
-		if decision.Reason != "already wrapped" {
+		if decision.Reason != hooks.ReasonAlreadyWrapped {
 			t.Fatalf("unexpected reason %q for %q", decision.Reason, in)
 		}
 	}
