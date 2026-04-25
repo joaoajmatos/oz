@@ -42,7 +42,7 @@ Scope for initial rollout:
 
 Deferred to follow-up after initial command ship:
 
-1. transparent rewrite of `cat` / `head` / `tail` to `oz shell read`
+1. ~~transparent rewrite of `cat` / `head` / `tail` to `oz shell read`~~ — **resolved**: `rewriteSegment` now rewrites `cat [files]`, `head [-n N] <file>`, and `tail [-n N] <file>` to `oz shell read` so the language-aware readfilter path is used transparently via the hook. Unsupported forms (redirections, `-f`, `-c`, unknown flags) fall through to `oz shell run` as before.
 2. broader language-specific readers beyond the initial baseline set
 
 ### oz audit — performance baseline (Sprint A6, 2026-04-20)

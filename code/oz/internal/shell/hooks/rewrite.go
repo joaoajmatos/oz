@@ -1,6 +1,9 @@
 package hooks
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 type Decision struct {
 	Allowed   bool
@@ -69,10 +72,16 @@ func firstToken(command string) string {
 
 func isAlreadyWrapped(command string) bool {
 	fields := strings.Fields(strings.ToLower(strings.TrimSpace(command)))
-	if len(fields) < 4 {
+	if len(fields) < 3 || fields[0] != "oz" || fields[1] != "shell" {
 		return false
 	}
-	return fields[0] == "oz" && fields[1] == "shell" && fields[2] == "run" && fields[3] == "--"
+	switch fields[2] {
+	case "read":
+		return true
+	case "run":
+		return len(fields) >= 4 && fields[3] == "--"
+	}
+	return false
 }
 
 func rewriteCompound(command string, cfg Config) string {
@@ -107,7 +116,102 @@ func rewriteSegment(segment string, cfg Config) string {
 
 	leading := segment[:len(segment)-len(strings.TrimLeft(segment, " \t"))]
 	trailing := segment[len(strings.TrimRight(segment, " \t")):]
+
+	if rewritten, ok := tryRewriteFileRead(trimmed); ok {
+		return leading + rewritten + trailing
+	}
 	return leading + "oz shell run -- " + trimmed + trailing
+}
+
+// tryRewriteFileRead rewrites cat/head/tail file reads to oz shell read so the
+// language-aware readfilter path is used instead of the generic run filter.
+// Returns the rewritten command and true if applicable, "" and false otherwise.
+func tryRewriteFileRead(command string) (string, bool) {
+	// Bail on redirections — we can't safely rewrite those.
+	if strings.ContainsAny(command, "<>") {
+		return "", false
+	}
+	fields := strings.Fields(command)
+	if len(fields) == 0 {
+		return "", false
+	}
+	cmd := strings.ToLower(strings.Trim(fields[0], `"'`))
+	switch cmd {
+	case "cat":
+		return rewriteCatRead(fields)
+	case "head":
+		return rewriteWindowedRead(fields, "--max-lines", 10)
+	case "tail":
+		return rewriteWindowedRead(fields, "--tail-lines", 10)
+	}
+	return "", false
+}
+
+func rewriteCatRead(fields []string) (string, bool) {
+	args := fields[1:]
+	if len(args) == 0 {
+		return "", false // bare cat reads stdin interactively; skip
+	}
+	for _, a := range args {
+		if strings.HasPrefix(a, "-") && a != "-" {
+			return "", false // unsupported flag
+		}
+	}
+	return "oz shell read " + strings.Join(args, " "), true
+}
+
+// rewriteWindowedRead handles head/tail with optional -n N or -N line count.
+// Unsupported flags (e.g. tail -f) fall through to oz shell run.
+func rewriteWindowedRead(fields []string, flag string, defaultLines int) (string, bool) {
+	args := fields[1:]
+	lines := 0
+	var files []string
+	for i := 0; i < len(args); {
+		a := args[i]
+		switch {
+		case a == "-n" || a == "--lines":
+			if i+1 >= len(args) {
+				return "", false
+			}
+			n, err := strconv.Atoi(args[i+1])
+			if err != nil || n <= 0 {
+				return "", false
+			}
+			lines = n
+			i += 2
+		case len(a) > 1 && a[0] == '-' && isAllDigits(a[1:]):
+			n, err := strconv.Atoi(a[1:])
+			if err != nil || n <= 0 {
+				return "", false
+			}
+			lines = n
+			i++
+		case strings.HasPrefix(a, "-"):
+			return "", false // unsupported flag
+		default:
+			files = append(files, a)
+			i++
+		}
+	}
+	if len(files) == 0 {
+		return "", false
+	}
+	if lines == 0 {
+		lines = defaultLines
+	}
+	return "oz shell read " + flag + " " + strconv.Itoa(lines) + " " + strings.Join(files, " "), true
+}
+
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func nextSegment(input string) (segment, op string, consumed int) {
