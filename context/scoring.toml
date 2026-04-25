@@ -29,28 +29,20 @@ min_candidate_confidence = 0.2
 include_notes = true
 concept_min_relevance = 0.4
 concept_min_fraction_of_top = 0.75
-# Require ≥1/3 of query stems to appear in the concept — blocks single-stem
-# false positives on queries with ≥4 terms without hurting short queries.
 concept_min_query_coverage = 0.33
-# Bigrams sharpen compound phrases (e.g. "semantic_overlay", "query_engine")
-# without affecting agent routing (tokenize.use_bigrams stays false).
 concept_use_bigrams = true
 max_relevant_concepts = 10
 
 [retrieval.trust_boost]
-# Widen the spread so low-trust notes cannot outrank high-trust spec sections.
-specs   = 1.6   # default 1.3
+specs   = 1.6
 docs    = 1.0
 context = 1.0
-notes   = 0.4   # default 0.6
+notes   = 0.4
 
 [retrieval.bm25]
-# Slightly below routing k1: tighter term saturation in long decision bodies.
 k1 = 1.05
 
 [retrieval.fields]
-# Favor title and path (ADR ids, section headings) over long bodies that may
-# duplicate golden benchmark phrasing. See ADR-0004 / retrieval PRD.
 weight_title = 2.5
 weight_path = 1.7
 weight_body = 0.62
@@ -58,7 +50,6 @@ weight_body = 0.62
 [retrieval.concepts]
 weight_name = 2.0
 weight_description = 1.0
-# Paths from semantic source_files (ADRs, package paths) for query–concept match.
 weight_source_files = 1.2
 
 [tokenize]

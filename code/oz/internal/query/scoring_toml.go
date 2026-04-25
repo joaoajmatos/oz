@@ -3,10 +3,11 @@ package query
 import (
 	"errors"
 	"fmt"
-	"github.com/pelletier/go-toml/v2"
 	"math"
 	"os"
 	"path/filepath"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 const scoringHeader = `# Default BM25F and routing parameters for "oz context query".
@@ -63,21 +64,21 @@ type scoringTOMLTokenIn struct {
 }
 
 type scoringTOMLRetrievalIn struct {
-	IncludeNotes  *bool                      `toml:"include_notes"`
-	MinRelevance  *float64                   `toml:"min_relevance"`
-	MaxBlocks     *float64                   `toml:"max_blocks"`
-	MaxCodeEntryPoints *float64              `toml:"max_code_entry_points"`
-	MaxImplementingPackages *float64         `toml:"max_implementing_packages"`
-	MaxRelevantConcepts     *float64         `toml:"max_relevant_concepts"`
-	ConceptMinRelevance     *float64 `toml:"concept_min_relevance"`
-	ConceptMinFractionOfTop *float64 `toml:"concept_min_fraction_of_top"`
-	ConceptMinQueryCoverage *float64 `toml:"concept_min_query_coverage"`
-	ConceptUseBigrams       *bool    `toml:"concept_use_bigrams"`
-	BM25          *scoringTOMLRetrievalBM25  `toml:"bm25"`
-	Fields        *scoringTOMLRetrievalField `toml:"fields"`
-	Concepts      *scoringTOMLRetrievalConcepts `toml:"concepts"`
-	TrustBoost    *scoringTOMLRetrievalTrust `toml:"trust_boost"`
-	AgentAffinity *float64                   `toml:"agent_affinity"`
+	IncludeNotes            *bool                         `toml:"include_notes"`
+	MinRelevance            *float64                      `toml:"min_relevance"`
+	MaxBlocks               *float64                      `toml:"max_blocks"`
+	MaxCodeEntryPoints      *float64                      `toml:"max_code_entry_points"`
+	MaxImplementingPackages *float64                      `toml:"max_implementing_packages"`
+	MaxRelevantConcepts     *float64                      `toml:"max_relevant_concepts"`
+	ConceptMinRelevance     *float64                      `toml:"concept_min_relevance"`
+	ConceptMinFractionOfTop *float64                      `toml:"concept_min_fraction_of_top"`
+	ConceptMinQueryCoverage *float64                      `toml:"concept_min_query_coverage"`
+	ConceptUseBigrams       *bool                         `toml:"concept_use_bigrams"`
+	BM25                    *scoringTOMLRetrievalBM25     `toml:"bm25"`
+	Fields                  *scoringTOMLRetrievalField    `toml:"fields"`
+	Concepts                *scoringTOMLRetrievalConcepts `toml:"concepts"`
+	TrustBoost              *scoringTOMLRetrievalTrust    `toml:"trust_boost"`
+	AgentAffinity           *float64                      `toml:"agent_affinity"`
 }
 
 type scoringTOMLRetrievalBM25 struct {
@@ -92,9 +93,9 @@ type scoringTOMLRetrievalField struct {
 }
 
 type scoringTOMLRetrievalConcepts struct {
-	WeightName         *float64 `toml:"weight_name"`
-	WeightDescription  *float64 `toml:"weight_description"`
-	WeightSourceFiles  *float64 `toml:"weight_source_files"`
+	WeightName        *float64 `toml:"weight_name"`
+	WeightDescription *float64 `toml:"weight_description"`
+	WeightSourceFiles *float64 `toml:"weight_source_files"`
 }
 
 type scoringTOMLRetrievalTrust struct {
@@ -317,14 +318,14 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 			BPath float64 `toml:"b_path"`
 		} `toml:"fields"`
 		Weights struct {
-			Scope              float64 `toml:"scope"`
-			Role               float64 `toml:"role"`
-			Responsibilities   float64 `toml:"responsibilities"`
-			Readchain          float64 `toml:"readchain"`
-			Skills             float64 `toml:"skills"`
-			ContextTopics      float64 `toml:"context_topics"`
-			Rules              float64 `toml:"rules"`
-			OutOfScopePenalty  float64 `toml:"out_of_scope_penalty"`
+			Scope             float64 `toml:"scope"`
+			Role              float64 `toml:"role"`
+			Responsibilities  float64 `toml:"responsibilities"`
+			Readchain         float64 `toml:"readchain"`
+			Skills            float64 `toml:"skills"`
+			ContextTopics     float64 `toml:"context_topics"`
+			Rules             float64 `toml:"rules"`
+			OutOfScopePenalty float64 `toml:"out_of_scope_penalty"`
 		} `toml:"weights"`
 		Routing struct {
 			Confidence             float64 `toml:"confidence_threshold"`
@@ -336,10 +337,10 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 			UseBigrams bool `toml:"use_bigrams"`
 		} `toml:"tokenize"`
 		Retrieval struct {
-			IncludeNotes  bool    `toml:"include_notes"`
-			MinRelevance  float64 `toml:"min_relevance"`
-			MaxBlocks     float64 `toml:"max_blocks"`
-			MaxCodeEntryPoints float64 `toml:"max_code_entry_points"`
+			IncludeNotes            bool    `toml:"include_notes"`
+			MinRelevance            float64 `toml:"min_relevance"`
+			MaxBlocks               float64 `toml:"max_blocks"`
+			MaxCodeEntryPoints      float64 `toml:"max_code_entry_points"`
 			MaxImplementingPackages float64 `toml:"max_implementing_packages"`
 			MaxRelevantConcepts     float64 `toml:"max_relevant_concepts"`
 			ConceptMinRelevance     float64 `toml:"concept_min_relevance"`
@@ -347,7 +348,7 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 			ConceptMinQueryCoverage float64 `toml:"concept_min_query_coverage"`
 			ConceptUseBigrams       bool    `toml:"concept_use_bigrams"`
 			AgentAffinity           float64 `toml:"agent_affinity"`
-			BM25          struct {
+			BM25                    struct {
 				K1 float64 `toml:"k1"`
 			} `toml:"bm25"`
 			Fields struct {
@@ -357,9 +358,9 @@ func buildTOMLDocument(cfg ScoringConfig) []byte {
 				WeightKind  float64 `toml:"weight_kind"`
 			} `toml:"fields"`
 			Concepts struct {
-				WeightName         float64 `toml:"weight_name"`
-				WeightDescription  float64 `toml:"weight_description"`
-				WeightSourceFiles  float64 `toml:"weight_source_files"`
+				WeightName        float64 `toml:"weight_name"`
+				WeightDescription float64 `toml:"weight_description"`
+				WeightSourceFiles float64 `toml:"weight_source_files"`
 			} `toml:"concepts"`
 			TrustBoost struct {
 				Specs   float64 `toml:"specs"`
