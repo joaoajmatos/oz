@@ -2,10 +2,15 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/joaoajmatos/oz/internal/shell/track"
 	"github.com/spf13/cobra"
 )
 
@@ -84,5 +89,88 @@ func TestRunShellRunCompactFailureVisibility(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "FAIL") {
 		t.Fatalf("expected failure context in compact stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunShellGainEmptyState(t *testing.T) {
+	customDataHome := t.TempDir()
+	original := os.Getenv("XDG_DATA_HOME")
+	t.Cleanup(func() {
+		if original == "" {
+			_ = os.Unsetenv("XDG_DATA_HOME")
+		} else {
+			_ = os.Setenv("XDG_DATA_HOME", original)
+		}
+	})
+	if err := os.Setenv("XDG_DATA_HOME", customDataHome); err != nil {
+		t.Fatalf("set XDG_DATA_HOME: %v", err)
+	}
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+
+	shellGainJSON = false
+	shellGainDays = 90
+	if err := runShellGain(cmd, nil); err != nil {
+		t.Fatalf("runShellGain returned error: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "no tracked runs") {
+		t.Fatalf("expected empty-state message, got %q", stdout.String())
+	}
+}
+
+func TestRunShellGainJSON(t *testing.T) {
+	customDataHome := t.TempDir()
+	original := os.Getenv("XDG_DATA_HOME")
+	t.Cleanup(func() {
+		if original == "" {
+			_ = os.Unsetenv("XDG_DATA_HOME")
+		} else {
+			_ = os.Setenv("XDG_DATA_HOME", original)
+		}
+	})
+	if err := os.Setenv("XDG_DATA_HOME", customDataHome); err != nil {
+		t.Fatalf("set XDG_DATA_HOME: %v", err)
+	}
+
+	dbPath := filepath.Join(customDataHome, "oz", "shell-track.db")
+	store, err := track.Open(dbPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	now := time.Now().Unix()
+	if err := store.Insert(track.Run{
+		Command:       "echo hello",
+		RecordedAt:    now,
+		DurationMs:    5,
+		TokenBefore:   20,
+		TokenAfter:    10,
+		TokenSaved:    10,
+		ReductionPct:  50,
+		MatchedFilter: "generic",
+		ExitCode:      0,
+	}); err != nil {
+		t.Fatalf("insert run: %v", err)
+	}
+	_ = store.Close()
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	shellGainJSON = true
+	shellGainDays = 90
+	if err := runShellGain(cmd, nil); err != nil {
+		t.Fatalf("runShellGain returned error: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("unmarshal json: %v", err)
+	}
+	if got := int(payload["invocation_count"].(float64)); got != 1 {
+		t.Fatalf("invocation_count=%d, want 1", got)
 	}
 }

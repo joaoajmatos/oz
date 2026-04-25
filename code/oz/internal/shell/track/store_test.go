@@ -121,6 +121,30 @@ func TestStoreDefaultPath(t *testing.T) {
 	}
 }
 
+func TestStoreQuerySinceDaysBoundary(t *testing.T) {
+	t.Parallel()
+
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	now := time.Unix(1700000000, 0)
+	cutoff := now.AddDate(0, 0, -30).Unix()
+	mustInsert(t, store, Run{Command: "before", RecordedAt: cutoff - 1, DurationMs: 1, TokenBefore: 10, TokenAfter: 9, TokenSaved: 1, ReductionPct: 10, MatchedFilter: "generic", ExitCode: 0})
+	mustInsert(t, store, Run{Command: "at-cutoff", RecordedAt: cutoff, DurationMs: 1, TokenBefore: 10, TokenAfter: 9, TokenSaved: 1, ReductionPct: 10, MatchedFilter: "generic", ExitCode: 0})
+	mustInsert(t, store, Run{Command: "after", RecordedAt: cutoff + 1, DurationMs: 1, TokenBefore: 10, TokenAfter: 9, TokenSaved: 1, ReductionPct: 10, MatchedFilter: "generic", ExitCode: 0})
+
+	runs, err := store.QuerySinceDays(30, now)
+	if err != nil {
+		t.Fatalf("QuerySinceDays: %v", err)
+	}
+	if len(runs) != 2 {
+		t.Fatalf("expected 2 runs, got %d", len(runs))
+	}
+	if runs[0].Command != "after" || runs[1].Command != "at-cutoff" {
+		t.Fatalf("unexpected retained runs: %#v", []string{runs[0].Command, runs[1].Command})
+	}
+}
+
 func openTestStore(t *testing.T) *Store {
 	t.Helper()
 

@@ -9,14 +9,20 @@
 
 ## Known Issues
 
-### Shell compression layer not yet implemented (tracking item)
+### Shell compression layer rollout status (tracking item)
 
 Specification and ADR are landed:
 
 - `specs/oz-shell-compression-specification.md`
 - `specs/decisions/0005-oz-shell-compression-architecture.md`
 
-Implementation has not started yet. Risks to manage in rollout:
+Implementation status:
+
+1. SHL-1 complete: safe wrapper execution with strict exit-code propagation, generic compact fallback, tee, JSON envelope.
+2. SHL-2 complete: deterministic MVP family filters (`git status`, `git diff`, `rg`/`grep`, `go test`) with golden and reduction tests.
+3. SHL-3 baseline complete: `oz shell gain` aggregates and transparent interception decision scaffolding (suggest default, rewrite opt-in, exclusions).
+
+Remaining risks to manage in rollout:
 
 1. preserving full failure signal while aggressively reducing tokens
 2. maintaining deterministic compact output across tool versions

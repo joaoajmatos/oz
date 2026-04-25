@@ -123,6 +123,14 @@ func (s *Store) Query(opts QueryOpts) ([]Run, error) {
 	return runs, nil
 }
 
+func (s *Store) QuerySinceDays(retentionDays int, now time.Time) ([]Run, error) {
+	opts := QueryOpts{}
+	if retentionDays > 0 {
+		opts.Since = now.AddDate(0, 0, -retentionDays).Unix()
+	}
+	return s.Query(opts)
+}
+
 func (s *Store) Prune(retentionDays int) error {
 	if s == nil || s.db == nil {
 		return fmt.Errorf("store is not open")

@@ -120,7 +120,7 @@ directory. They assert on exit behaviour and filesystem state.
 | transparent rewrite enabled | command is rewritten to `oz shell run -- ...` when eligible |
 | transparent rewrite excluded command | command bypasses rewrite and runs unchanged |
 
-### `oz shell gain` (planned)
+### `oz shell gain` (SHL-3 implemented baseline)
 
 | Scenario | Assertion |
 |---|---|
@@ -129,6 +129,15 @@ directory. They assert on exit behaviour and filesystem state.
 | retention boundary | excluded records older than retention window are not counted |
 | `--json` output | valid schema with deterministic key set and numeric fields |
 | tracking store temporarily unavailable | returns actionable error without corrupting store |
+
+### `oz shell` transparent interception (SHL-3 baseline)
+
+| Scenario | Assertion |
+|---|---|
+| suggest-mode default | command yields wrapper suggestion and does not rewrite |
+| explicit rewrite opt-in | command rewrites to `oz shell run -- ...` |
+| excluded command | command bypasses suggestion/rewrite |
+| hooks disabled or config error | fail-open behavior leaves command unchanged |
 
 ### `oz shell run` unit and golden tests (planned)
 

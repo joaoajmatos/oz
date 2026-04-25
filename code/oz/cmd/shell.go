@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/joaoajmatos/oz/internal/shell/gain"
 	shellrun "github.com/joaoajmatos/oz/internal/shell/run"
+	"github.com/joaoajmatos/oz/internal/shell/track"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +16,7 @@ var (
 	shellMode, shellTee              string
 	shellJSON, shellNoTrack          bool
 	shellUltraCompact, shellGainJSON bool
+	shellGainDays                    int
 	shellVerbosity                   int
 )
 
@@ -85,7 +89,42 @@ func runShellRun(cmd *cobra.Command, args []string) error {
 }
 
 func runShellGain(cmd *cobra.Command, _ []string) error {
-	fmt.Fprintln(cmd.OutOrStdout(), "oz shell gain: not yet implemented")
+	store, err := track.Open(track.DefaultPath())
+	if err != nil {
+		return fmt.Errorf("open tracking store: %w", err)
+	}
+	defer func() {
+		_ = store.Close()
+	}()
+
+	now := time.Now()
+	runs, err := store.QuerySinceDays(shellGainDays, now)
+	if err != nil {
+		return fmt.Errorf("query gain runs: %w", err)
+	}
+	report := gain.Aggregate(runs, shellGainDays, now)
+
+	if shellGainJSON {
+		data, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal gain json: %w", err)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(data))
+		return nil
+	}
+
+	if report.Empty() {
+		fmt.Fprintf(cmd.OutOrStdout(), "oz shell gain: no tracked runs in the last %d days\n", shellGainDays)
+		return nil
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "oz shell gain (%d days)\n", report.RetentionDays)
+	fmt.Fprintf(cmd.OutOrStdout(), "  invocations: %d\n", report.InvocationCount)
+	fmt.Fprintf(cmd.OutOrStdout(), "  tokens before: %d\n", report.TokenBeforeTotal)
+	fmt.Fprintf(cmd.OutOrStdout(), "  tokens after: %d\n", report.TokenAfterTotal)
+	fmt.Fprintf(cmd.OutOrStdout(), "  tokens saved: %d\n", report.TokenSavedTotal)
+	fmt.Fprintf(cmd.OutOrStdout(), "  avg reduction: %.2f%%\n", report.ReductionPctAvg)
+	fmt.Fprintf(cmd.OutOrStdout(), "  avg duration: %.2fms\n", report.DurationMsAvg)
 	return nil
 }
 
@@ -109,5 +148,6 @@ func init() {
 	shellRunCmd.Flags().CountVarP(&shellVerbosity, "verbose", "v", "verbosity (-v, -vv, -vvv)")
 	shellRunCmd.Flags().BoolVarP(&shellUltraCompact, "ultra-compact", "u", false, "maximum token reduction")
 	shellGainCmd.Flags().BoolVar(&shellGainJSON, "json", false, "emit JSON")
+	shellGainCmd.Flags().IntVar(&shellGainDays, "days", 90, "retention window in days (0 = all)")
 	shellCmd.AddCommand(shellRunCmd, shellGainCmd)
 }

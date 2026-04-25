@@ -8,6 +8,17 @@ Read `docs/architecture.md` for the full system design and `notes/planning/oz-co
 
 ---
 
+## Shell compression status (SHL-3)
+
+Shell compression is now implemented in staged form under `internal/shell/`:
+
+- `oz shell run` executes once, preserves exit codes, supports JSON envelope output, tee artifacts, and deterministic compact output.
+- SHL-2 specialized filters are in place for `git status`, `git diff`, `rg`/`grep`, and `go test`, with fixture-based determinism and reduction tests.
+- `oz shell gain` now aggregates local tracking store data (invocations, before/after/saved tokens, average reduction and duration) with both human and JSON output.
+- Transparent interception scaffolding is implemented via hook decision logic (`suggest` default, explicit `rewrite` opt-in, per-command exclusions, fail-open no-op).
+
+---
+
 ## What shipped in V1
 
 ### Commands
