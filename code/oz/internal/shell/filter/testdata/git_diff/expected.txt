@@ -1,0 +1,3 @@
+git diff summary: files=2 insertions=10 deletions=3
+file: cmd/shell.go
+file: internal/shell/run/run.go

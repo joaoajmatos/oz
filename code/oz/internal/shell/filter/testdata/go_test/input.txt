@@ -1,0 +1,5 @@
+ok  	github.com/joaoajmatos/oz/internal/context	0.111s
+--- FAIL: TestRunnerHandlesFailure (0.00s)
+    run_test.go:42: expected warning metadata
+FAIL	github.com/joaoajmatos/oz/internal/shell/run	0.145s
+FAIL

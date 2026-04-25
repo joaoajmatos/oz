@@ -90,3 +90,38 @@ func TestExecuteLargeOutputNoPanic(t *testing.T) {
 		t.Fatalf("expected non-zero token estimate")
 	}
 }
+
+func TestExecuteMatchedFilterID(t *testing.T) {
+	t.Parallel()
+
+	result, err := shellrun.Execute([]string{"go", "test", "-run", "^$", "./internal/shell/envelope"}, shellrun.Options{
+		Mode:    "compact",
+		TeeMode: "never",
+		NoTrack: true,
+	})
+	if err != nil {
+		t.Fatalf("Execute returned error: %v", err)
+	}
+	if result.Envelope.MatchedFilter != "go.test" {
+		t.Fatalf("MatchedFilter=%q, want go.test", result.Envelope.MatchedFilter)
+	}
+}
+
+func TestExecuteSpecializedFallbackWarning(t *testing.T) {
+	t.Parallel()
+
+	second, secondErr := shellrun.Execute([]string{"go", "test", "__OZ_FORCE_SPECIALIZED_FILTER_ERROR__"}, shellrun.Options{
+		Mode:    "compact",
+		TeeMode: "never",
+		NoTrack: true,
+	})
+	if secondErr != nil {
+		t.Fatalf("go test execution failed unexpectedly: %v", secondErr)
+	}
+	if len(second.Envelope.Warnings) == 0 {
+		t.Fatalf("expected fallback warning for specialized filter failure")
+	}
+	if second.Envelope.MatchedFilter != "generic" {
+		t.Fatalf("MatchedFilter=%q, want generic fallback", second.Envelope.MatchedFilter)
+	}
+}

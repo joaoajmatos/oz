@@ -1,0 +1,10 @@
+cmd/shell.go:10:TODO add usage docs
+cmd/shell.go:18:TODO add validation
+cmd/shell.go:24:TODO add robust command parsing and argument forwarding behavior
+cmd/shell.go:31:TODO add fallback warning formatting with deterministic ordering
+cmd/shell.go:42:TODO add per-command exclusions and compact strategy metadata
+internal/shell/run/run.go:55:TODO split out envelope builder
+internal/shell/run/run.go:77:TODO improve warning text
+internal/shell/run/run.go:90:TODO add deterministic map serialization for grouped output summaries
+internal/shell/run/run.go:102:TODO add bounded truncation policy for exceptionally noisy command outputs
+internal/shell/run/run.go:119:TODO capture provenance for representative lines selected by compact filter

@@ -1,0 +1,12 @@
+diff --git a/cmd/shell.go b/cmd/shell.go
+index 123..456 100644
+--- a/cmd/shell.go
++++ b/cmd/shell.go
+@@ -10,7 +10,8 @@
++ added line
+- removed line
+diff --git a/internal/shell/run/run.go b/internal/shell/run/run.go
+index abc..def 100644
+--- a/internal/shell/run/run.go
++++ b/internal/shell/run/run.go
+ 2 files changed, 10 insertions(+), 3 deletions(-)

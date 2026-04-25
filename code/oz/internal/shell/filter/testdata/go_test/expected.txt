@@ -1,0 +1,3 @@
+--- FAIL: TestRunnerHandlesFailure (0.00s)
+FAIL github.com/joaoajmatos/oz/internal/shell/run 0.145s
+FAIL

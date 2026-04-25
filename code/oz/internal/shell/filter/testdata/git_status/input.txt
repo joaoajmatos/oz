@@ -1,0 +1,4 @@
+ M cmd/shell.go
+M  internal/shell/run/run.go
+?? internal/shell/filter/filter.go
+UU internal/shell/filter/git_diff.go

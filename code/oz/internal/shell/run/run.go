@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joaoajmatos/oz/internal/shell/compact"
 	"github.com/joaoajmatos/oz/internal/shell/envelope"
 	ozexec "github.com/joaoajmatos/oz/internal/shell/exec"
+	"github.com/joaoajmatos/oz/internal/shell/filter"
 	"github.com/joaoajmatos/oz/internal/shell/tee"
 	"github.com/joaoajmatos/oz/internal/shell/track"
 )
@@ -33,10 +33,16 @@ func Execute(args []string, opts Options) (Result, error) {
 	}
 
 	if mode == "compact" {
-		matchedFilter = "generic"
-		compactStdout, compactStderr, compactErr := compact.ApplyGeneric(execResult.Stdout, execResult.Stderr, opts.UltraCompact)
+		compactStdout, compactStderr, detectedFilter, compactErr := filter.Apply(args, execResult.Stdout, execResult.Stderr, execResult.ExitCode, opts.UltraCompact)
+		matchedFilter = detectedFilter
 		if compactErr != nil {
-			warnings = append(warnings, "compact failed; falling back to raw output")
+			warnings = append(warnings, fmt.Sprintf("%s failed; falling back to raw output", detectedFilter))
+			fallbackStdout, fallbackStderr, _, fallbackErr := filter.Apply([]string{"unknown"}, execResult.Stdout, execResult.Stderr, execResult.ExitCode, opts.UltraCompact)
+			if fallbackErr == nil {
+				outStdout = fallbackStdout
+				outStderr = fallbackStderr
+				matchedFilter = filter.FilterGeneric
+			}
 		} else {
 			outStdout = compactStdout
 			outStderr = compactStderr

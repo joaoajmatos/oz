@@ -104,7 +104,7 @@ directory. They assert on exit behaviour and filesystem state.
 
 ---
 
-### `oz shell run` (planned)
+### `oz shell run` (SHL-2 implemented baseline)
 
 | Scenario | Assertion |
 |---|---|
@@ -138,8 +138,10 @@ directory. They assert on exit behaviour and filesystem state.
 | filter strategy transforms (stats/grouping/dedupe/failure-focus) | unit |
 | deterministic output for same fixture input | unit |
 | fixture-based output snapshots for MVP command families | golden |
+| deterministic output for same fixture input across runs | golden/unit |
 | exit-code propagation from wrapped command | integration |
 | fallback path (no specialized filter / filter failure) | integration |
+| token reduction thresholds for family fixtures + median gate | unit |
 | overhead budget assertions for short commands | benchmark |
 
 ---
