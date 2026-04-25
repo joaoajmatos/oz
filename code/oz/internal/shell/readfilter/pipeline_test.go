@@ -14,6 +14,14 @@ func (emptyReader) Extensions() []string {
 }
 func (emptyReader) Filter(_ string, _ Options) (string, error) { return "", nil }
 
+type expandReader struct{}
+
+func (expandReader) Name() string        { return "expand-reader" }
+func (expandReader) Extensions() []string { return []string{".expand-reader"} }
+func (expandReader) Filter(content string, _ Options) (string, error) {
+	return content + "\n\n\nextra padding to make output larger than input\n\n\n", nil
+}
+
 type errReader struct{}
 
 func (errReader) Name() string { return "err-reader" }
@@ -36,6 +44,21 @@ func TestRunSafetyFallbackWhenReaderEmptiesInput(t *testing.T) {
 	}
 	if len(res.Warnings) == 0 || !strings.Contains(res.Warnings[0], "emptied non-empty input") {
 		t.Fatalf("warnings=%v, expected empty-input fallback warning", res.Warnings)
+	}
+}
+
+func TestRunSafetyFallbackWhenReaderExpandsInput(t *testing.T) {
+	Register(expandReader{})
+	const raw = "alpha\nbeta\n"
+	res, err := Run(Options{
+		Path:    "sample.expand-reader",
+		Content: raw,
+	})
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+	if res.Content != raw {
+		t.Fatalf("content=%q, want raw fallback when filter expands", res.Content)
 	}
 }
 

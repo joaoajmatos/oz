@@ -25,6 +25,9 @@ func Run(opts Options) (Result, error) {
 			warnings = append(warnings, fmt.Sprintf("readfilter %s emptied non-empty input; falling back to raw", reader.Name()))
 			output = opts.Content
 		}
+		if envelope.EstimateTokens(output) > envelope.EstimateTokens(opts.Content) {
+			output = opts.Content
+		}
 	}
 
 	output = applyMaxLines(output, opts.MaxLines)

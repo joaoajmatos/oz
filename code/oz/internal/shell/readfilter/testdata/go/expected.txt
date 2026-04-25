@@ -1,8 +1,50 @@
-package main
+package example
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
-func main() {
+var ErrNotFound = errors.New("not found")
 
-	fmt.Println("hello")
+type Store struct {
+	items map[string]string
+	count int
+}
+
+func NewStore() *Store {
+	return &Store{items: make(map[string]string)}
+}
+
+func (s *Store) Set(key, value string) error {
+	if key == "" {
+		return fmt.Errorf("empty key")
+	}
+	if _, exists := s.items[key]; exists {
+	... (5 lines omitted)
+}
+
+func (s *Store) Get(key string) (string, error) {
+	v, ok := s.items[key]
+	if !ok {
+		return "", ErrNotFound
+	}
+	... (1 lines omitted)
+}
+
+func (s *Store) Keys() []string {
+	out := make([]string, 0, len(s.items))
+	for k := range s.items {
+		out = append(out, k)
+	}
+	... (1 lines omitted)
+}
+
+func (s *Store) String() string {
+	parts := make([]string, 0, len(s.items))
+	for k, v := range s.items {
+		parts = append(parts, fmt.Sprintf("%s=%s", k, v))
+	}
+	... (1 lines omitted)
 }

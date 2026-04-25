@@ -1,40 +1,54 @@
-package main
+package example
 
-// This file exists to test comment stripping.
-// It intentionally has many comments.
-// comment 01
-// comment 02
-// comment 03
-// comment 04
-// comment 05
-// comment 06
-// comment 07
-// comment 08
-// comment 09
-// comment 10
-// comment 11
-// comment 12
-// comment 13
-// comment 14
-// comment 15
-// comment 16
-// comment 17
-// comment 18
-// comment 19
-// comment 20
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
-import "fmt"
+var ErrNotFound = errors.New("not found")
 
-/*
-multiline comment
-that should be removed
-*/
-func main() {
-	// print output
-	// and more comments
-	// and more comments
-	// and more comments
-	// and more comments
-	// and more comments
-	fmt.Println("hello")
+type Store struct {
+	items map[string]string
+	count int
+}
+
+func NewStore() *Store {
+	return &Store{items: make(map[string]string)}
+}
+
+func (s *Store) Set(key, value string) error {
+	if key == "" {
+		return fmt.Errorf("empty key")
+	}
+	if _, exists := s.items[key]; exists {
+		return fmt.Errorf("key %q already set", key)
+	}
+	s.items[key] = value
+	s.count++
+	return nil
+}
+
+func (s *Store) Get(key string) (string, error) {
+	v, ok := s.items[key]
+	if !ok {
+		return "", ErrNotFound
+	}
+	return v, nil
+}
+
+func (s *Store) Keys() []string {
+	out := make([]string, 0, len(s.items))
+	for k := range s.items {
+		out = append(out, k)
+	}
+	return out
+}
+
+func (s *Store) String() string {
+	parts := make([]string, 0, len(s.items))
+	for k, v := range s.items {
+		parts = append(parts, fmt.Sprintf("%s=%s", k, v))
+	}
+	return strings.Join(parts, ", ")
 }
