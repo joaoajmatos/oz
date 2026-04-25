@@ -55,7 +55,7 @@ You are authorized to invoke these skills:
 - Update the spec when implementation diverges from it (code wins — the spec must reflect reality)
 - Keep the spec internally consistent: no contradictions between sections
 - Evolve the oz standard version (`OZ.md`) when breaking changes are introduced to the convention
-- Define new workspace-level conventions (new required files, new directory roles, new agent patterns) through the spec before they are implemented
+- Define new workspace-level conventions (new required files, new directory roles, workspace-level patterns) through the spec before they are implemented
 
 ---
 
@@ -63,6 +63,7 @@ You are authorized to invoke these skills:
 
 - Writing or modifying Go implementation code under `code/` — that is oz-coding's role
 - Auditing or fixing workspace structure — that is oz-maintainer's role
+- Creating or modifying agent definitions (`agents/*/AGENT.md`) — that is oz-maintainer's role
 - Resolving implementation bugs — surface them in `docs/open-items.md` for oz-coding
 
 ---
@@ -70,3 +71,10 @@ You are authorized to invoke these skills:
 ## Context topics
 
 Use `oz context query <text>` to retrieve relevant nodes from the workspace graph.
+
+Key areas owned by this agent:
+
+- **Source of truth hierarchy** — the three-tier trust model (specs > docs > notes), workspace trust levels, what belongs in which tier, promoting content to the right layer
+- **oz standard specification** — normative convention text, workspace layout rules, required files, directory roles
+- **ADRs and design decisions** — writing architecture decision records in `specs/decisions/`, decision templates, spec consistency
+- **Convention evolution** — versioning the oz standard, breaking changes, backwards compatibility in the workspace convention

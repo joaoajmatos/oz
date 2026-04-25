@@ -79,7 +79,10 @@ func runContextConceptAdd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	blocks := buildRetrievalBlocks(root)
+	blocks, err := buildRetrievalBlocks(root)
+	if err != nil {
+		return fmt.Errorf("retrieval for proposal: %w", err)
+	}
 
 	if conceptAddPrint {
 		return runConceptAddDryRun(root, g, blocks)
@@ -132,10 +135,10 @@ func runContextConceptAdd(cmd *cobra.Command, _ []string) error {
 }
 
 // buildRetrievalBlocks runs RetrievalForProposal and converts the top-k blocks
-// to enrich.RetrievedBlock. Returns nil when --no-retrieval is set.
-func buildRetrievalBlocks(root string) []enrich.RetrievedBlock {
+// to enrich.RetrievedBlock. Returns nil blocks when --no-retrieval is set.
+func buildRetrievalBlocks(root string) ([]enrich.RetrievedBlock, error) {
 	if conceptAddNoRetrieval {
-		return nil
+		return nil, nil
 	}
 	queryText := conceptAddName
 	if conceptAddSeed != "" {
@@ -143,7 +146,7 @@ func buildRetrievalBlocks(root string) []enrich.RetrievedBlock {
 	}
 	r, err := query.RetrievalForProposal(root, queryText)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	k := conceptAddRetrievalK
 	if k < 1 {
@@ -160,7 +163,7 @@ func buildRetrievalBlocks(root string) []enrich.RetrievedBlock {
 			Trust:   b.Trust,
 		})
 	}
-	return blocks
+	return blocks, nil
 }
 
 // runConceptAddDryRun builds the proposal prompt without calling OpenRouter and

@@ -333,3 +333,22 @@ func TestParseSingleConcept_ReviewedAlwaysFalse(t *testing.T) {
 		t.Error("new concept must have reviewed=false regardless of model output")
 	}
 }
+
+// TestParseSingleConcept_EdgesAlwaysUnreviewed verifies that even high-confidence
+// edges (which ParseResponse would auto-review via ADR-0003) are forced to
+// reviewed:false in the proposal path so oz context review can show them.
+func TestParseSingleConcept_EdgesAlwaysUnreviewed(t *testing.T) {
+	nodeIDs := map[string]struct{}{"agent:coding": {}}
+	// confidence 0.95 would normally trigger ADR-0003 auto-review in ParseResponse
+	raw := `{"concepts":[{"id":"concept:foo","name":"Foo","tag":"EXTRACTED","confidence":1.0}],"edges":[{"from":"concept:foo","to":"agent:coding","type":"agent_owns_concept","tag":"EXTRACTED","confidence":0.95}]}`
+	_, edges, _, err := ParseSingleConcept(raw, nodeIDs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(edges) != 1 {
+		t.Fatalf("expected 1 edge, got %d", len(edges))
+	}
+	if edges[0].Reviewed {
+		t.Error("proposal edges must be reviewed=false even at high confidence (ADR-0003 applies to bulk enrich only)")
+	}
+}

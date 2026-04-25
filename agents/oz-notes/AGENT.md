@@ -24,7 +24,7 @@ Read these files in order before starting any task:
 
 1. `AGENTS.md` — workspace entry point and agent routing
 2. `OZ.md` — workspace manifest, registered agents, standard version
-3. `specs/oz-project-specification.md` — source of truth hierarchy and promotion targets
+3. `specs/oz-project-specification.md` — workspace convention, tiered trust model, and promotion targets
 4. `docs/open-items.md` — open questions that may inform which notes are ready to promote
 5. `notes/` — read notes relevant to the task (lowest trust — treat as raw input)
 
@@ -50,9 +50,9 @@ You are authorized to invoke these skills:
 
 - Run `oz crystallize` to get the classification report; present findings to the user clearly
 - Help the user decide what to promote: ask about intent, surface ambiguities, do not decide unilaterally
-- Propose a target path and tier for each note marked for promotion, following the source-of-truth hierarchy:
+- Propose a target path and tier for each note marked for promotion, following the tiered promotion model:
   - Normative convention text → `specs/oz-project-specification.md` or a new spec section
-  - Significant design decisions → `specs/decisions/` as an ADR (use `specs/decisions/_template.md`)
+  - Significant design decisions → `specs/decisions/` (use `specs/decisions/_template.md` — oz-spec authors the actual content)
   - Architecture and open questions → `docs/`
   - Content that informs but is not normative → leave in `notes/` or archive under `notes/planning/`
 - Write only what the user approves — never silently promote or delete notes

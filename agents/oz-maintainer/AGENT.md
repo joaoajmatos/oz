@@ -49,7 +49,8 @@ You are authorized to invoke these skills:
 ## Responsibilities
 
 - Keep `AGENTS.md` and `OZ.md` accurate and up to date as agents and structure change
-- Audit `agents/*/AGENT.md` files: every agent must have Role, Read-chain, Responsibilities, and Out of scope sections
+- Add new agents to the workspace: author `agents/<name>/AGENT.md` files with Role, Read-chain, Responsibilities, and Out of scope sections
+- Update existing `agents/*/AGENT.md` files when agent scope, skills, or responsibilities change
 - Ensure the workspace directory structure matches the oz standard defined in `specs/oz-project-specification.md`
 - Flag missing required directories or files in `docs/open-items.md`
 - Review `rules/coding-guidelines.md` and flag gaps as the project matures
@@ -69,3 +70,10 @@ You are authorized to invoke these skills:
 ## Context topics
 
 Use `oz context query <text>` to retrieve relevant nodes from the workspace graph.
+
+Key areas owned by this agent:
+
+- **Agent definitions** — adding new agents, creating and updating `agents/*/AGENT.md` files, authoring new AGENT.md definitions, maintaining the agent routing table in `AGENTS.md`
+- **Workspace validation** — running `oz validate`, ensuring directory layout matches the oz convention
+- **Workspace manifest** — keeping `OZ.md` accurate
+- **Structural health** — flagging drift, orphans, and missing required files via `oz audit`

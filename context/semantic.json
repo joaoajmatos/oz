@@ -113,7 +113,7 @@
     {
       "id": "concept:three-layer-architecture",
       "name": "Three-Layer Architecture",
-      "description": "The oz workspace trust model with Notes (low-trust), Docs (medium-trust), and Specs (high-trust) layers, where specs take precedence in conflicts.",
+      "description": "The oz workspace source-of-truth hierarchy and trust model: Notes (low-trust), Docs (medium-trust), and Specs (high-trust) layers, where specs take precedence in conflicts. Defines which tier wins when information across layers diverges.",
       "source_files": [
         "specs/oz-project-specification.md",
         "docs/architecture.md"
@@ -171,6 +171,20 @@
       ],
       "tag": "EXTRACTED",
       "confidence": 0.9,
+      "reviewed": true
+    },
+    {
+      "id": "concept:query-engine",
+      "name": "Query Engine",
+      "description": "The BM25F routing and retrieval engine that scores agents, selects context blocks, resolves relevant concepts, and returns implementing packages and code entry points for a given query. Includes scoring config, softmax routing, trust boosts, concept matching, and the oz context query CLI command.",
+      "source_files": [
+        "specs/routing-packet.md",
+        "specs/decisions/0004-context-retrieval-ranking.md",
+        "docs/architecture.md",
+        "code/oz/internal/query"
+      ],
+      "tag": "MANUAL",
+      "confidence": 1,
       "reviewed": true
     }
   ],
@@ -493,6 +507,14 @@
       "type": "implements",
       "tag": "EXTRACTED",
       "confidence": 0.9,
+      "reviewed": true
+    },
+    {
+      "from": "concept:query-engine",
+      "to": "code_package:github.com/joaoajmatos/oz/internal/query",
+      "type": "implements",
+      "tag": "MANUAL",
+      "confidence": 1,
       "reviewed": true
     }
   ]

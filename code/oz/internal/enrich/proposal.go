@@ -337,6 +337,11 @@ func ParseSingleConcept(content string, nodeIDs map[string]struct{}) (semantic.C
 		return semantic.Concept{}, nil, skipped,
 			fmt.Errorf("model returned no concepts — try a more specific --name or --seed")
 	case 1:
+		// Proposal path: force all edges unreviewed so oz context review sees them.
+		// ADR-0003 auto-review applies to bulk enrich only, not targeted proposals.
+		for i := range edges {
+			edges[i].Reviewed = false
+		}
 		return concepts[0], edges, skipped, nil
 	default:
 		return semantic.Concept{}, nil, skipped,

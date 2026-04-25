@@ -47,9 +47,9 @@ You are authorized to invoke these skills:
 
 ## Responsibilities
 
-- Implement and extend `oz` subcommands: `init`, `validate`, `audit`, `context`, `crystallize`, `repair`, `add`
+- Implement and extend `oz` subcommands: `init`, `validate`, `audit`, `context`, `crystallize`, `repair`; and the `oz concept add` command for semantic concept proposals
 - Write and maintain Go packages under `code/oz/internal/` and `code/oz/cmd/`
-- Keep `code/oz/internal/convention/convention.go` as the Go-typed source of truth for the oz workspace convention
+- Keep `code/oz/internal/convention/convention.go` as the canonical Go representation of the oz workspace convention constants
 - Write tests for all non-trivial logic
 - Embed templates using Go's `embed` package — no runtime file dependencies
 - Flag spec drift when discovered: open an item in `docs/open-items.md`, do not silently revert code
@@ -69,3 +69,16 @@ You are authorized to invoke these skills:
 
 Use `oz context query <text>` to retrieve relevant nodes from the workspace graph.
 Manually authored implementation context lives in `docs/implementation.md`.
+
+Key implementation areas owned by this agent:
+
+- **Query engine** — BM25F scoring and retrieval (`internal/query`), scoring config, concept matching, implementing packages, code entry points
+- **Semantic overlay** — enrich pipeline, concept proposals, overlay loading and merging (`internal/enrich`, `internal/semantic`)
+- **Structural graph** — context graph build, code indexing, Go indexer (`internal/graph`, `internal/codeindex`, `internal/codeindex/goindexer`, `internal/context`)
+- **MCP server** — context serve, MCP tool registration (`internal/mcp`)
+- **CLI commands** — all `oz` subcommands (`cmd/`): `init`, `validate`, `audit`, `context build/query/serve/enrich/concept`, `crystallize`, `repair`
+- **Crystallize** — classifier, promote, heuristic, signals (`internal/crystallize`)
+- **Audit** — drift detection, spec scan, audit catalogue (`internal/audit`)
+- **Workspace + convention** — workspace loader, convention constants (`internal/workspace`, `internal/convention`)
+- **Validate** — workspace validation checks (`internal/validate`)
+- **Terminal styling** — output formatting (`internal/termstyle`)

@@ -75,14 +75,36 @@ func BuildContextBlocks(workspacePath string, g *graph.Graph, agentName string, 
 // or indexing task (so surfacing a code/ file may help). Deliberately excludes
 // generic "implement" so "how is drift detection implemented" remains ranked
 // by the normal spec-heavy retrieval mix.
+//
+// "rout" is intentionally excluded: it fires on documentation queries like
+// "routing confidence threshold" which are already well-served by spec sections.
 func querySuggestsCodeContext(terms []string) bool {
 	for _, t := range terms {
 		switch t {
-		case "index", "symbol", "packag", "graph", "load", "build", "api", "func", "type", "test", "debug", "rout", "migrat":
+		case "index", "symbol", "packag", "graph", "load", "build", "api", "func", "type", "test", "debug", "migrat":
 			return true
 		}
 	}
 	return false
+}
+
+// specsDominateBlocks returns true when the top-3 context blocks (or all
+// blocks if fewer than 3) are all high-trust spec sections. When specs already
+// cover the query well, injecting a code package as a survivor adds noise.
+func specsDominateBlocks(blocks []ContextBlock) bool {
+	limit := 3
+	if len(blocks) < limit {
+		limit = len(blocks)
+	}
+	if limit == 0 {
+		return false
+	}
+	for _, b := range blocks[:limit] {
+		if b.Trust != "high" {
+			return false
+		}
+	}
+	return true
 }
 
 // ensureCodePackageSurvivor only when the ranked slice has no code/ entry but
@@ -95,6 +117,11 @@ func ensureCodePackageSurvivor(blocks *[]ContextBlock, passed []contextretrieval
 		return
 	}
 	if !querySuggestsCodeContext(queryTerms) {
+		return
+	}
+	// Skip injection when spec sections already dominate the top results —
+	// the query is answered by specs and a code block would add noise.
+	if specsDominateBlocks(*blocks) {
 		return
 	}
 	for _, b := range *blocks {

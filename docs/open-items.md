@@ -107,3 +107,26 @@ Measured against this repo's `context/graph.json` (651 nodes, 522 edges) with
 4. **Retrieval blocks as text labels only** (file + section + trust tier, no body
    content). Including body content would add ~500–2000 tokens per block — defer to
    a flag if users request richer grounding.
+
+
+## Known Limitations: oz context concept add
+
+### CCA-L-01 — Retrieval packet partially used in proposal prompt
+
+`RetrievalForProposal` returns `context_blocks`, `relevant_concepts`, `implementing_packages`,
+and `code_entry_points`. The proposal prompt currently uses only `context_blocks` (top-k
+file+section+trust labels). `relevant_concepts` and `implementing_packages` are not yet fed
+into the prompt.
+
+**Deferral rationale:** context blocks alone provide sufficient grounding for V1. Extending
+`ProposeOptions` + `BuildProposalPrompt` to include concept/package context is tracked here.
+Add when users report that concept proposals miss package or concept relationships.
+
+### CCA-L-02 — `--from` anchors do not steer retrieval
+
+`--from <file>` paths appear in the prompt as anchors but do not change the retrieval query
+or boost candidates in `RetrievalForProposal`. Retrieval is driven by `--name` + `--seed` only.
+
+**Deferral rationale:** grounding via retrieved blocks already covers the common case. Boosting
+specific files in the retrieval candidate set is a retrieval-tuning concern; track for a
+follow-up when the `--from` signal proves useful enough to warrant the added complexity.
