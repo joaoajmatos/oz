@@ -31,7 +31,7 @@ Remaining risks to manage in rollout:
 
 ### Shell read command rollout status (tracking item)
 
-`oz shell read` is planned as a language-aware reader path for file and stdin workflows.
+`oz shell read` shipped as a language-aware reader path for file and stdin workflows, without hook rewrite in the initial release.
 
 Scope for initial rollout:
 

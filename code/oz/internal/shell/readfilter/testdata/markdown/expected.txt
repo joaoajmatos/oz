@@ -1,0 +1,14 @@
+# Readfilter Fixture
+
+Intro text.
+
+```unknownlang
+... (100 lines omitted)
+```
+
+## Keep this heading
+
+```go
+package main
+func main() {}
+```

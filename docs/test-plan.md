@@ -121,7 +121,7 @@ directory. They assert on exit behaviour and filesystem state.
 | transparent rewrite enabled | command is rewritten to `oz shell run -- ...` when eligible |
 | transparent rewrite excluded command | command bypasses rewrite and runs unchanged |
 
-### `oz shell read` (planned)
+### `oz shell read` (implemented baseline)
 
 | Scenario | Assertion |
 |---|---|

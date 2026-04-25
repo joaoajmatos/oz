@@ -1,0 +1,6 @@
+json object: keys=5
+  enabled: bool(true)
+  features: array(len=6)
+  limits: object(3 keys)
+  nested: object(1 keys)
+  service: string("oz")

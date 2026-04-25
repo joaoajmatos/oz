@@ -1,0 +1,23 @@
+{
+  "service": "oz",
+  "enabled": true,
+  "limits": {
+    "max_tokens": 8000,
+    "max_lines": 300,
+    "max_files": 20
+  },
+  "features": [
+    "shell-run",
+    "shell-read",
+    "context",
+    "audit",
+    "validate",
+    "repair"
+  ],
+  "nested": {
+    "owner": {
+      "name": "oz-coding",
+      "active": true
+    }
+  }
+}
