@@ -100,6 +100,7 @@ func init() {
 	contextCmd.AddCommand(contextEnrichCmd)
 	contextCmd.AddCommand(contextReviewCmd)
 	contextCmd.AddCommand(contextServeCmd)
+	contextCmd.AddCommand(contextConceptCmd)
 	contextBuildCmd.Flags().BoolVarP(&quietBuild, "quiet", "q", false, "suppress output")
 	contextQueryCmd.Flags().BoolVar(&queryRaw, "raw", false, "output routing debug JSON (scores + query-relevant subgraph) instead of routing packet")
 	contextQueryCmd.Flags().BoolVar(&queryIncludeNotes, "include-notes", false, "include note-tier content in retrieval (OR with retrieval.include_notes in context/scoring.toml; use flag for a one-off query)")

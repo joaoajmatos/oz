@@ -49,6 +49,7 @@ Single Go binary built with `go build`. No runtime dependencies. Subcommands:
 | `oz context build` | `internal/context/` | Build the structural graph |
 | `oz context query` | `internal/query/` | **Route** a task to the best-matching agent, then **retrieve** ranked context (see below) |
 | `oz context enrich` | `internal/enrich/` | LLM enrichment pass via OpenRouter |
+| `oz context concept add` | `internal/enrich/` + `internal/query/` | Propose one new concept (retrieval-grounded, no agent routing) |
 | `oz context review` | `internal/review/` | Human review of semantic overlay |
 | `oz context serve` | `internal/mcp/` | MCP stdio server for LLM tool calls |
 
@@ -153,6 +154,38 @@ flowchart LR
   or --> parse[ResponseParser_validate_schema]
   parse --> write[semantic_Write_merge_and_graph_hash]
 ```
+
+### oz context concept add
+
+`oz context concept add --name "<name>"` proposes **one** new concept into
+`context/semantic.json` using retrieval-grounded LLM output. Unlike `enrich`
+(which re-extracts all concepts from the full graph), this command targets a
+single, named concept and grounds the model in the workspace's existing context.
+
+**When to use each command:**
+
+| Command | Use when |
+|---------|----------|
+| `oz context enrich` | First-time enrichment or broad re-extraction of the semantic layer |
+| `oz context concept add` | Adding one specific concept you have in mind without re-running the full extraction |
+
+```mermaid
+flowchart LR
+  q[name_and_seed] --> ret[RetrievalForProposal_no_agent_routing]
+  ret --> blocks[top_k_ContextBlocks]
+  blocks --> prompt[BuildProposalPrompt_allowlist_and_context]
+  prompt --> or[OpenRouter_OPENROUTER_API_KEY]
+  or --> parse[ParseSingleConcept_strict_1_concept]
+  parse --> write[semantic_Merge_Write_reviewed_false]
+  write --> review[oz_context_review]
+```
+
+The proposed concept is written with `reviewed: false`. Run `oz context review`
+to accept or reject it before it affects query routing and retrieval.
+
+**Flags:** `--name` (required), `--seed`, `--from` (repeatable file anchors),
+`--retrieval-k` (default 5), `--no-retrieval`, `--print` (dry run — shows prompt
+and token count without calling OpenRouter or writing to disk).
 
 ### oz context serve (MCP)
 
