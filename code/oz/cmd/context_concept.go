@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	ozcontext "github.com/joaoajmatos/oz/internal/context"
 	"github.com/joaoajmatos/oz/internal/enrich"
@@ -101,6 +102,12 @@ func runContextConceptAdd(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	if len(res.NearDuplicates) > 0 {
+		fmt.Fprintf(cmd.ErrOrStderr(), "%s near-duplicate concept name(s): %s\n",
+			termstyle.Warn.Render("warning:"),
+			strings.Join(res.NearDuplicates, ", "),
+		)
+	}
 	fmt.Fprintf(cmd.ErrOrStderr(), "%s %s\n",
 		termstyle.OK.Render("✓"),
 		termstyle.Muted.Render("proposal written"),

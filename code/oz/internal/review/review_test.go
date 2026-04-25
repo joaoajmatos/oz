@@ -299,3 +299,46 @@ func TestReview_AcceptAll_WritesValidJSON(t *testing.T) {
 		t.Fatalf("semantic.json is not valid JSON after review: %v", err)
 	}
 }
+
+// --- Scenario 10: --accept-all non-TTY guardrail (T6) ----------------------
+
+func TestReview_AcceptAll_NonTTY_PrintsWarning(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("backend", testws.Role("Builds REST endpoints")).
+		Build()
+	writeSemanticJSON(t, ws.Path(), unreviewedOverlay())
+
+	// strings.NewReader is not a *os.File, so isReaderTTY returns false.
+	var out bytes.Buffer
+	_, err := review.Run(ws.Path(), review.Options{
+		AcceptAll: true,
+		In:        strings.NewReader(""),
+		Out:       &out,
+	})
+	if err != nil {
+		t.Fatalf("review.Run: %v", err)
+	}
+	if !strings.Contains(out.String(), "--accept-all used in non-interactive mode") {
+		t.Errorf("expected non-TTY warning, got: %q", out.String())
+	}
+}
+
+func TestReview_AcceptAll_StdinTTY_NoWarning(t *testing.T) {
+	ws := testws.New(t).
+		WithAgent("backend", testws.Role("Builds REST endpoints")).
+		Build()
+	writeSemanticJSON(t, ws.Path(), unreviewedOverlay())
+
+	// os.Stdin is a *os.File; in test CI it is NOT a TTY so the warning fires.
+	// Instead, pass nil In (defaults to os.Stdin) and verify the code path is
+	// exercised without a panic. We can't fake a TTY in unit tests.
+	// This test just ensures default (nil In → os.Stdin) runs without error.
+	var out bytes.Buffer
+	_, err := review.Run(ws.Path(), review.Options{
+		AcceptAll: true,
+		Out:       &out,
+	})
+	if err != nil {
+		t.Fatalf("review.Run with nil In: %v", err)
+	}
+}

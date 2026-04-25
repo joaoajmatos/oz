@@ -94,6 +94,12 @@ func Run(workspacePath string, opts Options) (Summary, error) {
 	printEdgeTable(ui, overlay, pendingEdges)
 
 	if opts.AcceptAll {
+		if !isReaderTTY(opts.In) {
+			fmt.Fprintf(opts.Out, "%s %s\n",
+				ui.render(termstyle.Warn, "warning:"),
+				"--accept-all used in non-interactive mode — ensure proposed items have been inspected",
+			)
+		}
 		for _, i := range pendingConcepts {
 			overlay.Concepts[i].Reviewed = true
 		}
@@ -154,6 +160,11 @@ func (u *ui) render(st lipgloss.Style, s string) string {
 		return st.Render(s)
 	}
 	return s
+}
+
+func isReaderTTY(r io.Reader) bool {
+	f, ok := r.(*os.File)
+	return ok && isatty.IsTerminal(f.Fd())
 }
 
 func useColor(w io.Writer) bool {

@@ -242,6 +242,85 @@ func TestParseSingleConcept_SkippedItemCarriesError(t *testing.T) {
 	}
 }
 
+// --- Near-duplicate detection tests (T5) ---
+
+func TestNormalizeConceptName(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"Query Routing", "queryrouting"},
+		{"BM25F Scoring", "bm25fscoring"},
+		{"日本語", ""},
+		{"  Foo  Bar  ", "foobar"},
+		{"already-normalized", "alreadynormalized"},
+	}
+	for _, tc := range cases {
+		got := normalizeConceptName(tc.in)
+		if got != tc.want {
+			t.Errorf("normalizeConceptName(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestLevenshtein(t *testing.T) {
+	cases := []struct {
+		a, b string
+		want int
+	}{
+		{"", "", 0},
+		{"abc", "", 3},
+		{"", "abc", 3},
+		{"abc", "abc", 0},
+		{"kitten", "sitting", 3},
+		{"routing", "routng", 1},
+	}
+	for _, tc := range cases {
+		got := levenshtein(tc.a, tc.b)
+		if got != tc.want {
+			t.Errorf("levenshtein(%q, %q) = %d, want %d", tc.a, tc.b, got, tc.want)
+		}
+	}
+}
+
+func TestFindNearDuplicates_ExactNormMatch(t *testing.T) {
+	existing := []semantic.Concept{
+		{ID: "concept:query-routing", Name: "Query Routing", Reviewed: true},
+	}
+	got := findNearDuplicates("query routing", existing)
+	if len(got) != 1 || got[0] != "Query Routing" {
+		t.Errorf("expected [Query Routing], got %v", got)
+	}
+}
+
+func TestFindNearDuplicates_TypoMatch(t *testing.T) {
+	existing := []semantic.Concept{
+		{ID: "concept:routing", Name: "Routing", Reviewed: true},
+	}
+	// "Routng" normalizes to "routng", levenshtein("routng","routing")=1 ≤ 2
+	got := findNearDuplicates("Routng", existing)
+	if len(got) != 1 {
+		t.Errorf("expected typo to match, got %v", got)
+	}
+}
+
+func TestFindNearDuplicates_UnreviewedIgnored(t *testing.T) {
+	existing := []semantic.Concept{
+		{ID: "concept:routing", Name: "Routing", Reviewed: false},
+	}
+	got := findNearDuplicates("Routing", existing)
+	if len(got) != 0 {
+		t.Errorf("unreviewed concept must not match; got %v", got)
+	}
+}
+
+func TestFindNearDuplicates_DistinctNamesNoMatch(t *testing.T) {
+	existing := []semantic.Concept{
+		{ID: "concept:audit-pipeline", Name: "Audit Pipeline", Reviewed: true},
+	}
+	got := findNearDuplicates("Semantic Overlay", existing)
+	if len(got) != 0 {
+		t.Errorf("distinct names must not match; got %v", got)
+	}
+}
+
 func TestParseSingleConcept_ReviewedAlwaysFalse(t *testing.T) {
 	// Model output claims reviewed:true — ParseResponse must reset it to false.
 	nodeIDs := map[string]struct{}{"agent:coding": {}}

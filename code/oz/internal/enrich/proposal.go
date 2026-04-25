@@ -32,12 +32,13 @@ type ProposeOptions struct {
 
 // ProposeResult is the outcome of a single-concept proposal.
 type ProposeResult struct {
-	Concept    semantic.Concept
-	Edges      []semantic.ConceptEdge
-	Skipped    []string
-	Cost       float64
-	Model      string
-	PromptText string // the full prompt sent to the model
+	Concept        semantic.Concept
+	Edges          []semantic.ConceptEdge
+	Skipped        []string
+	NearDuplicates []string // existing reviewed concept names that closely match the proposed name
+	Cost           float64
+	Model          string
+	PromptText     string // the full prompt sent to the model
 }
 
 // ProposeConcept runs the single-concept proposal pipeline:
@@ -122,12 +123,18 @@ func ProposeConcept(workspacePath string, g *graph.Graph, opts ProposeOptions) (
 		return nil, fmt.Errorf("write semantic.json: %w", err)
 	}
 
+	var nearDups []string
+	if existing != nil {
+		nearDups = findNearDuplicates(opts.Name, existing.Concepts)
+	}
+
 	res := &ProposeResult{
-		Concept:    concept,
-		Edges:      edges,
-		Skipped:    skipped,
-		Model:      client.Model,
-		PromptText: prompt,
+		Concept:        concept,
+		Edges:          edges,
+		Skipped:        skipped,
+		NearDuplicates: nearDups,
+		Model:          client.Model,
+		PromptText:     prompt,
 	}
 	if resp.Usage != nil {
 		res.Cost = resp.Usage.Cost
@@ -237,6 +244,83 @@ Rules:
 - Return pure JSON only`)
 
 	return sb.String(), nil
+}
+
+// normalizeConceptName lowercases s and strips all non-alphanumeric characters,
+// producing a canonical form for near-duplicate comparison.
+func normalizeConceptName(s string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(s) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// levenshtein returns the edit distance between a and b.
+func levenshtein(a, b string) int {
+	ra, rb := []rune(a), []rune(b)
+	la, lb := len(ra), len(rb)
+	if la == 0 {
+		return lb
+	}
+	if lb == 0 {
+		return la
+	}
+	row := make([]int, lb+1)
+	for j := range row {
+		row[j] = j
+	}
+	for i := 1; i <= la; i++ {
+		prev := row[0]
+		row[0] = i
+		for j := 1; j <= lb; j++ {
+			tmp := row[j]
+			if ra[i-1] == rb[j-1] {
+				row[j] = prev
+			} else {
+				row[j] = 1 + min3(prev, row[j], row[j-1])
+			}
+			prev = tmp
+		}
+	}
+	return row[lb]
+}
+
+func min3(a, b, c int) int {
+	if a < b {
+		if a < c {
+			return a
+		}
+		return c
+	}
+	if b < c {
+		return b
+	}
+	return c
+}
+
+// findNearDuplicates returns the names of reviewed concepts in existing whose
+// normalized form either exactly matches norm(proposed) or has edit distance ≤
+// threshold (2 for names ≤ 10 chars, 3 for longer names).
+func findNearDuplicates(proposed string, existing []semantic.Concept) []string {
+	normProp := normalizeConceptName(proposed)
+	threshold := 2
+	if len(normProp) > 10 {
+		threshold = 3
+	}
+	var matches []string
+	for _, c := range existing {
+		if !c.Reviewed {
+			continue
+		}
+		normExist := normalizeConceptName(c.Name)
+		if normExist == normProp || levenshtein(normProp, normExist) <= threshold {
+			matches = append(matches, c.Name)
+		}
+	}
+	return matches
 }
 
 // ParseSingleConcept is the strict proposal-mode variant of ParseResponse.
