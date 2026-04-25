@@ -73,7 +73,7 @@ Use `oz context query <text>` to retrieve relevant nodes from the workspace grap
 
 Key areas owned by this agent:
 
-- **Agent definitions** — adding new agents, creating and updating `agents/*/AGENT.md` files, authoring new AGENT.md definitions, maintaining the agent routing table in `AGENTS.md`
+- **Agent definitions** — adding new agents, creating and updating `agents/*/AGENT.md` files, authoring new AGENT.md definitions, maintaining the agent dispatch index in `AGENTS.md`
 - **Workspace validation** — running `oz validate`, ensuring directory layout matches the oz convention
 - **Workspace manifest** — keeping `OZ.md` accurate
 - **Structural health** — flagging drift, orphans, and missing required files via `oz audit`

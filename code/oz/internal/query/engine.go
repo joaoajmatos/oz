@@ -170,17 +170,19 @@ func loadRelevantConcepts(workspacePath string, queryTerms []string, cfg Scoring
 	scores := scoreConcepts(reviewed, conceptTerms, cfg, cfg.RetrievalConceptUseBigrams)
 	threshold := effectiveConceptRelevanceThreshold(scores, cfg)
 
-	// Pre-tokenize concept fields (unigrams only) for the coverage check.
+	// Pre-tokenize name+description only for the coverage check — source_paths
+	// are location signals (e.g. "docs/architecture.md" gives "architectur" to
+	// many unrelated concepts) and must not inflate coverage fractions.
 	var coverageSets map[string]map[string]bool
 	if cfg.RetrievalConceptMinQueryCoverage > 0 {
 		coverageSets = make(map[string]map[string]bool, len(reviewed))
 		for _, c := range reviewed {
-			toks := conceptFieldTokens(c, false)
 			set := make(map[string]bool)
-			for _, ts := range toks {
-				for _, t := range ts {
-					set[t] = true
-				}
+			for _, t := range TokenizeMulti(c.Name, false) {
+				set[t] = true
+			}
+			for _, t := range TokenizeMulti(c.Description, false) {
+				set[t] = true
 			}
 			coverageSets[c.ID] = set
 		}

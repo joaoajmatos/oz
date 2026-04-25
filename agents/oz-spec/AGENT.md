@@ -76,5 +76,6 @@ Key areas owned by this agent:
 
 - **Source of truth hierarchy** — the three-tier trust model (specs > docs > notes), workspace trust levels, what belongs in which tier, promoting content to the right layer
 - **oz standard specification** — normative convention text, workspace layout rules, required files, directory roles
+- **Semantic overlay specification** — the overlay schema, concept object format, staleness contract, enrich review process (`specs/semantic-overlay.md`)
 - **ADRs and design decisions** — writing architecture decision records in `specs/decisions/`, decision templates, spec consistency
 - **Convention evolution** — versioning the oz standard, breaking changes, backwards compatibility in the workspace convention

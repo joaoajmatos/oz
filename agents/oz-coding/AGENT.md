@@ -72,7 +72,7 @@ Manually authored implementation context lives in `docs/implementation.md`.
 
 Key implementation areas owned by this agent:
 
-- **Query engine** — BM25F scoring and retrieval (`internal/query`), scoring config, concept matching, implementing packages, code entry points
+- **Query engine** — BM25F scoring and retrieval (`internal/query`), scoring configuration, routing confidence threshold, softmax temperature, concept matching, implementing packages, code entry points, token budget
 - **Semantic overlay** — enrich pipeline, concept proposals, overlay loading and merging (`internal/enrich`, `internal/semantic`)
 - **Structural graph** — context graph build, code indexing, Go indexer (`internal/graph`, `internal/codeindex`, `internal/codeindex/goindexer`, `internal/context`)
 - **MCP server** — context serve, MCP tool registration (`internal/mcp`)

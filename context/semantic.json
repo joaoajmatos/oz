@@ -186,6 +186,31 @@
       "tag": "MANUAL",
       "confidence": 1,
       "reviewed": true
+    },
+    {
+      "id": "concept:mcp-server",
+      "name": "MCP Server",
+      "description": "The Model Context Protocol server that registers oz context query as a tool, allowing IDE extensions and LLM clients to query the workspace graph over MCP.",
+      "source_files": [
+        "docs/architecture.md",
+        "docs/guides/graph-and-mcp.md",
+        "code/oz/internal/mcp"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
+    },
+    {
+      "id": "concept:architecture-decision-record",
+      "name": "Architecture Decision Record",
+      "description": "An ADR documents a significant architectural or design decision made for the oz project, stored in specs/decisions/ using the decision record template.",
+      "source_files": [
+        "specs/decisions",
+        "docs/architecture.md"
+      ],
+      "tag": "EXTRACTED",
+      "confidence": 1,
+      "reviewed": true
     }
   ],
   "edges": [
