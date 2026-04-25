@@ -9,6 +9,19 @@
 
 ## Known Issues
 
+### Shell compression layer not yet implemented (tracking item)
+
+Specification and ADR are landed:
+
+- `specs/oz-shell-compression-specification.md`
+- `specs/decisions/0005-oz-shell-compression-architecture.md`
+
+Implementation has not started yet. Risks to manage in rollout:
+
+1. preserving full failure signal while aggressively reducing tokens
+2. maintaining deterministic compact output across tool versions
+3. keeping wrapper overhead within the v1 SLO targets
+
 ### oz audit — performance baseline (Sprint A6, 2026-04-20)
 
 `go test ./internal/audit -bench=BenchmarkAuditAll` runs the full check bundle on a small
@@ -59,7 +72,22 @@ AT-03 is considered **not triggered** (3 warnings ≤ threshold of 3).
 
 ## Pending Decisions
 
-<!-- No pending decisions. -->
+### SHL-01 — `oz shell run` storage backend for tracking (v1)
+
+`specs/oz-shell-compression-specification.md` requires local token/perf tracking with bounded
+retention, but leaves backend choice open (`sqlite` vs structured file store).
+
+**Current recommendation:** SQLite (queryable and robust), matching expected analytics needs.
+**Status:** pending implementation choice during Phase 1.
+
+### SHL-02 — Transparent interception default mode
+
+`oz shell run` v1 includes optional transparent interception, but default behavior is undecided:
+
+- suggest-only first
+- auto-rewrite when hook is present
+
+**Status:** pending before hook integrations ship.
 
 ## CCA-0 Token Budget Spike (CCA-0-06) — RESOLVED
 
@@ -107,7 +135,6 @@ Measured against this repo's `context/graph.json` (651 nodes, 522 edges) with
 4. **Retrieval blocks as text labels only** (file + section + trust tier, no body
    content). Including body content would add ~500–2000 tokens per block — defer to
    a flag if users request richer grounding.
-
 
 ## Known Limitations: oz context concept add
 

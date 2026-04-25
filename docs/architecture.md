@@ -13,7 +13,7 @@ running `oz context build && oz context query` in this repo.
 
 ---
 
-## Three-layer architecture
+## Four-layer architecture
 
 ```mermaid
 flowchart TB
@@ -26,12 +26,17 @@ flowchart TB
   subgraph layerSem ["Layer 3: Semantic overlay"]
     sem["context/semantic.json from oz context enrich and review"]
   end
+  subgraph layerExec ["Layer 4: Shell compression execution layer"]
+    shell["oz shell run: deterministic command-output compaction"]
+  end
   layerConv --> layerGraph
   layerGraph --> layerSem
+  layerSem --> layerExec
 ```
 
 Layer 1 is always the source of truth. Layers 2 and 3 are derived artefacts; they can be
-rebuilt at any time from the workspace convention files.
+rebuilt at any time from the workspace convention files. Layer 4 is an execution-time layer
+that compacts shell output for LLM consumers without changing command semantics.
 
 ---
 
@@ -52,6 +57,7 @@ Single Go binary built with `go build`. No runtime dependencies. Subcommands:
 | `oz context concept add` | `internal/enrich/` + `internal/query/` | Propose one new concept (retrieval-grounded, no agent routing) |
 | `oz context review` | `internal/review/` | Human review of semantic overlay |
 | `oz context serve` | `internal/mcp/` | MCP stdio server for LLM tool calls |
+| `oz shell run` | `internal/shell/` (planned) | Execute shell commands with deterministic compact output and exit-code preservation |
 
 ### internal packages
 
@@ -202,6 +208,36 @@ flowchart LR
   gn --> stdout
   neigh --> stdout
   aft --> stdout
+```
+
+### oz shell run (planned)
+
+`oz shell run` is a shell-output compression layer designed to reduce token usage for command
+execution workflows while preserving correctness. It supports:
+
+- explicit wrapper mode (`oz shell run -- <cmd...>`)
+- optional transparent interception via hooks (opt-in)
+- deterministic filter strategies and safe fallback to raw output
+- strict exit-code preservation and local token/perf tracking
+
+Normative contract:
+
+- [`specs/oz-shell-compression-specification.md`](../specs/oz-shell-compression-specification.md)
+- [`specs/decisions/0005-oz-shell-compression-architecture.md`](../specs/decisions/0005-oz-shell-compression-architecture.md)
+
+```mermaid
+flowchart TD
+  cmdInput[command_input] --> modeSel{interception_mode}
+  modeSel -->|explicit| runShell[oz_shell_run]
+  modeSel -->|transparent| hookRewrite[hook_rewrite]
+  hookRewrite --> runShell
+  runShell --> executeCmd[execute_process]
+  executeCmd --> rawOut[capture_stdout_stderr_exit]
+  rawOut --> classifyCmd[classify_command_family]
+  classifyCmd --> applyFilter[apply_filter_strategy]
+  applyFilter --> emitOut[emit_compact_or_json]
+  rawOut --> teeStore[tee_store_optional]
+  teeStore --> emitOut
 ```
 
 ---

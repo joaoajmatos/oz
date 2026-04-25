@@ -191,10 +191,21 @@ flowchart TB
   binary --> validateCmd["oz validate convention lint"]
   binary --> auditCmd["oz audit structure and drift"]
   binary --> contextCmd["oz context graph and query"]
+  binary --> shellCmd["oz shell compact command output"]
   binary --> crystallizeCmd["oz crystallize report-first"]
   binary --> repairCmd["oz repair restore missing files"]
   binary --> addCmd["oz add integrations and packages"]
 ```
+
+### oz shell (planned)
+
+Executes shell commands with deterministic output compaction to reduce LLM token usage while
+preserving exit codes and error visibility.
+
+Normative contract:
+
+- `specs/oz-shell-compression-specification.md`
+- `specs/decisions/0005-oz-shell-compression-architecture.md`
 
 ### oz init (priority — build this first)
 

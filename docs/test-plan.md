@@ -104,8 +104,39 @@ directory. They assert on exit behaviour and filesystem state.
 
 ---
 
+### `oz shell run` (planned)
+
+| Scenario | Assertion |
+|---|---|
+| `git status` compact mode | deterministic summary preserves staged/unstaged signal and exit code |
+| `git diff` compact mode | summary includes file/change totals and preserves non-zero exits |
+| `rg` compact mode | grouped output preserves file paths and representative match lines |
+| `go test` compact mode | failures are preserved, passing noise is reduced |
+| unknown command in compact mode | generic profile applies without losing error visibility |
+| unknown command in raw mode | output matches raw passthrough behavior |
+| filter internal error | falls back to raw output with warning metadata |
+| `--json` | schema includes token/perf fields and matched filter id |
+| `--tee failures` with failing command | raw output artifact is persisted and path is reported |
+| transparent rewrite enabled | command is rewritten to `oz shell run -- ...` when eligible |
+| transparent rewrite excluded command | command bypasses rewrite and runs unchanged |
+
+### `oz shell run` unit and golden tests (planned)
+
+| Behaviour | Test type |
+|---|---|
+| token estimator (`ceil(chars/4.0)`) | unit |
+| filter strategy transforms (stats/grouping/dedupe/failure-focus) | unit |
+| deterministic output for same fixture input | unit |
+| fixture-based output snapshots for MVP command families | golden |
+| exit-code propagation from wrapped command | integration |
+| fallback path (no specialized filter / filter failure) | integration |
+| overhead budget assertions for short commands | benchmark |
+
+---
+
 ## CI
 
 - Run `go test ./...` on every pull request.
 - Run `go vet ./...` and `go build ./...` as a smoke check.
 - No test should require network access or write outside `t.TempDir()`.
+- Planned: `oz shell run` golden suites should run in CI and gate regressions in compact output schemas.
