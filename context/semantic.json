@@ -34,7 +34,7 @@
     {
       "id": "concept:semantic-overlay",
       "name": "Semantic Overlay",
-      "description": "The semantic.json layer that adds extracted and reviewed concepts and relationships on top of the structural graph, with staleness and review contracts.",
+      "description": "The semantic.json layer that layers extracted and reviewed concepts and relationships onto the structural graph, with staleness and review contracts.",
       "source_files": [
         "specs/semantic-overlay.md",
         "docs/architecture.md",

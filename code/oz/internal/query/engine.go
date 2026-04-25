@@ -161,8 +161,31 @@ func loadRelevantConcepts(workspacePath string, queryTerms []string, cfg Scoring
 	if len(reviewed) == 0 {
 		return nil
 	}
-	scores := scoreConcepts(reviewed, terms, cfg, cfg.UseBigrams)
+	// Augment query terms with adjacent bigrams when concept bigrams are
+	// requested but global bigrams are off, so compound phrases score higher.
+	conceptTerms := terms
+	if cfg.RetrievalConceptUseBigrams && !cfg.UseBigrams {
+		conceptTerms = appendStemBigrams(terms)
+	}
+	scores := scoreConcepts(reviewed, conceptTerms, cfg, cfg.RetrievalConceptUseBigrams)
 	threshold := effectiveConceptRelevanceThreshold(scores, cfg)
+
+	// Pre-tokenize concept fields (unigrams only) for the coverage check.
+	var coverageSets map[string]map[string]bool
+	if cfg.RetrievalConceptMinQueryCoverage > 0 {
+		coverageSets = make(map[string]map[string]bool, len(reviewed))
+		for _, c := range reviewed {
+			toks := conceptFieldTokens(c, false)
+			set := make(map[string]bool)
+			for _, ts := range toks {
+				for _, t := range ts {
+					set[t] = true
+				}
+			}
+			coverageSets[c.ID] = set
+		}
+	}
+
 	type item struct {
 		name  string
 		score float64
@@ -172,6 +195,11 @@ func loadRelevantConcepts(workspacePath string, queryTerms []string, cfg Scoring
 		s, ok := scores[c.ID]
 		if !ok || s < threshold {
 			continue
+		}
+		if cfg.RetrievalConceptMinQueryCoverage > 0 {
+			if conceptUnigramCoverage(coverageSets[c.ID], terms) < cfg.RetrievalConceptMinQueryCoverage {
+				continue
+			}
 		}
 		items = append(items, item{name: c.Name, score: s})
 	}
@@ -523,6 +551,39 @@ func loadCodeEntryPoints(workspacePath string, g *graph.Graph, winningAgent stri
 // loadCodeEntryPoints.
 func eligiblePackagesByConcept(workspacePath string, queryTerms []string, cfg ScoringConfig) map[string]float64 {
 	return packageBestConceptReachScores(workspacePath, queryTerms, cfg, cfg.UseBigrams)
+}
+
+// appendStemBigrams returns terms with adjacent-pair bigrams ("a_b") appended.
+// Order of the original terms is preserved so bigrams reflect query adjacency.
+func appendStemBigrams(terms []string) []string {
+	if len(terms) <= 1 {
+		return terms
+	}
+	out := make([]string, len(terms), len(terms)+(len(terms)-1))
+	copy(out, terms)
+	for i := 0; i+1 < len(terms); i++ {
+		out = append(out, terms[i]+"_"+terms[i+1])
+	}
+	return out
+}
+
+// conceptUnigramCoverage returns the fraction of unigram query terms (those
+// without "_") that appear in tokenSet. Returns 1.0 when terms is empty.
+func conceptUnigramCoverage(tokenSet map[string]bool, terms []string) float64 {
+	var total, matched int
+	for _, t := range terms {
+		if strings.Contains(t, "_") {
+			continue
+		}
+		total++
+		if tokenSet[t] {
+			matched++
+		}
+	}
+	if total == 0 {
+		return 1.0
+	}
+	return float64(matched) / float64(total)
 }
 
 func scoreConcepts(concepts []semantic.Concept, queryTerms []string, cfg ScoringConfig, useBigrams bool) map[string]float64 {

@@ -217,6 +217,24 @@ var AllScoringKeyMeta = []ScoringKeyMeta{
 		Kind: ScoringKindFloat,
 	},
 	{
+		Key:   "retrieval.concept_min_query_coverage",
+		Title: "Minimum query-term coverage for concepts",
+		Description: `In [0,1]. When > 0, a concept is kept only if at least this fraction of ` +
+			`the distinct unigram query terms appear in the concept's name, description, or source_paths. ` +
+			`0 disables the check. 0.33 requires ≥1/3 coverage (e.g. at least 1 of 3 terms, 2 of 5). ` +
+			`Prevents single-stem false positives from matching unrelated concepts.`,
+		Kind: ScoringKindFloat,
+	},
+	{
+		Key:   "retrieval.concept_use_bigrams",
+		Title: "Enable bigrams for concept BM25 scoring",
+		Description: `When true, adjacent stem bigrams (e.g. semantic_overlay) are added to both ` +
+			`the query terms and concept field tokens for concept scoring, independent of ` +
+			`tokenize.use_bigrams. Sharpens compound-phrase matching and reduces single-stem ` +
+			`collisions where the same word means different things in different contexts.`,
+		Kind: ScoringKindBool,
+	},
+	{
 		Key:   "retrieval.agent_affinity",
 		Title: "Agent affinity boost",
 		Description: `Multiplier for blocks connected to the winning agent (reads/owns/scope links). ` +

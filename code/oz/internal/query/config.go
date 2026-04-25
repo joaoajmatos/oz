@@ -48,6 +48,15 @@ type ScoringConfig struct {
 	// the best-scoring concept in the overlay (in addition to
 	// RetrievalConceptMinRelevance). Cuts spurious token matches; 0 disables.
 	RetrievalConceptMinFractionOfTop float64
+	// Minimum fraction of distinct unigram query terms that must appear in at
+	// least one of the concept's fields (name, description, source_paths).
+	// 0 disables the check; 0.33 requires ≥1 match for 3-term queries.
+	RetrievalConceptMinQueryCoverage float64
+	// When true, concept BM25 scoring uses adjacent stem bigrams in addition to
+	// unigrams, independent of the global tokenize.use_bigrams setting. Bigrams
+	// sharpen compound-phrase matching (e.g. "semantic_overlay") and prevent
+	// single-stem collisions from unrelated queries.
+	RetrievalConceptUseBigrams bool
 
 	// Retrieval BM25 and ranking boosts.
 	RetrievalK1                float64
@@ -94,6 +103,8 @@ func DefaultScoringConfig() ScoringConfig {
 		RetrievalMaxRelevantConcepts:      10,
 		RetrievalConceptMinRelevance:      0.1,
 		RetrievalConceptMinFractionOfTop:  0.5,
+		RetrievalConceptMinQueryCoverage:  0.0,
+		RetrievalConceptUseBigrams:        false,
 		RetrievalK1:                       1.05,
 		RetrievalAgentAffinity:            1.2,
 		RetrievalTrustBoostSpecs:          1.3,
