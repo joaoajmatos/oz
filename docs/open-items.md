@@ -77,8 +77,9 @@ AT-03 is considered **not triggered** (3 warnings ≤ threshold of 3).
 `specs/oz-shell-compression-specification.md` requires local token/perf tracking with bounded
 retention, but leaves backend choice open (`sqlite` vs structured file store).
 
-**Current recommendation:** SQLite (queryable and robust), matching expected analytics needs.
-**Status:** pending implementation choice during Phase 1.
+**Decision:** SQLite for v1.
+**Source:** `notes/planning/oz-shell-compression-prd.md` (Section 9).
+**Status:** resolved.
 
 ### SHL-02 — Transparent interception default mode
 
@@ -87,7 +88,17 @@ retention, but leaves backend choice open (`sqlite` vs structured file store).
 - suggest-only first
 - auto-rewrite when hook is present
 
-**Status:** pending before hook integrations ship.
+**Decision:** suggest-mode first; explicit opt-in required for auto-rewrite.
+**Source:** `notes/planning/oz-shell-compression-prd.md` (Section 9).
+**Status:** resolved.
+
+### SHL-03 — `oz shell gain` analytics command scope (v1)
+
+`oz shell gain` is committed for v1.
+
+**Decision:** include `oz shell gain` in the v1 command surface.
+**Status:** resolved.
+**Implementation note:** exact sub-flag set (for example daily/history/JSON modes) can iterate after initial v1 delivery.
 
 ## CCA-0 Token Budget Spike (CCA-0-06) — RESOLVED
 

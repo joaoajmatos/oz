@@ -58,6 +58,7 @@ Single Go binary built with `go build`. No runtime dependencies. Subcommands:
 | `oz context review` | `internal/review/` | Human review of semantic overlay |
 | `oz context serve` | `internal/mcp/` | MCP stdio server for LLM tool calls |
 | `oz shell run` | `internal/shell/` (planned) | Execute shell commands with deterministic compact output and exit-code preservation |
+| `oz shell gain` | `internal/shell/track` (planned) | Report local token/perf savings from shell command history |
 
 ### internal packages
 

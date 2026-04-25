@@ -200,7 +200,8 @@ flowchart TB
 ### oz shell (planned)
 
 Executes shell commands with deterministic output compaction to reduce LLM token usage while
-preserving exit codes and error visibility.
+preserving exit codes and error visibility. V1 also includes `oz shell gain` for local
+token/perf savings summaries.
 
 Normative contract:
 

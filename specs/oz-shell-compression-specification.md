@@ -72,6 +72,7 @@ This specification defines a new `oz` shell layer that:
 `oz` MUST expose:
 
 - `oz shell run -- <command> [args...]`
+- `oz shell gain`
 
 `oz` MAY expose helper aliases in later versions (out of scope for v1).
 
@@ -338,6 +339,7 @@ Fixture policy:
 ### Phase 1
 
 - Implement explicit mode (`oz shell run`) with MVP filter set.
+- Implement `oz shell gain` for local token/perf reporting over tracked command history.
 
 ### Phase 2
 
@@ -351,6 +353,5 @@ Fixture policy:
 
 ## 16. Open Questions
 
-- Should `oz shell` ship with standalone analytics commands (`oz shell gain`) in v1 or v2?
 - Should transparent interception default to suggest mode before auto-rewrite for each agent integration?
 - Should compact envelopes include optional line-level provenance for grouped results?

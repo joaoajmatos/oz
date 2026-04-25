@@ -120,6 +120,16 @@ directory. They assert on exit behaviour and filesystem state.
 | transparent rewrite enabled | command is rewritten to `oz shell run -- ...` when eligible |
 | transparent rewrite excluded command | command bypasses rewrite and runs unchanged |
 
+### `oz shell gain` (planned)
+
+| Scenario | Assertion |
+|---|---|
+| no tracking records | returns empty-state summary and exit 0 |
+| tracked records present | returns aggregate totals for commands, token savings, and average reduction |
+| retention boundary | excluded records older than retention window are not counted |
+| `--json` output | valid schema with deterministic key set and numeric fields |
+| tracking store temporarily unavailable | returns actionable error without corrupting store |
+
 ### `oz shell run` unit and golden tests (planned)
 
 | Behaviour | Test type |
