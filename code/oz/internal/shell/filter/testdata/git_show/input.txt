@@ -1,0 +1,65 @@
+commit abcdef1234567890abcdef1234567890abcd
+Author: Alice <a@example.com>
+Date:   Mon Apr 1 10:00:00 2024 +0000
+
+    one file change
+
+diff --git a/pkg/a.go b/pkg/a.go
+--- a/pkg/a.go
++++ b/pkg/a.go
+@@ -1,20 +1,20 @@
+ package pkg
+-
+-const old = 1
++const new = 2
+ 
+ func A() int {
+-	return old
++	return new
+ }
+ 
+ func B() string {
+-	return "old"
++	return "new"
+ }
+ 
+ func C() bool {
+-	return false
++	return true
+ }
+ 
+ func D() float64 {
+-	return 1.0
++	return 2.0
+ }
+ 
+ func E() []int {
+-	return []int{1}
++	return []int{1, 2}
+ }
+ 
+ func F() map[string]int {
+-	return map[string]int{"k": 1}
++	return map[string]int{"k": 2}
+ }
+ 
+ func G() error {
+-	return nil
++	return fmt.Errorf("x")
+ }
+ 
+ func H() int {
+-	return 0
++	return 42
+ }
+ 
+ func I() string {
+-	return ""
++	return "ok"
+ }
+ 
+ func J() bool {
+-	return true
++	return false
+ }
+ 1 file changed, 10 insertions(+), 10 deletions(-)

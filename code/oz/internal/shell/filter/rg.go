@@ -36,3 +36,23 @@ func applyRG(stdout, stderr string, exitCode int, ultraCompact bool) (string, st
 	}
 	return strings.Join(stableUnique(out), "\n"), strings.Join(keepHead(stableUnique(normalizeLines(stderr)), 12), "\n"), nil
 }
+
+type rgFilter struct{}
+
+func (rgFilter) ID() ID { return FilterRG }
+
+func (rgFilter) Match(args []string) bool {
+	if len(args) < 1 {
+		return false
+	}
+	switch trimArg(0, args) {
+	case "rg", "grep":
+		return true
+	default:
+		return false
+	}
+}
+
+func (rgFilter) Apply(stdout, stderr string, exitCode int, ultraCompact bool) (string, string, error) {
+	return applyRG(stdout, stderr, exitCode, ultraCompact)
+}

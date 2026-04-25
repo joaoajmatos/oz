@@ -1,0 +1,6 @@
+json object: keys=5
+  count: number(3)
+  description: string("open workspace convention and toolset fo…")
+  meta: object(5 keys)
+  name: string("oz")
+  tags: array(len=26)

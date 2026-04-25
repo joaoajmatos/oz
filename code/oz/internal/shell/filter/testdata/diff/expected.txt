@@ -1,0 +1,2 @@
+git diff summary: files=1 insertions=1 deletions=1
+file: a.go

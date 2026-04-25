@@ -1,6 +1,9 @@
 package codeindex
 
-import "sync"
+import (
+	"strings"
+	"sync"
+)
 
 var (
 	mu       sync.RWMutex
@@ -43,4 +46,27 @@ func All() []LanguagePackage {
 	out := make([]LanguagePackage, len(registry))
 	copy(out, registry)
 	return out
+}
+
+// LanguageByExt returns the canonical language name registered for ext, or "".
+// ext is expected to be dot-prefixed (for example ".go"), but bare extensions
+// are accepted as a convenience.
+func LanguageByExt(ext string) string {
+	ext = strings.TrimSpace(strings.ToLower(ext))
+	if ext == "" {
+		return ""
+	}
+	if !strings.HasPrefix(ext, ".") {
+		ext = "." + ext
+	}
+	mu.RLock()
+	defer mu.RUnlock()
+	for _, pkg := range registry {
+		for _, candidate := range pkg.Extensions() {
+			if strings.EqualFold(strings.TrimSpace(candidate), ext) {
+				return pkg.Language()
+			}
+		}
+	}
+	return ""
 }

@@ -1,0 +1,4 @@
+env summary: vars=4 redacted=2
+keys:
+  HOME
+  PATH

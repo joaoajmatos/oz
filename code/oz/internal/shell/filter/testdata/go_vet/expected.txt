@@ -1,0 +1,10 @@
+go vet summary: files=2 findings=21
+./cmd/main.go:10: fmt.Sprintf call needs 1 arg but has 2 args
+./pkg/x.go:3: exported func MissingDoc should have comment
+./pkg/x.go:4: exported func AnotherMissing should have comment
+./pkg/x.go:5: exported func ThirdMissing should have comment
+./pkg/x.go:6: exported func FourthMissing should have comment
+./pkg/x.go:7: exported func FifthMissing should have comment
+./pkg/x.go:8: exported func SixthMissing should have comment
+./pkg/x.go:9: exported func SeventhMissing should have comment
+./pkg/x.go:10: exported func EighthMissing should have comment

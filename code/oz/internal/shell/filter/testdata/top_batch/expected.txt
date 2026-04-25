@@ -1,0 +1,31 @@
+top batch summary: lines=30
+top - 10:00:00 up 1 day, 1 user, load average: 0.10, 0.20, 0.30
+Tasks: 10 total, 1 running, 9 sleeping, 0 stopped, 0 zombie
+%Cpu(s): 5.0 us, 1.0 sy, 0.0 ni, 94.0 id, 0.0 wa
+MiB Mem : 8000.0 total, 4000.0 free, 2000.0 used
+MiB Swap: 2000.0 total, 2000.0 free, 0.0 used
+line noise 01
+line noise 02
+line noise 03
+line noise 04
+line noise 05
+line noise 06
+line noise 07
+line noise 08
+line noise 09
+line noise 10
+line noise 11
+line noise 12
+line noise 13
+line noise 14
+line noise 15
+line noise 16
+line noise 17
+line noise 18
+line noise 19
+line noise 20
+line noise 21
+line noise 22
+line noise 23
+line noise 24
+line noise 25

@@ -27,7 +27,7 @@ flowchart TB
     sem["context/semantic.json from oz context enrich and review"]
   end
   subgraph layerExec ["Layer 4: Shell compression execution layer"]
-    shell["oz shell run: deterministic command-output compaction"]
+    shell["oz shell run and read: deterministic command-output compaction and language-aware file reading compaction"]
   end
   layerConv --> layerGraph
   layerGraph --> layerSem
@@ -58,6 +58,7 @@ Single Go binary built with `go build`. No runtime dependencies. Subcommands:
 | `oz context review` | `internal/review/` | Human review of semantic overlay |
 | `oz context serve` | `internal/mcp/` | MCP stdio server for LLM tool calls |
 | `oz shell run` | `internal/shell/` (planned) | Execute shell commands with deterministic compact output and exit-code preservation |
+| `oz shell read` | `internal/shell/readfilter` (planned) | Read files/stdin with language-aware compaction and safe fallback to raw content |
 | `oz shell gain` | `internal/shell/track` (planned) | Report local token/perf savings from shell command history |
 
 ### internal packages
@@ -239,6 +240,33 @@ flowchart TD
   applyFilter --> emitOut[emit_compact_or_json]
   rawOut --> teeStore[tee_store_optional]
   teeStore --> emitOut
+```
+
+### oz shell read (planned)
+
+`oz shell read` is a language-aware reader path for file and stdin content, designed to
+reduce token usage for read-heavy workflows while preserving actionable content.
+
+Planned behavior:
+
+- explicit reader mode (`oz shell read -- <file...>` and `oz shell read -` for stdin)
+- language-aware reader registry (extension-based dispatch, deterministic transforms)
+- strict safety fallback: if filtering empties non-empty content, return raw content with warning
+- optional line windowing (`--max-lines`, `--tail-lines`) and line numbering
+
+Planned architecture:
+
+```mermaid
+flowchart TD
+  readInput[read_input_file_or_stdin] --> detectLang[detect_language_by_extension]
+  detectLang --> selectReader[select_language_reader]
+  selectReader --> filterRead[apply_reader_filter]
+  filterRead --> safetyGate{safety_fallback_needed}
+  safetyGate -->|yes| rawRead[emit_raw_content]
+  safetyGate -->|no| compactRead[emit_compact_content]
+  rawRead --> readWindow[line_window_and_line_numbers]
+  compactRead --> readWindow
+  readWindow --> trackRead[token_and_perf_tracking]
 ```
 
 ---

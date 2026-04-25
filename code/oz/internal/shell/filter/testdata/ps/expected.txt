@@ -1,0 +1,4 @@
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+ps summary: shown=2
+alice     1000  5.0  1.0  20000 2000 ?       Sl   10:01   0:10 app
+root         1  0.0  0.1  12345  100 ?        Ss   10:00   0:01 init

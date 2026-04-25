@@ -12,7 +12,7 @@ type fakePackage struct {
 	confidence float64
 }
 
-func (f *fakePackage) Language() string   { return f.lang }
+func (f *fakePackage) Language() string     { return f.lang }
 func (f *fakePackage) Extensions() []string { return []string{"." + f.lang} }
 func (f *fakePackage) Detect(_ string) codeindex.DetectResult {
 	return codeindex.DetectResult{Confidence: f.confidence}
@@ -71,5 +71,29 @@ func TestAll_ReturnsAllRegistered(t *testing.T) {
 	after := len(codeindex.All())
 	if after != before+2 {
 		t.Errorf("All() count: got %d, want %d", after, before+2)
+	}
+}
+
+func TestLanguageByExt(t *testing.T) {
+	pkg := &fakePackage{lang: "testlang-byext", confidence: 1.0}
+	codeindex.Register(pkg)
+
+	tests := []struct {
+		name string
+		ext  string
+		want string
+	}{
+		{name: "dot prefixed", ext: ".testlang-byext", want: "testlang-byext"},
+		{name: "bare extension", ext: "testlang-byext", want: "testlang-byext"},
+		{name: "unknown", ext: ".missing-ext", want: ""},
+		{name: "empty", ext: "", want: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := codeindex.LanguageByExt(tt.ext); got != tt.want {
+				t.Fatalf("LanguageByExt(%q)=%q, want %q", tt.ext, got, tt.want)
+			}
+		})
 	}
 }

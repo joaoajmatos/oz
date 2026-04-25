@@ -1,0 +1,8 @@
+tree summary: lines=7 max_depth_shown=2
+.
+├── pkg
+│   ├── a.go
+│   └── b.go
+└── cmd
+    └── main.go
+… collapsed deeper tree lines: 50

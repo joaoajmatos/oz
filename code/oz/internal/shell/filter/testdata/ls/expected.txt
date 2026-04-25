@@ -1,0 +1,4 @@
+ls summary: dirs=1 files=1 links=1 entries=3
+names:
+  a.go
+  pkg

@@ -104,7 +104,7 @@ directory. They assert on exit behaviour and filesystem state.
 
 ---
 
-### `oz shell run` (SHL-2 implemented baseline)
+### `oz shell run` (SHL-2 implemented baseline + extended filter set)
 
 | Scenario | Assertion |
 |---|---|
@@ -112,6 +112,7 @@ directory. They assert on exit behaviour and filesystem state.
 | `git diff` compact mode | summary includes file/change totals and preserves non-zero exits |
 | `rg` compact mode | grouped output preserves file paths and representative match lines |
 | `go test` compact mode | failures are preserved, passing noise is reduced |
+| extended specialized filters (golden + reduction + determinism in `internal/shell/filter`) | `ls`, `find`, `tree`, `json` (`jq` + JSON stdout sniff), `git log`, `git blame`, `git show`, `go build`/`go run`/`go install`, `go vet` + `staticcheck`, `make`, `npm`/`yarn`/`pnpm`, `docker build`/`docker run`, `curl`/`wget`/`http`/`https`, `env`/`printenv`, `wc`, `diff`/`patch`, `ps`, `top -b -n*`, `df`, `cargo`, `pytest` / `python -m pytest` |
 | unknown command in compact mode | generic profile applies without losing error visibility |
 | unknown command in raw mode | output matches raw passthrough behavior |
 | filter internal error | falls back to raw output with warning metadata |
@@ -119,6 +120,19 @@ directory. They assert on exit behaviour and filesystem state.
 | `--tee failures` with failing command | raw output artifact is persisted and path is reported |
 | transparent rewrite enabled | command is rewritten to `oz shell run -- ...` when eligible |
 | transparent rewrite excluded command | command bypasses rewrite and runs unchanged |
+
+### `oz shell read` (planned)
+
+| Scenario | Assertion |
+|---|---|
+| file input (`oz shell read <file>`) | language-aware reader selected by extension; output remains non-empty for non-empty input |
+| stdin input (`oz shell read -`) | stdin is read and filtered via unknown/generic path when no extension signal exists |
+| missing file mixed with valid file | valid content still emitted; error surfaced for missing path; non-zero exit status |
+| safety fallback triggered | if reader returns empty for non-empty content, raw content is emitted with warning |
+| `--max-lines` | deterministic truncation applied after filtering |
+| `--tail-lines` | deterministic tail window preserves newline behavior |
+| `--line-numbers` | output uses stable, right-aligned line numbering |
+| `--json` | envelope includes language, token before/after, warnings, and exit metadata |
 
 ### `oz shell gain` (SHL-3 implemented baseline)
 
@@ -148,14 +162,14 @@ directory. They assert on exit behaviour and filesystem state.
 | concurrent tracking access | inserts/queries remain stable without sqlite lock failures |
 | shell command tests | global CLI flag/env state is isolated per test |
 
-### `oz shell run` unit and golden tests (planned)
+### `oz shell run` unit and golden tests
 
 | Behaviour | Test type |
 |---|---|
 | token estimator (`ceil(chars/4.0)`) | unit |
 | filter strategy transforms (stats/grouping/dedupe/failure-focus) | unit |
 | deterministic output for same fixture input | unit |
-| fixture-based output snapshots for MVP command families | golden |
+| fixture-based output snapshots for MVP + extended command families | golden |
 | deterministic output for same fixture input across runs | golden/unit |
 | exit-code propagation from wrapped command | integration |
 | fallback path (no specialized filter / filter failure) | integration |

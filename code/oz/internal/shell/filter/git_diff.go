@@ -72,3 +72,15 @@ func max(a, b int) int {
 	}
 	return b
 }
+
+type gitDiffFilter struct{}
+
+func (gitDiffFilter) ID() ID { return FilterGitDiff }
+
+func (gitDiffFilter) Match(args []string) bool {
+	return len(args) >= 2 && trimArg(0, args) == "git" && trimArg(1, args) == "diff"
+}
+
+func (gitDiffFilter) Apply(stdout, stderr string, exitCode int, ultraCompact bool) (string, string, error) {
+	return applyGitDiff(stdout, stderr, exitCode, ultraCompact)
+}

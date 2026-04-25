@@ -1,0 +1,21 @@
+./cmd/main.go:10:12: fmt.Sprintf call needs 1 arg but has 2 args
+./pkg/x.go:3:1: exported func MissingDoc should have comment
+./pkg/x.go:4:1: exported func AnotherMissing should have comment
+./pkg/x.go:5:1: exported func ThirdMissing should have comment
+./pkg/x.go:6:1: exported func FourthMissing should have comment
+./pkg/x.go:7:1: exported func FifthMissing should have comment
+./pkg/x.go:8:1: exported func SixthMissing should have comment
+./pkg/x.go:9:1: exported func SeventhMissing should have comment
+./pkg/x.go:10:1: exported func EighthMissing should have comment
+./pkg/x.go:11:1: exported func NinthMissing should have comment
+./pkg/x.go:12:1: exported func TenthMissing should have comment
+./pkg/x.go:13:1: exported func EleventhMissing should have comment
+./pkg/x.go:14:1: exported func TwelfthMissing should have comment
+./pkg/x.go:15:1: exported func ThirteenthMissing should have comment
+./pkg/x.go:16:1: exported func FourteenthMissing should have comment
+./pkg/x.go:17:1: exported func FifteenthMissing should have comment
+./pkg/x.go:18:1: exported func SixteenthMissing should have comment
+./pkg/x.go:19:1: exported func SeventeenthMissing should have comment
+./pkg/x.go:20:1: exported func EighteenthMissing should have comment
+./pkg/x.go:21:1: exported func NineteenthMissing should have comment
+./pkg/x.go:22:1: exported func TwentiethMissing should have comment

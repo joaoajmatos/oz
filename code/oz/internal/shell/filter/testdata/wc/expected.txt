@@ -1,0 +1,1 @@
+wc L=42 W=100 B=1200 README.md

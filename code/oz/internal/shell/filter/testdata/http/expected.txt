@@ -1,0 +1,10 @@
+status: HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 12
+Authorization: <redacted>
+Cache-Control: no-cache
+body(json):
+  json object: keys=3
+  items: array(len=20)
+  meta: object(10 keys)
+  ok: bool(true)

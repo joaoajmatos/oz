@@ -203,6 +203,16 @@ Executes shell commands with deterministic output compaction to reduce LLM token
 preserving exit codes and error visibility. V1 also includes `oz shell gain` for local
 token/perf savings summaries.
 
+`oz shell` also includes a planned language-aware reader surface:
+
+- `oz shell read <file...>` for file input
+- `oz shell read -` for stdin input
+
+`oz shell read` is intended for read-heavy workflows (`cat`-style usage) and applies
+deterministic, language-aware filtering with strict safety fallback to raw content when
+a filter produces empty output for non-empty input. Line-window flags (`--max-lines`,
+`--tail-lines`) and line numbering are part of the planned command contract.
+
 Normative contract:
 
 - `specs/oz-shell-compression-specification.md`

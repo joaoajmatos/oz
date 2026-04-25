@@ -1,0 +1,5 @@
+=================================== FAILURES ===================================
+_______________________________ test_bad ___________________________________
+FAILED tests/test_x.py::test_bad - assert 1 == 2
+1 failed, 5 passed in 0.50s
+tests/test_x.py:5: AssertionError

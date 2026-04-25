@@ -1,0 +1,9 @@
+go vet summary: files=1 findings=21
+./pkg/x.go:10: SA9003: empty branch (staticcheck) case 10
+./pkg/x.go:11: SA9003: empty branch (staticcheck) case 11
+./pkg/x.go:12: SA9003: empty branch (staticcheck) case 12
+./pkg/x.go:13: SA9003: empty branch (staticcheck) case 13
+./pkg/x.go:14: SA9003: empty branch (staticcheck) case 14
+./pkg/x.go:15: SA9003: empty branch (staticcheck) case 15
+./pkg/x.go:16: SA9003: empty branch (staticcheck) case 16
+./pkg/x.go:17: SA9003: empty branch (staticcheck) case 17

@@ -31,3 +31,15 @@ func applyGoTest(stdout, stderr string, exitCode int, ultraCompact bool) (string
 	out = keepHead(stableUnique(out), ternaryInt(ultraCompact, 20, 40))
 	return strings.Join(out, "\n"), strings.Join(keepHead(stableUnique(normalizeLines(stderr)), 12), "\n"), nil
 }
+
+type goTestFilter struct{}
+
+func (goTestFilter) ID() ID { return FilterGoTest }
+
+func (goTestFilter) Match(args []string) bool {
+	return len(args) >= 2 && trimArg(0, args) == "go" && trimArg(1, args) == "test"
+}
+
+func (goTestFilter) Apply(stdout, stderr string, exitCode int, ultraCompact bool) (string, string, error) {
+	return applyGoTest(stdout, stderr, exitCode, ultraCompact)
+}

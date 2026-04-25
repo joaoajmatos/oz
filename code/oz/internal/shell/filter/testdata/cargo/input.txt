@@ -1,0 +1,2 @@
+   Compiling mycrate v0.1.0 (/tmp/mycrate)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.20s

@@ -19,7 +19,7 @@ Specification and ADR are landed:
 Implementation status:
 
 1. SHL-1 complete: safe wrapper execution with strict exit-code propagation, generic compact fallback, tee, JSON envelope.
-2. SHL-2 complete: deterministic MVP family filters (`git status`, `git diff`, `rg`/`grep`, `go test`) with golden and reduction tests.
+2. SHL-2 complete: deterministic MVP family filters (`git status`, `git diff`, `rg`/`grep`, `go test`) **plus** an extended registry-backed filter set (see `docs/test-plan.md` `oz shell run` table) with golden, reduction, determinism, and failure fixtures in `code/oz/internal/shell/filter/testdata/`.
 3. SHL-3 baseline complete: `oz shell gain` aggregates and transparent interception decision scaffolding (suggest default, rewrite opt-in, exclusions).
 
 Remaining risks to manage in rollout:
@@ -27,7 +27,23 @@ Remaining risks to manage in rollout:
 1. preserving full failure signal while aggressively reducing tokens
 2. maintaining deterministic compact output across tool versions
 3. keeping wrapper overhead within the v1 SLO targets
-4. broad real-world parser drift coverage for non-MVP command families (fast-follow beyond SHL-4)
+4. parser drift for uncommon tool flags/output shapes (mitigated by generic fallback + fixture suite; still monitor real-world reports)
+
+### Shell read command rollout status (tracking item)
+
+`oz shell read` is planned as a language-aware reader path for file and stdin workflows.
+
+Scope for initial rollout:
+
+1. explicit command surface (`oz shell read <file...>` and `oz shell read -`)
+2. extensible language reader registry (parallel to shell filter registry)
+3. safety fallback to raw content when a reader empties non-empty input
+4. line windowing (`--max-lines`, `--tail-lines`) and optional line numbering
+
+Deferred to follow-up after initial command ship:
+
+1. transparent rewrite of `cat` / `head` / `tail` to `oz shell read`
+2. broader language-specific readers beyond the initial baseline set
 
 ### oz audit — performance baseline (Sprint A6, 2026-04-20)
 

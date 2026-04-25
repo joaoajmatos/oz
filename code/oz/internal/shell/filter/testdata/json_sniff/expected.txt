@@ -1,0 +1,6 @@
+json object: keys=5
+  items: array(len=30)
+  nested: object(10 keys)
+  notes: string("this is a longer note used to inflate fi…")
+  ok: bool(true)
+  project: string("oz")

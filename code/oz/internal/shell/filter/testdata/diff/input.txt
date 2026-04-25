@@ -1,0 +1,7 @@
+diff --git a/a.go b/a.go
+--- a/a.go
++++ b/a.go
+@@ -1 +1 @@
+-old
++new
+ 1 file changed, 1 insertion(+), 1 deletion(-)

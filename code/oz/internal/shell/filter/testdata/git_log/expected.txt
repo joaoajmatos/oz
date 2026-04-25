@@ -1,0 +1,3 @@
+git log summary: total=2 shown=2
+abcdef123456 · add feature one · Alice <a@example.com> · Mon Apr 1 10:00:00 2024 +0000
+1234567890ab · fix bug two · Bob <b@example.com> · Tue Apr 2 11:00:00 2024 +0000

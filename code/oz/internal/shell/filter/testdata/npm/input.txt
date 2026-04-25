@@ -1,0 +1,4 @@
+npm warn deprecated oldpkg@1.0.0
+added 120 packages, and audited 121 packages in 8s
+2 packages are looking for funding
+found 0 vulnerabilities

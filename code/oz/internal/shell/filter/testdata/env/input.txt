@@ -1,0 +1,4 @@
+PATH=/usr/bin:/bin
+HOME=/home/alice
+SECRET_TOKEN=supersecret
+API_KEY=abc123

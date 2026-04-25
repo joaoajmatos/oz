@@ -1,0 +1,3 @@
+npm error code ELIFECYCLE
+npm error errno 1
+npm error missing script: build

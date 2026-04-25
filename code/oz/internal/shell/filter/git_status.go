@@ -61,3 +61,15 @@ func applyGitStatus(stdout, stderr string, exitCode int, ultraCompact bool) (str
 	out = keepHead(stableUnique(out), ternaryInt(ultraCompact, 8, 16))
 	return strings.Join(out, "\n"), strings.Join(keepHead(stableUnique(normalizeLines(stderr)), 12), "\n"), nil
 }
+
+type gitStatusFilter struct{}
+
+func (gitStatusFilter) ID() ID { return FilterGitStatus }
+
+func (gitStatusFilter) Match(args []string) bool {
+	return len(args) >= 2 && trimArg(0, args) == "git" && trimArg(1, args) == "status"
+}
+
+func (gitStatusFilter) Apply(stdout, stderr string, exitCode int, ultraCompact bool) (string, string, error) {
+	return applyGitStatus(stdout, stderr, exitCode, ultraCompact)
+}

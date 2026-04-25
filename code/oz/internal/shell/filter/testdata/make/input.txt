@@ -1,0 +1,27 @@
+echo stepping target-a
+echo stepping target-b
+echo stepping target-c
+echo stepping target-d
+echo stepping target-e
+echo stepping target-f
+echo stepping target-g
+echo stepping target-h
+echo stepping target-i
+echo stepping target-j
+echo stepping target-k
+echo stepping target-l
+echo stepping target-m
+echo stepping target-n
+echo stepping target-o
+echo stepping target-p
+echo stepping target-q
+echo stepping target-r
+echo stepping target-s
+echo stepping target-t
+echo stepping target-u
+echo stepping target-v
+echo stepping target-w
+echo stepping target-x
+echo stepping target-y
+echo stepping target-z
+make: Nothing to be done for `all'.

@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -12,7 +13,59 @@ import (
 var (
 	wsRE      = regexp.MustCompile(`\s+`)
 	failureRE = regexp.MustCompile(`(?i)(fail|error|fatal|panic)`)
+	ansiRE    = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 )
+
+func stripANSI(s string) string {
+	return ansiRE.ReplaceAllString(s, "")
+}
+
+func looksLikeJSON(s string) bool {
+	s = strings.TrimSpace(s)
+	if len(s) == 0 {
+		return false
+	}
+	if s[0] != '{' && s[0] != '[' {
+		return false
+	}
+	return json.Valid([]byte(s))
+}
+
+// topN returns the first n elements and how many were omitted from the tail.
+func topN[T any](items []T, n int) (head []T, omitted int) {
+	if n <= 0 || len(items) <= n {
+		return items, 0
+	}
+	return items[:n], len(items) - n
+}
+
+func formatOmittedSuffix(omitted int) string {
+	if omitted <= 0 {
+		return ""
+	}
+	return fmt.Sprintf(" (%d omitted)", omitted)
+}
+
+func groupByKey[K comparable, V any](items []V, keyFn func(V) K) map[K][]V {
+	out := make(map[K][]V)
+	for _, it := range items {
+		k := keyFn(it)
+		out[k] = append(out[k], it)
+	}
+	return out
+}
+
+var unifiedHunkRE = regexp.MustCompile(`^@@\s`)
+
+func countUnifiedHunks(lines []string) int {
+	n := 0
+	for _, line := range lines {
+		if unifiedHunkRE.MatchString(line) {
+			n++
+		}
+	}
+	return n
+}
 
 func normalizeLines(s string) []string {
 	raw := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")

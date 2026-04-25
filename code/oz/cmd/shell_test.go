@@ -40,6 +40,13 @@ func saveShellGlobals(t *testing.T) {
 	prevGainPeriod := shellGainPeriod
 	prevVerbosity := shellVerbosity
 	prevRewriteExclude := append([]string(nil), shellRewriteExclude...)
+	prevReadMaxLines := shellReadMaxLines
+	prevReadTailLines := shellReadTailLines
+	prevReadLineNumbers := shellReadLineNumbers
+	prevReadNoFilter := shellReadNoFilter
+	prevReadJSON := shellReadJSON
+	prevReadUltraCompact := shellReadUltraCompact
+	prevReadNoTrack := shellReadNoTrack
 	t.Cleanup(func() {
 		shellMode = prevMode
 		shellTee = prevTee
@@ -52,7 +59,20 @@ func saveShellGlobals(t *testing.T) {
 		shellGainPeriod = prevGainPeriod
 		shellVerbosity = prevVerbosity
 		shellRewriteExclude = prevRewriteExclude
+		shellReadMaxLines = prevReadMaxLines
+		shellReadTailLines = prevReadTailLines
+		shellReadLineNumbers = prevReadLineNumbers
+		shellReadNoFilter = prevReadNoFilter
+		shellReadJSON = prevReadJSON
+		shellReadUltraCompact = prevReadUltraCompact
+		shellReadNoTrack = prevReadNoTrack
 	})
+}
+
+func addShellReadFlagsForTest(cmd *cobra.Command) {
+	cmd.Flags().Int("max-lines", 0, "")
+	cmd.Flags().Int("tail-lines", 0, "")
+	cmd.Flags().Bool("line-numbers", false, "")
 }
 
 func TestRunShellRewriteKnownCommand(t *testing.T) {
@@ -201,6 +221,7 @@ func TestRunShellRunRawPassthrough(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.SetOut(stdout)
 	cmd.SetErr(stderr)
+	addShellReadFlagsForTest(cmd)
 
 	shellMode = string(shellrun.ModeRaw)
 	shellTee = string(shellrun.TeeModeNever)
@@ -218,6 +239,58 @@ func TestRunShellRunRawPassthrough(t *testing.T) {
 	if !strings.Contains(stderr.String(), "err") {
 		t.Fatalf("expected stderr passthrough, got %q", stderr.String())
 	}
+}
+
+func TestRunShellRunJSONEnvelopeMatchedFilters(t *testing.T) {
+	runShellJSONCase := func(t *testing.T, args []string, wantFilter string) {
+		t.Helper()
+		lockShellTest(t)
+		saveShellGlobals(t)
+
+		stdout := &bytes.Buffer{}
+		stderr := &bytes.Buffer{}
+		cmd := &cobra.Command{}
+		cmd.SetOut(stdout)
+		cmd.SetErr(stderr)
+
+		shellMode = string(shellrun.ModeCompact)
+		shellTee = string(shellrun.TeeModeNever)
+		shellNoTrack = true
+		shellJSON = true
+		shellUltraCompact = false
+
+		if err := runShellRun(cmd, args); err != nil {
+			t.Fatalf("runShellRun: %v", err)
+		}
+		var payload map[string]any
+		if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+			t.Fatalf("unmarshal envelope: %v", err)
+		}
+		got, _ := payload["matched_filter"].(string)
+		if got != wantFilter {
+			t.Fatalf("matched_filter=%q want %q (stdout=%s)", got, wantFilter, stdout.String())
+		}
+		if code, ok := payload["exit_code"].(float64); !ok || int(code) != 0 {
+			t.Fatalf("exit_code=%v want 0", payload["exit_code"])
+		}
+	}
+
+	t.Run("json_sniff", func(t *testing.T) {
+		t.Parallel()
+		runShellJSONCase(t, []string{"sh", "-c", `echo '{"sniff":true,"n":42}'`}, "json")
+	})
+	t.Run("git_log", func(t *testing.T) {
+		t.Parallel()
+		runShellJSONCase(t, []string{"git", "log", "-1", "--oneline"}, "git.log")
+	})
+	t.Run("wc", func(t *testing.T) {
+		t.Parallel()
+		p := filepath.Join(t.TempDir(), "wcfile.txt")
+		if err := os.WriteFile(p, []byte("hello world\n"), 0o644); err != nil {
+			t.Fatalf("write temp file: %v", err)
+		}
+		runShellJSONCase(t, []string{"wc", p}, "wc")
+	})
 }
 
 func TestRunShellRunCompactFailureVisibility(t *testing.T) {
@@ -387,5 +460,152 @@ func TestRunShellGainHumanOutputIncludesSections(t *testing.T) {
 		if !strings.Contains(out, needle) {
 			t.Fatalf("expected %q in output, got:\n%s", needle, out)
 		}
+	}
+}
+
+func TestRunShellReadFile(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	path := filepath.Join(t.TempDir(), "sample.go")
+	content := "package main\n\n// comment\nfunc main() {}\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(stderr)
+
+	shellReadNoTrack = true
+	if err := runShellRead(cmd, []string{path}); err != nil {
+		t.Fatalf("runShellRead: %v", err)
+	}
+	if stdout.String() == "" {
+		t.Fatalf("expected non-empty output")
+	}
+	if strings.Contains(stdout.String(), "// comment") {
+		t.Fatalf("expected go reader to compact comments, got %q", stdout.String())
+	}
+}
+
+func TestRunShellReadStdin(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(stderr)
+	cmd.SetIn(strings.NewReader("hello\nworld\n"))
+	addShellReadFlagsForTest(cmd)
+
+	shellReadNoTrack = true
+	if err := runShellRead(cmd, []string{"-"}); err != nil {
+		t.Fatalf("runShellRead: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "hello") {
+		t.Fatalf("expected stdin content in output, got %q", stdout.String())
+	}
+}
+
+func TestRunShellReadMissingFile(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	path := filepath.Join(t.TempDir(), "ok.txt")
+	if err := os.WriteFile(path, []byte("ok\n"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(stderr)
+	addShellReadFlagsForTest(cmd)
+
+	shellReadNoTrack = true
+	err := runShellRead(cmd, []string{path, filepath.Join(t.TempDir(), "missing.txt")})
+	if err == nil {
+		t.Fatalf("expected missing file error")
+	}
+	var withCode interface{ ExitCode() int }
+	if !errors.As(err, &withCode) || withCode.ExitCode() != 2 {
+		t.Fatalf("expected exit code 2, got %v", err)
+	}
+	if !strings.Contains(stderr.String(), "missing file") {
+		t.Fatalf("expected missing-file stderr, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "ok") {
+		t.Fatalf("expected valid file output to still be present")
+	}
+}
+
+func TestRunShellReadTailLines(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	path := filepath.Join(t.TempDir(), "lines.txt")
+	if err := os.WriteFile(path, []byte("1\n2\n3\n4\n"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	addShellReadFlagsForTest(cmd)
+
+	shellReadNoTrack = true
+	shellReadTailLines = 2
+	if err := cmd.Flags().Set("tail-lines", "2"); err != nil {
+		t.Fatalf("set flag: %v", err)
+	}
+	if err := runShellRead(cmd, []string{path}); err != nil {
+		t.Fatalf("runShellRead: %v", err)
+	}
+	out := strings.TrimSpace(stdout.String())
+	if out != "3\n4" {
+		t.Fatalf("tail output=%q, want %q", out, "3\n4")
+	}
+}
+
+func TestRunShellReadLineNumbers(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	lines := make([]string, 0, 100)
+	for i := 0; i < 100; i++ {
+		lines = append(lines, "x")
+	}
+	path := filepath.Join(t.TempDir(), "lines.txt")
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	addShellReadFlagsForTest(cmd)
+
+	shellReadNoTrack = true
+	shellReadLineNumbers = true
+	if err := cmd.Flags().Set("line-numbers", "true"); err != nil {
+		t.Fatalf("set flag: %v", err)
+	}
+	if err := runShellRead(cmd, []string{path}); err != nil {
+		t.Fatalf("runShellRead: %v", err)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "  1|x") {
+		t.Fatalf("expected right-aligned first line number, got %q", out)
+	}
+	if !strings.Contains(out, "100|x") {
+		t.Fatalf("expected line 100, got %q", out)
 	}
 }

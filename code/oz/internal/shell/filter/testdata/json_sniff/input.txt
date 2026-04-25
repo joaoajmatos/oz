@@ -1,0 +1,1 @@
+{"project":"oz","ok":true,"nested":{"x":1,"y":2,"z":3,"a":4,"b":5,"c":6,"d":7,"e":8,"f":9,"g":10},"items":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],"notes":"this is a longer note used to inflate fixture size for token reduction tests and should compress well when summarized as json keys"}

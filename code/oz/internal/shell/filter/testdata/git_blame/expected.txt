@@ -1,0 +1,3 @@
+git blame summary: ranges=2
+L1-L15 abcdef1 (Alice 2024-04-01 10:00:00 +0000 1) line one
+L16-L18 2222222 (Bob 2024-04-02 10:00:00 +0000 16) line sixteen
