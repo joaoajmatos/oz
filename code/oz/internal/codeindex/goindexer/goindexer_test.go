@@ -31,7 +31,7 @@ func internalFunc() {}
 		Path:    "code/project/pkg/sample.go",
 		AbsPath: filepath.Join(root, "pkg", "sample.go"),
 		Lang:    "go",
-	})
+	}, codeindex.ProjectContext{Root: root})
 	if err != nil {
 		t.Fatalf("IndexFile: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestIndexFile_ParseFailureReturnsFileNodeOnly(t *testing.T) {
 		Path:    "code/project/pkg/broken.go",
 		AbsPath: filepath.Join(root, "pkg", "broken.go"),
 		Lang:    "go",
-	})
+	}, codeindex.ProjectContext{Root: root})
 	if err != nil {
 		t.Fatalf("IndexFile returned error on parse failure: %v", err)
 	}
@@ -98,6 +98,78 @@ func TestIndexFile_ParseFailureReturnsFileNodeOnly(t *testing.T) {
 	}
 	if len(res.Edges) != 0 {
 		t.Fatalf("edges = %d, want 0 on parse failure", len(res.Edges))
+	}
+}
+
+func TestDetect_GoModFound(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "code", "myapp", "go.mod"), "module example.com/myapp\n\ngo 1.21\n")
+
+	idx := goindexer.New()
+	dr := idx.Detect(root)
+	if dr.Confidence == 0 {
+		t.Fatal("Detect: expected Confidence > 0 when go.mod exists")
+	}
+	if dr.Manifest == "" {
+		t.Fatal("Detect: expected Manifest to be set")
+	}
+}
+
+func TestDetect_NoGoMod(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "code", "myapp", "main.py"), "print('hello')\n")
+
+	idx := goindexer.New()
+	dr := idx.Detect(root)
+	if dr.Confidence != 0 {
+		t.Fatalf("Detect: expected Confidence == 0 when no go.mod, got %f", dr.Confidence)
+	}
+}
+
+func TestIndexFile_PackageNodeSet(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "go.mod"), "module example.com/project\n\ngo 1.21\n")
+	writeFile(t, filepath.Join(root, "pkg", "sample.go"), "package pkg\n\nfunc Hello() {}\n")
+
+	idx := goindexer.New()
+	res, err := idx.IndexFile(codeindex.DiscoveredCodeFile{
+		Path:    "code/project/pkg/sample.go",
+		AbsPath: filepath.Join(root, "pkg", "sample.go"),
+		Lang:    "go",
+	}, codeindex.ProjectContext{Root: root})
+	if err != nil {
+		t.Fatalf("IndexFile: %v", err)
+	}
+	if res.PackageNode == nil {
+		t.Fatal("expected PackageNode to be set")
+	}
+	if res.PackageNode.Type != "code_package" {
+		t.Errorf("PackageNode.Type = %q, want code_package", res.PackageNode.Type)
+	}
+	if res.PackageNode.Language != "go" {
+		t.Errorf("PackageNode.Language = %q, want go", res.PackageNode.Language)
+	}
+	wantID := "code_package:example.com/project/pkg"
+	if res.PackageNode.ID != wantID {
+		t.Errorf("PackageNode.ID = %q, want %q", res.PackageNode.ID, wantID)
+	}
+	wantName := "pkg"
+	if res.PackageNode.Name != wantName {
+		t.Errorf("PackageNode.Name = %q, want %q", res.PackageNode.Name, wantName)
+	}
+}
+
+func TestExtractSemantics_Stub(t *testing.T) {
+	root := t.TempDir()
+	idx := goindexer.New()
+	concepts, err := idx.ExtractSemantics(codeindex.DiscoveredCodeFile{
+		Path: "code/project/pkg/main.go", Lang: "go",
+	}, codeindex.ProjectContext{Root: root})
+	if err != nil {
+		t.Fatalf("ExtractSemantics: unexpected error: %v", err)
+	}
+	if len(concepts) != 0 {
+		t.Fatalf("ExtractSemantics: expected nil/empty stub, got %d concepts", len(concepts))
 	}
 }
 

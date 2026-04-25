@@ -12,6 +12,7 @@ Practical, task-oriented walkthroughs for adopting `oz` as a shared workspace en
 6. [`ops-and-recovery.md`](./ops-and-recovery.md) — day-2 health checks and safe recovery with `oz repair`.
 7. [`crystallize-notes.md`](./crystallize-notes.md) — classify notes and review promotion-ready diffs.
 8. [`team-rollout.md`](./team-rollout.md) — optional guidance for team-level rollout.
+9. [`adding-a-language-package.md`](./adding-a-language-package.md) — extend oz to index a new language or framework.
 
 Use these guides whether your team works in one repository or a meta-repo model with separate codebases connected as git submodules under `code/`.
 

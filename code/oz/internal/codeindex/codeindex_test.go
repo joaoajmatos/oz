@@ -23,7 +23,7 @@ func TestWalkCode_SkipsAndFilters(t *testing.T) {
 	writeFile(t, filepath.Join(root, "code", "vendor", "dep", "dep.go"), "package dep\n")
 	writeFile(t, filepath.Join(root, "code", "testdata", "fixtures", "fixture.go"), "package fixture\n")
 
-	files, err := codeindex.WalkCode(root, []codeindex.Indexer{goindexer.New()}, codeindex.WalkOpts{})
+	files, err := codeindex.WalkCode(root, []codeindex.LanguagePackage{goindexer.New()}, codeindex.WalkOpts{})
 	if err != nil {
 		t.Fatalf("WalkCode: %v", err)
 	}

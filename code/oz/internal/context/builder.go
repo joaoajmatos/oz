@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strings"
 
 	"github.com/joaoajmatos/oz/internal/codeindex"
-	"github.com/joaoajmatos/oz/internal/codeindex/goindexer"
+	_ "github.com/joaoajmatos/oz/internal/codeindex/goindexer" // registers Go language package
 	"github.com/joaoajmatos/oz/internal/graph"
 )
 
@@ -16,6 +15,7 @@ type BuildResult struct {
 	Graph     *graph.Graph
 	NodeCount int
 	EdgeCount int
+	Concepts  []codeindex.CodeConcept // framework-specific concepts; may be empty
 }
 
 // Build constructs the structural graph for the oz workspace at root.
@@ -58,55 +58,71 @@ func Build(root string) (*BuildResult, error) {
 	var edges []graph.Edge
 
 	// 4. Index code files and symbols under code/.
-	goIdx := goindexer.New()
-	codeFiles, err := codeindex.WalkCode(root, []codeindex.Indexer{goIdx}, codeindex.WalkOpts{})
+	activePkgs := codeindex.Detect(root)
+
+	// Build a ProjectContext for each active language (one Detect call per package).
+	type pkgEntry struct {
+		pkg codeindex.LanguagePackage
+		ctx codeindex.ProjectContext
+	}
+	langMap := make(map[string]pkgEntry, len(activePkgs))
+	for _, p := range activePkgs {
+		dr := p.Detect(root)
+		langMap[p.Language()] = pkgEntry{
+			pkg: p,
+			ctx: codeindex.ProjectContext{Root: root, Framework: dr.Framework, Manifest: dr.Manifest},
+		}
+	}
+
+	codeFiles, err := codeindex.WalkCode(root, activePkgs, codeindex.WalkOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("walk code files: %w", err)
 	}
-	// pkgDocs collects the first non-empty package doc comment seen per import path.
-	// pkgFirstFile records one workspace .go file per package (for code_package
-	// retrieval display and for routing blocks that point at real files).
-	pkgDocs := map[string]string{}
-	pkgFirstFile := map[string]string{}
+
+	// seenPkg de-dupes code_package nodes by ID.
+	// For DocComment: keep the first non-empty value seen across files in the package.
+	type seenEntry struct {
+		node   graph.Node
+		hasDoc bool
+	}
+	seenPkg := map[string]seenEntry{}
+	var allConcepts []codeindex.CodeConcept
+
 	for _, cf := range codeFiles {
-		if cf.Lang != goIdx.Language() {
+		entry, ok := langMap[cf.Lang]
+		if !ok {
 			continue
 		}
-		res, indexErr := goIdx.IndexFile(cf)
+		res, indexErr := entry.pkg.IndexFile(cf, entry.ctx)
 		if indexErr != nil {
 			return nil, fmt.Errorf("index code file %s: %w", cf.Path, indexErr)
 		}
 		nodes = append(nodes, res.FileNode)
 		nodes = append(nodes, res.Symbols...)
 		edges = append(edges, res.Edges...)
-		if res.FileNode.Package != "" {
-			if _, seen := pkgFirstFile[res.FileNode.Package]; !seen {
-				pkgFirstFile[res.FileNode.Package] = res.FileNode.File
-			}
-			if _, seen := pkgDocs[res.FileNode.Package]; !seen && res.FileNode.DocComment != "" {
-				pkgDocs[res.FileNode.Package] = res.FileNode.DocComment
-			} else if _, seen := pkgDocs[res.FileNode.Package]; !seen {
-				pkgDocs[res.FileNode.Package] = ""
+
+		if pn := res.PackageNode; pn != nil {
+			if e, seen := seenPkg[pn.ID]; !seen {
+				seenPkg[pn.ID] = seenEntry{*pn, pn.DocComment != ""}
+			} else if !e.hasDoc && pn.DocComment != "" {
+				updated := e.node
+				updated.DocComment = pn.DocComment
+				seenPkg[pn.ID] = seenEntry{updated, true}
 			}
 		}
+
+		concepts, _ := entry.pkg.ExtractSemantics(cf, entry.ctx)
+		allConcepts = append(allConcepts, concepts...)
 	}
-	// Emit one code_package node per unique Go package, sorted for determinism.
-	pkgPaths := make([]string, 0, len(pkgDocs))
-	for pkg := range pkgDocs {
-		pkgPaths = append(pkgPaths, pkg)
+
+	// Emit code_package nodes in sorted order for determinism.
+	pkgIDs := make([]string, 0, len(seenPkg))
+	for id := range seenPkg {
+		pkgIDs = append(pkgIDs, id)
 	}
-	slices.Sort(pkgPaths)
-	for _, pkg := range pkgPaths {
-		rep := pkgFirstFile[pkg]
-		nodes = append(nodes, graph.Node{
-			ID:         "code_package:" + pkg,
-			Type:       graph.NodeTypeCodePackage,
-			File:       rep,
-			Name:       lastPathSegment(pkg),
-			Package:    pkg,
-			Language:   goIdx.Language(),
-			DocComment: pkgDocs[pkg],
-		})
+	slices.Sort(pkgIDs)
+	for _, id := range pkgIDs {
+		nodes = append(nodes, seenPkg[id].node)
 	}
 
 	// 5. Extract cross-reference and ownership edges now that code_file nodes exist.
@@ -122,18 +138,11 @@ func Build(root string) (*BuildResult, error) {
 		Graph:     g,
 		NodeCount: len(nodes),
 		EdgeCount: len(edges),
+		Concepts:  allConcepts,
 	}, nil
 }
 
 // readFile is a thin wrapper around os.ReadFile used by extractor.go.
 func readFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
-}
-
-// lastPathSegment returns the last slash-delimited segment of a path or import path.
-func lastPathSegment(p string) string {
-	if i := strings.LastIndex(p, "/"); i >= 0 {
-		return p[i+1:]
-	}
-	return p
 }

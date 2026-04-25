@@ -14,7 +14,7 @@ func TestWalkCode_IncludeTestGo(t *testing.T) {
 	writeFile(t, filepath.Join(root, "code", "pkg", "main.go"), "package pkg\n")
 	writeFile(t, filepath.Join(root, "code", "pkg", "main_test.go"), "package pkg\n")
 
-	files, err := codeindex.WalkCode(root, []codeindex.Indexer{goindexer.New()}, codeindex.WalkOpts{IncludeTestGo: true})
+	files, err := codeindex.WalkCode(root, []codeindex.LanguagePackage{goindexer.New()}, codeindex.WalkOpts{IncludeTestGo: true})
 	if err != nil {
 		t.Fatalf("WalkCode: %v", err)
 	}

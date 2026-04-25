@@ -15,23 +15,52 @@ import (
 	"github.com/joaoajmatos/oz/internal/graph"
 )
 
+func init() { codeindex.Register(New()) }
+
 // Indexer extracts exported symbols from Go files.
 type Indexer struct {
 	moduleCache map[string]string // go.mod dir -> module path
 }
 
-// New returns a Go AST-based code indexer.
+// New returns a Go AST-based language package.
 func New() *Indexer {
 	return &Indexer{
 		moduleCache: map[string]string{},
 	}
 }
 
-func (i *Indexer) Language() string { return "go" }
-
+func (i *Indexer) Language() string   { return "go" }
 func (i *Indexer) Extensions() []string { return []string{".go"} }
 
-func (i *Indexer) IndexFile(f codeindex.DiscoveredCodeFile) (*codeindex.Result, error) {
+// Detect reports whether the project rooted at root contains Go code.
+// It walks root/code/ looking for a go.mod file. Framework detection
+// (e.g. gin, echo, cobra) can be added by reading go.mod dependencies.
+func (i *Indexer) Detect(root string) codeindex.DetectResult {
+	codeDir := filepath.Join(root, "code")
+	var manifest string
+	_ = filepath.WalkDir(codeDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !d.IsDir() && d.Name() == "go.mod" {
+			rel, _ := filepath.Rel(root, path)
+			manifest = filepath.ToSlash(rel)
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	if manifest == "" {
+		return codeindex.DetectResult{}
+	}
+	// Framework detection stub — framework-specific detection (gin, cobra, echo…)
+	// will be added here by scanning go.mod require directives.
+	return codeindex.DetectResult{Confidence: 1.0, Manifest: manifest}
+}
+
+// IndexFile extracts graph nodes from one Go source file.
+// ctx carries the workspace root and detected framework (unused for now;
+// reserved for future framework-specific extraction such as gin routes).
+func (i *Indexer) IndexFile(f codeindex.DiscoveredCodeFile, ctx codeindex.ProjectContext) (*codeindex.Result, error) {
 	pkgPath, err := i.resolvePackagePath(f.AbsPath)
 	if err != nil {
 		return nil, err
@@ -131,11 +160,33 @@ func (i *Indexer) IndexFile(f codeindex.DiscoveredCodeFile) (*codeindex.Result, 
 		}
 	}
 
-	return &codeindex.Result{
+	res := &codeindex.Result{
 		FileNode: fileNode,
 		Symbols:  symbols,
 		Edges:    edges,
-	}, nil
+	}
+
+	if pkgPath != "" {
+		pkgNode := graph.Node{
+			ID:         "code_package:" + pkgPath,
+			Type:       graph.NodeTypeCodePackage,
+			File:       f.Path,
+			Name:       lastPathSegment(pkgPath),
+			Package:    pkgPath,
+			Language:   i.Language(),
+			DocComment: fileNode.DocComment,
+		}
+		res.PackageNode = &pkgNode
+	}
+
+	return res, nil
+}
+
+// ExtractSemantics returns framework-specific concepts for the given file.
+// Currently a stub — Go framework concept extraction (cobra commands, gin routes,
+// gorm models) will be added here per-framework without changing the interface.
+func (i *Indexer) ExtractSemantics(_ codeindex.DiscoveredCodeFile, _ codeindex.ProjectContext) ([]codeindex.CodeConcept, error) {
+	return nil, nil
 }
 
 func (i *Indexer) resolvePackagePath(absPath string) (string, error) {
@@ -201,4 +252,11 @@ func readModulePath(goModPath string) (string, error) {
 		return "", err
 	}
 	return "", fmt.Errorf("module directive not found in %s", goModPath)
+}
+
+func lastPathSegment(p string) string {
+	if i := strings.LastIndex(p, "/"); i >= 0 {
+		return p[i+1:]
+	}
+	return p
 }

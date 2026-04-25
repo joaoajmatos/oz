@@ -14,7 +14,7 @@ import (
 	"github.com/joaoajmatos/oz/internal/audit"
 	"github.com/joaoajmatos/oz/internal/audit/drift/specscan"
 	"github.com/joaoajmatos/oz/internal/codeindex"
-	"github.com/joaoajmatos/oz/internal/codeindex/goindexer"
+	_ "github.com/joaoajmatos/oz/internal/codeindex/goindexer" // registers Go language package
 	ozcontext "github.com/joaoajmatos/oz/internal/context"
 	"github.com/joaoajmatos/oz/internal/graph"
 )
@@ -62,16 +62,32 @@ func loadDriftSymbols(root string, g *graph.Graph, includeTests bool) ([]Symbol,
 		return symbols, nil
 	}
 
-	goIdx := goindexer.New()
-	files, err := codeindex.WalkCode(root, []codeindex.Indexer{goIdx}, codeindex.WalkOpts{IncludeTestGo: true})
+	activePkgs := codeindex.Detect(root)
+	files, err := codeindex.WalkCode(root, activePkgs, codeindex.WalkOpts{IncludeTestGo: true})
 	if err != nil {
 		return nil, err
 	}
+
+	// Build a quick lang → (pkg, ctx) lookup for IndexFile calls.
+	type entry struct {
+		pkg codeindex.LanguagePackage
+		ctx codeindex.ProjectContext
+	}
+	langMap := make(map[string]entry, len(activePkgs))
+	for _, p := range activePkgs {
+		dr := p.Detect(root)
+		langMap[p.Language()] = entry{p, codeindex.ProjectContext{Root: root, Framework: dr.Framework, Manifest: dr.Manifest}}
+	}
+
 	for _, cf := range files {
 		if !strings.HasSuffix(cf.Path, "_test.go") {
 			continue
 		}
-		res, err := goIdx.IndexFile(cf)
+		e, ok := langMap[cf.Lang]
+		if !ok {
+			continue
+		}
+		res, err := e.pkg.IndexFile(cf, e.ctx)
 		if err != nil {
 			return nil, err
 		}

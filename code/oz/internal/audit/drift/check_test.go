@@ -329,7 +329,7 @@ func TestLoadDriftSymbols_IncludeTestsMergesTestExports(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, "code", "lib"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmod\n\ngo 1.22\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "code", "lib", "go.mod"), []byte("module testmod\n\ngo 1.22\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(root, "code", "lib", "lib.go"), []byte("package lib\n\nfunc Production() {}\n"), 0644); err != nil {
