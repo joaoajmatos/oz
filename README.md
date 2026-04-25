@@ -9,7 +9,7 @@
    ▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒▒ 
 </pre>
 
-<p align="center"><strong>oz</strong> — open workspace convention and Go CLI for LLM-first development</p>
+<p align="center"><strong>oz</strong> — context intelligence CLI for LLM-first engineering</p>
 
 <p align="center">
   <a href="./docs/guides/README.md">Guides</a> ·
@@ -21,15 +21,17 @@
 
 ## Why oz?
 
-LLM sessions are stateless by default. Every session starts cold, so teams repeatedly pay the cost of re-explaining structure, ownership, and rules.
+LLM sessions are stateless by default. Every session starts cold, so teams repeatedly pay the cost of rebuilding context before real work can begin.
 
-`oz` fixes that with one open convention plus one Go binary:
+`oz` turns workspace knowledge into an executable system:
 
-- **Convention:** a predictable workspace layout (`AGENTS.md`, `agents/`, `specs/`, `docs/`, `context/`, `skills/`, `rules/`, `notes/`)
-- **Tooling:** `oz` commands to scaffold, validate, audit, and query workspace context
-- **Interoperability:** works with Claude Code, Cursor, and any setup that can read markdown and/or speak MCP
+- **Source-of-truth hierarchy:** resolve conflicts across `specs/`, `docs/`, `context/`, and `notes/`
+- **Code indexing:** build a structural graph of docs, agents, packages, and symbols
+- **Agent routing + retrieval:** route tasks to the right agent and return meaningful context blocks
+- **Shell optimization:** compact command output and track token/perf savings with shell gain analytics
+- **Open integration:** works with Claude Code, Cursor, and any setup that can read markdown and/or speak MCP
 
-The result is a workspace that is easier for both humans and LLMs to navigate consistently.
+Convention provides the foundation, but `oz` is the engine that operationalizes it.
 
 ## Who this is for
 
@@ -40,16 +42,16 @@ The result is a workspace that is easier for both humans and LLMs to navigate co
 
 ## What is oz?
 
-**oz** gives any LLM a predictable workspace: explicit **agents**, **specs-first** truth, a machine-checkable layout, and a small **Go binary** (`oz`) for validate, audit, and context graph workflows — without locking you to one editor or model vendor.
+**oz** is an open source Go CLI that converts repository structure into actionable context for humans and LLMs. It combines convention-aware validation with indexing, routing, retrieval, audit, and shell token optimization in one workflow.
 
-It is also a practical **shared workspace environment for teams**: people working at different levels (implementation, maintenance, and specification) operate inside the same conventions, routing model, and validation rules.
+It can scaffold and maintain the workspace convention, but its core value is helping agents find the right owner, the right evidence, and the right amount of context fast.
 
 For multi-repo teams, `oz` works well as a **meta repository**: keep application repos separate and clean, mount them under `code/` as git submodules, and manage shared docs/agents/rules from one workspace root.
 
 | Layer | What you get |
 |--------|----------------|
-| **Convention** | [`AGENTS.md`](./AGENTS.md), [`OZ.md`](./OZ.md), `agents/`, `specs/`, `docs/`, `context/`, `skills/`, `rules/`, `notes/`, optional `code/` |
-| **CLI** | Single `oz` binary — see **CLI surface** below |
+| **Knowledge substrate** | Structured workspace + source-of-truth hierarchy + graph artifacts |
+| **Intelligence + execution** | Routing, retrieval, auditing, MCP tools, shell optimization, and token/perf budgeting |
 
 Normative spec: **[`specs/oz-project-specification.md`](./specs/oz-project-specification.md)**. This repo ships the CLI in **`code/oz`** and uses the convention itself.
 
@@ -62,7 +64,7 @@ Normative spec: **[`specs/oz-project-specification.md`](./specs/oz-project-speci
 | **`oz context`** | `build` (structural `context/graph.json`) · `query` (BM25F routing) · `scoring` + `describe` (tune **`context/scoring.toml`**) · `enrich` / `review` (optional semantic overlay `context/semantic.json`, needs `OPENROUTER_API_KEY`) · **`serve`** (MCP stdio) |
 | **`oz audit`** | All checks by default, or `orphans`, `coverage`, `staleness`, `drift`, `graph-summary` |
 | **Notes** | `oz crystallize` — classify `notes/` for promotion to `specs/`, `docs/`, or ADRs (optional LLM classifier; can use heuristics only) |
-| **Shell** | `oz completion` — generate completion scripts (see **Shell completion** below) |
+| **Shell intelligence** | `oz shell run` (command-output optimization + token budget awareness) · `oz shell gain` (measured savings) · `oz completion` |
 
 Run `oz` with no subcommand to print the banner. `oz --help` lists top-level commands; `oz <cmd> --help` for subcommands and flags.
 
@@ -133,9 +135,11 @@ What each target does:
 ## Feature highlights
 
 - **Single binary:** no daemon, no runtime service dependency
-- **Spec-first and checkable:** `oz validate` and `oz audit` keep conventions honest
-- **Context graph + retrieval:** `oz context build` + `oz context query` for practical routing
-- **MCP-native:** `oz context serve` exposes query tools to editor agents
+- **Source-of-truth aware:** convention hierarchy is enforced and auditable
+- **Context intelligence:** `oz context build` + `oz context query` for routing and meaningful block retrieval
+- **Code-aware indexing:** exported symbols/packages become queryable graph entities
+- **MCP-native:** `oz context serve` exposes routing + graph tools to editor agents
+- **Shell/token optimization:** `oz shell run` compacts output and `oz shell gain` quantifies savings
 - **Editor hooks:** shared workflow guardrails for Claude Code and Cursor
 - **Optional packages:** install focused agent+skill bundles (`maintainer`, `pm`) as needed
 
