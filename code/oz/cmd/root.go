@@ -39,5 +39,6 @@ func init() {
 	rootCmd.AddCommand(auditCmd)
 	rootCmd.AddCommand(crystallizeCmd)
 	rootCmd.AddCommand(repairCmd)
+	rootCmd.AddCommand(shellCmd)
 	installBrandedHelp(rootCmd)
 }
