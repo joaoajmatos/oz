@@ -16,7 +16,9 @@ var (
 	shellMode, shellTee              string
 	shellJSON, shellNoTrack          bool
 	shellUltraCompact, shellGainJSON bool
+	shellGainAllTime                 bool
 	shellGainDays                    int
+	shellGainPeriod                  string
 	shellVerbosity                   int
 )
 
@@ -98,11 +100,23 @@ func runShellGain(cmd *cobra.Command, _ []string) error {
 	}()
 
 	now := time.Now()
-	runs, err := store.QuerySinceDays(shellGainDays, now)
+	days := shellGainDays
+	if shellGainAllTime {
+		days = 0
+	}
+	runs, err := store.QuerySinceDays(days, now)
 	if err != nil {
 		return fmt.Errorf("query gain runs: %w", err)
 	}
-	report := gain.Aggregate(runs, shellGainDays, now)
+
+	period := gain.Period(shellGainPeriod)
+	switch period {
+	case gain.PeriodDaily, gain.PeriodWeekly, gain.PeriodMonthly:
+	default:
+		return fmt.Errorf("invalid period %q (must be daily|weekly|monthly)", shellGainPeriod)
+	}
+
+	report := gain.BuildDetailed(runs, days, period, now)
 
 	if shellGainJSON {
 		data, err := json.MarshalIndent(report, "", "  ")
@@ -113,18 +127,52 @@ func runShellGain(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	if report.Empty() {
-		fmt.Fprintf(cmd.OutOrStdout(), "oz shell gain: no tracked runs in the last %d days\n", shellGainDays)
+	if report.Summary.Empty() {
+		if days == 0 {
+			fmt.Fprintln(cmd.OutOrStdout(), "oz shell gain: no tracked runs")
+		} else {
+			fmt.Fprintf(cmd.OutOrStdout(), "oz shell gain: no tracked runs in the last %d days\n", days)
+		}
 		return nil
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "oz shell gain (%d days)\n", report.RetentionDays)
-	fmt.Fprintf(cmd.OutOrStdout(), "  invocations: %d\n", report.InvocationCount)
-	fmt.Fprintf(cmd.OutOrStdout(), "  tokens before: %d\n", report.TokenBeforeTotal)
-	fmt.Fprintf(cmd.OutOrStdout(), "  tokens after: %d\n", report.TokenAfterTotal)
-	fmt.Fprintf(cmd.OutOrStdout(), "  tokens saved: %d\n", report.TokenSavedTotal)
-	fmt.Fprintf(cmd.OutOrStdout(), "  avg reduction: %.2f%%\n", report.ReductionPctAvg)
-	fmt.Fprintf(cmd.OutOrStdout(), "  avg duration: %.2fms\n", report.DurationMsAvg)
+	windowLabel := fmt.Sprintf("%d days", report.Summary.RetentionDays)
+	if report.Summary.RetentionDays == 0 {
+		windowLabel = "all-time"
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "oz shell gain (%s, %s)\n", windowLabel, report.Period)
+	fmt.Fprintf(cmd.OutOrStdout(), "  invocations: %d\n", report.Summary.InvocationCount)
+	fmt.Fprintf(cmd.OutOrStdout(), "  tokens before: %d\n", report.Summary.TokenBeforeTotal)
+	fmt.Fprintf(cmd.OutOrStdout(), "  tokens after: %d\n", report.Summary.TokenAfterTotal)
+	fmt.Fprintf(cmd.OutOrStdout(), "  tokens saved: %d\n", report.Summary.TokenSavedTotal)
+	fmt.Fprintf(cmd.OutOrStdout(), "  avg reduction: %.2f%%\n", report.Summary.ReductionPctAvg)
+	fmt.Fprintf(cmd.OutOrStdout(), "  avg duration: %.2fms\n", report.Summary.DurationMsAvg)
+
+	if len(report.Trend) > 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "")
+		fmt.Fprintln(cmd.OutOrStdout(), "Trend")
+		fmt.Fprintln(cmd.OutOrStdout(), "  bucket        invocations  saved   avg_reduction")
+		for _, row := range report.Trend {
+			fmt.Fprintf(cmd.OutOrStdout(), "  %-12s  %-11d  %-6d  %6.2f%%\n", row.Label, row.InvocationCount, row.TokenSavedTotal, row.ReductionPctAvg)
+		}
+	}
+
+	if len(report.CommandBreakdown) > 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "")
+		fmt.Fprintln(cmd.OutOrStdout(), "Command breakdown")
+		fmt.Fprintln(cmd.OutOrStdout(), "  command                      invocations  saved   avg_reduction")
+		for _, row := range report.CommandBreakdown {
+			fmt.Fprintf(cmd.OutOrStdout(), "  %-27s  %-11d  %-6d  %6.2f%%\n", truncateRunes(row.Command, 27), row.InvocationCount, row.TokenSavedTotal, row.ReductionPctAvg)
+		}
+	}
+
+	if len(report.TopSavers) > 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "")
+		fmt.Fprintln(cmd.OutOrStdout(), "Top savers")
+		for i, row := range report.TopSavers {
+			fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s (%d saved)\n", i+1, row.Command, row.TokenSavedTotal)
+		}
+	}
 	return nil
 }
 
@@ -149,5 +197,18 @@ func init() {
 	shellRunCmd.Flags().BoolVarP(&shellUltraCompact, "ultra-compact", "u", false, "maximum token reduction")
 	shellGainCmd.Flags().BoolVar(&shellGainJSON, "json", false, "emit JSON")
 	shellGainCmd.Flags().IntVar(&shellGainDays, "days", 90, "retention window in days (0 = all)")
+	shellGainCmd.Flags().BoolVar(&shellGainAllTime, "all-time", false, "use all tracked history")
+	shellGainCmd.Flags().StringVar(&shellGainPeriod, "period", "daily", "trend period: daily|weekly|monthly")
 	shellCmd.AddCommand(shellRunCmd, shellGainCmd)
+}
+
+func truncateRunes(s string, n int) string {
+	runes := []rune(s)
+	if len(runes) <= n {
+		return s
+	}
+	if n <= 1 {
+		return string(runes[:n])
+	}
+	return string(runes[:n-1]) + "…"
 }

@@ -33,7 +33,9 @@ func saveShellGlobals(t *testing.T) {
 	prevNoTrack := shellNoTrack
 	prevUltra := shellUltraCompact
 	prevGainJSON := shellGainJSON
+	prevGainAllTime := shellGainAllTime
 	prevGainDays := shellGainDays
+	prevGainPeriod := shellGainPeriod
 	prevVerbosity := shellVerbosity
 	t.Cleanup(func() {
 		shellMode = prevMode
@@ -42,7 +44,9 @@ func saveShellGlobals(t *testing.T) {
 		shellNoTrack = prevNoTrack
 		shellUltraCompact = prevUltra
 		shellGainJSON = prevGainJSON
+		shellGainAllTime = prevGainAllTime
 		shellGainDays = prevGainDays
+		shellGainPeriod = prevGainPeriod
 		shellVerbosity = prevVerbosity
 	})
 }
@@ -153,7 +157,9 @@ func TestRunShellGainEmptyState(t *testing.T) {
 	cmd.SetErr(&bytes.Buffer{})
 
 	shellGainJSON = false
+	shellGainAllTime = false
 	shellGainDays = 90
+	shellGainPeriod = "daily"
 	if err := runShellGain(cmd, nil); err != nil {
 		t.Fatalf("runShellGain returned error: %v", err)
 	}
@@ -204,7 +210,9 @@ func TestRunShellGainJSON(t *testing.T) {
 	cmd.SetOut(stdout)
 	cmd.SetErr(&bytes.Buffer{})
 	shellGainJSON = true
+	shellGainAllTime = true
 	shellGainDays = 90
+	shellGainPeriod = "weekly"
 	if err := runShellGain(cmd, nil); err != nil {
 		t.Fatalf("runShellGain returned error: %v", err)
 	}
@@ -213,7 +221,60 @@ func TestRunShellGainJSON(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
 		t.Fatalf("unmarshal json: %v", err)
 	}
-	if got := int(payload["invocation_count"].(float64)); got != 1 {
+	summary, ok := payload["summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("summary missing or invalid: %#v", payload["summary"])
+	}
+	if got := int(summary["invocation_count"].(float64)); got != 1 {
 		t.Fatalf("invocation_count=%d, want 1", got)
+	}
+	if payload["period"].(string) != "weekly" {
+		t.Fatalf("period=%q, want weekly", payload["period"])
+	}
+}
+
+func TestRunShellGainHumanOutputIncludesSections(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	customDataHome := t.TempDir()
+	original := os.Getenv("XDG_DATA_HOME")
+	t.Cleanup(func() {
+		if original == "" {
+			_ = os.Unsetenv("XDG_DATA_HOME")
+		} else {
+			_ = os.Setenv("XDG_DATA_HOME", original)
+		}
+	})
+	if err := os.Setenv("XDG_DATA_HOME", customDataHome); err != nil {
+		t.Fatalf("set XDG_DATA_HOME: %v", err)
+	}
+
+	dbPath := filepath.Join(customDataHome, "oz", "shell-track.db")
+	store, err := track.Open(dbPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	now := time.Now().Unix()
+	_ = store.Insert(track.Run{Command: "git status", RecordedAt: now, DurationMs: 3, TokenBefore: 20, TokenAfter: 10, TokenSaved: 10, ReductionPct: 50, MatchedFilter: "git.status", ExitCode: 0})
+	_ = store.Insert(track.Run{Command: "go test ./...", RecordedAt: now, DurationMs: 4, TokenBefore: 30, TokenAfter: 10, TokenSaved: 20, ReductionPct: 66, MatchedFilter: "go.test", ExitCode: 0})
+	_ = store.Close()
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	shellGainJSON = false
+	shellGainAllTime = true
+	shellGainDays = 90
+	shellGainPeriod = "daily"
+	if err := runShellGain(cmd, nil); err != nil {
+		t.Fatalf("runShellGain returned error: %v", err)
+	}
+	out := stdout.String()
+	for _, needle := range []string{"Trend", "Command breakdown", "Top savers"} {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("expected %q in output, got:\n%s", needle, out)
+		}
 	}
 }

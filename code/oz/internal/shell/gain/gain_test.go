@@ -41,3 +41,28 @@ func TestAggregateTotals(t *testing.T) {
 		t.Fatalf("DurationMsAvg=%f, want 30", report.DurationMsAvg)
 	}
 }
+
+func TestBuildDetailedDailyAndTopSavers(t *testing.T) {
+	t.Parallel()
+
+	base := time.Unix(1700000000, 0).UTC()
+	runs := []track.Run{
+		{Command: "git status", RecordedAt: base.Unix(), TokenSaved: 40, ReductionPct: 40, DurationMs: 10, TokenBefore: 100, TokenAfter: 60},
+		{Command: "git status", RecordedAt: base.Unix(), TokenSaved: 20, ReductionPct: 20, DurationMs: 20, TokenBefore: 100, TokenAfter: 80},
+		{Command: "go test ./...", RecordedAt: base.Add(24 * time.Hour).Unix(), TokenSaved: 90, ReductionPct: 90, DurationMs: 30, TokenBefore: 100, TokenAfter: 10},
+	}
+
+	report := gain.BuildDetailed(runs, 90, gain.PeriodDaily, base.Add(24*time.Hour))
+	if report.Summary.InvocationCount != 3 {
+		t.Fatalf("invocation count=%d, want 3", report.Summary.InvocationCount)
+	}
+	if len(report.Trend) != 2 {
+		t.Fatalf("trend rows=%d, want 2", len(report.Trend))
+	}
+	if len(report.CommandBreakdown) != 2 {
+		t.Fatalf("command breakdown rows=%d, want 2", len(report.CommandBreakdown))
+	}
+	if len(report.TopSavers) == 0 || report.TopSavers[0].Command != "go test ./..." {
+		t.Fatalf("unexpected top saver: %#v", report.TopSavers)
+	}
+}
