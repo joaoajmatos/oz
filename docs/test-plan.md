@@ -134,6 +134,17 @@ directory. They assert on exit behaviour and filesystem state.
 | `--line-numbers` | output uses stable, right-aligned line numbering |
 | `--json` | envelope includes language, token before/after, warnings, and exit metadata |
 
+### `oz shell pipe` (implemented baseline)
+
+| Scenario | Assertion |
+|---|---|
+| auto-detect mode (`oz shell pipe`) | stdin is compacted with a deterministic best-effort filter choice |
+| explicit filter (`--filter rg`, `--filter git-diff`, etc.) | named filter is used regardless of auto-detect heuristics |
+| `--passthrough` | stdin is relayed unchanged to stdout |
+| `--json` | envelope includes matched filter and token reduction metrics |
+| unknown filter name | command returns a validation error and exits non-zero |
+| stdin size over cap | command returns an explicit size-limit error and exits non-zero |
+
 ### `oz shell gain` (SHL-3 implemented baseline)
 
 | Scenario | Assertion |

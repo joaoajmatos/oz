@@ -11,6 +11,8 @@ import (
 
 	_ "github.com/joaoajmatos/oz/internal/shell/readfilter/langs"
 
+	"github.com/joaoajmatos/oz/internal/shell/envelope"
+	"github.com/joaoajmatos/oz/internal/shell/filter"
 	"github.com/joaoajmatos/oz/internal/shell/gain"
 	"github.com/joaoajmatos/oz/internal/shell/hooks"
 	"github.com/joaoajmatos/oz/internal/shell/readfilter"
@@ -34,7 +36,13 @@ var (
 	shellReadJSON                    bool
 	shellReadUltraCompact            bool
 	shellReadNoTrack                 bool
+	shellPipeFilter                  string
+	shellPipePassthrough             bool
+	shellPipeJSON                    bool
+	shellPipeUltraCompact            bool
 )
+
+const shellPipeRawCap = 2 * 1024 * 1024
 
 var shellCmd = &cobra.Command{
 	Use:   "shell",
@@ -61,6 +69,14 @@ var shellReadCmd = &cobra.Command{
 	Args:         cobra.MinimumNArgs(1),
 	SilenceUsage: true,
 	RunE:         runShellRead,
+}
+
+var shellPipeCmd = &cobra.Command{
+	Use:          "pipe",
+	Short:        "Compact stdin using shell output filters",
+	Args:         cobra.NoArgs,
+	SilenceUsage: true,
+	RunE:         runShellPipe,
 }
 
 var shellRewriteExclude []string
@@ -390,6 +406,185 @@ func runShellRead(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func runShellPipe(cmd *cobra.Command, _ []string) error {
+	if shellPipePassthrough {
+		_, err := io.Copy(cmd.OutOrStdout(), cmd.InOrStdin())
+		if err != nil {
+			return fmt.Errorf("pipe passthrough: %w", err)
+		}
+		return nil
+	}
+
+	var raw strings.Builder
+	_, err := io.Copy(&raw, io.LimitReader(cmd.InOrStdin(), shellPipeRawCap+1))
+	if err != nil {
+		return fmt.Errorf("read stdin: %w", err)
+	}
+	input := raw.String()
+	if len(input) > shellPipeRawCap {
+		return fmt.Errorf("stdin exceeds %d byte limit", shellPipeRawCap)
+	}
+
+	args, matched, resolveErr := resolvePipeFilterArgs(shellPipeFilter, input)
+	if resolveErr != nil {
+		return resolveErr
+	}
+	outStdout, outStderr, matchedFilter, applyErr := filter.Apply(args, input, "", 0, shellPipeUltraCompact)
+	warnings := make([]string, 0)
+	if applyErr != nil {
+		warnings = append(warnings, fmt.Sprintf("%s failed; falling back to raw output", matched))
+		outStdout = input
+		outStderr = ""
+		matchedFilter = filter.FilterGeneric
+	}
+
+	if shellPipeJSON {
+		result := envelope.RunResult{
+			SchemaVersion:  "1",
+			Command:        "oz shell pipe",
+			Mode:           "compact",
+			MatchedFilter:  string(matchedFilter),
+			ExitCode:       0,
+			DurationMs:     0,
+			TokenEstBefore: envelope.EstimateTokens(input),
+			TokenEstAfter:  envelope.EstimateTokens(outStdout + outStderr),
+			Stdout:         outStdout,
+			Stderr:         outStderr,
+			Warnings:       warnings,
+		}
+		result.TokenEstSaved = result.TokenEstBefore - result.TokenEstAfter
+		if result.TokenEstBefore > 0 {
+			result.TokenReductionPct = (float64(result.TokenEstSaved) / float64(result.TokenEstBefore)) * 100
+		}
+		data, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal pipe json: %w", err)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(data))
+		return nil
+	}
+
+	if outStdout != "" {
+		fmt.Fprintln(cmd.OutOrStdout(), outStdout)
+	}
+	if outStderr != "" {
+		fmt.Fprintln(cmd.ErrOrStderr(), outStderr)
+	}
+	for _, warning := range warnings {
+		fmt.Fprintf(cmd.ErrOrStderr(), "warning: %s\n", warning)
+	}
+	return nil
+}
+
+func resolvePipeFilterArgs(name, input string) ([]string, filter.ID, error) {
+	trimmed := strings.TrimSpace(strings.ToLower(name))
+	switch trimmed {
+	case "", "auto":
+		args, detected := autoDetectPipeFilter(input)
+		return args, detected, nil
+	case "cargo", "cargo-test":
+		return []string{"cargo", "test"}, filter.FilterCargo, nil
+	case "pytest":
+		return []string{"pytest"}, filter.FilterPytest, nil
+	case "go-test":
+		return []string{"go", "test"}, filter.FilterGoTest, nil
+	case "go-build":
+		return []string{"go", "build"}, filter.FilterGoBuild, nil
+	case "go-vet", "staticcheck":
+		return []string{"go", "vet"}, filter.FilterGoVet, nil
+	case "grep", "rg":
+		return []string{"rg"}, filter.FilterRG, nil
+	case "find", "fd":
+		return []string{"find"}, filter.FilterFind, nil
+	case "git-log":
+		return []string{"git", "log"}, filter.FilterGitLog, nil
+	case "git-diff":
+		return []string{"git", "diff"}, filter.FilterGitDiff, nil
+	case "git-status":
+		return []string{"git", "status"}, filter.FilterGitStatus, nil
+	case "git-blame":
+		return []string{"git", "blame"}, filter.FilterGitBlame, nil
+	case "git-show":
+		return []string{"git", "show"}, filter.FilterGitShow, nil
+	case "ls":
+		return []string{"ls"}, filter.FilterLs, nil
+	case "tree":
+		return []string{"tree"}, filter.FilterTree, nil
+	case "json":
+		return []string{"jq"}, filter.FilterJSON, nil
+	case "make":
+		return []string{"make"}, filter.FilterMake, nil
+	case "npm", "yarn", "pnpm":
+		return []string{"npm"}, filter.FilterNpm, nil
+	case "docker":
+		return []string{"docker", "build"}, filter.FilterDocker, nil
+	case "http", "curl", "wget":
+		return []string{"curl"}, filter.FilterHTTP, nil
+	case "env", "printenv":
+		return []string{"env"}, filter.FilterEnv, nil
+	case "wc":
+		return []string{"wc"}, filter.FilterWc, nil
+	case "diff", "patch":
+		return []string{"diff"}, filter.FilterDiff, nil
+	case "ps", "top":
+		return []string{"ps"}, filter.FilterPs, nil
+	case "df":
+		return []string{"df"}, filter.FilterDf, nil
+	default:
+		return nil, filter.FilterNone, fmt.Errorf("unknown pipe filter %q", name)
+	}
+}
+
+func autoDetectPipeFilter(input string) ([]string, filter.ID) {
+	sample := input
+	if len(sample) > 1024 {
+		sample = sample[:1024]
+	}
+	lines := strings.Split(sample, "\n")
+	nonEmpty := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			nonEmpty = append(nonEmpty, line)
+		}
+		if len(nonEmpty) >= 5 {
+			break
+		}
+	}
+
+	if strings.Contains(sample, "test result:") && strings.Contains(sample, "passed;") {
+		return []string{"cargo", "test"}, filter.FilterCargo
+	}
+	if strings.Contains(sample, "=== test session starts") || strings.Contains(sample, "collected ") {
+		return []string{"pytest"}, filter.FilterPytest
+	}
+	if strings.Contains(sample, "\"Action\"") {
+		return []string{"go", "test"}, filter.FilterGoTest
+	}
+	if strings.Contains(sample, "diff --git ") {
+		return []string{"git", "diff"}, filter.FilterGitDiff
+	}
+	for _, line := range nonEmpty {
+		parts := strings.SplitN(line, ":", 3)
+		if len(parts) == 3 {
+			return []string{"rg"}, filter.FilterRG
+		}
+	}
+	pathLike := 0
+	for _, line := range nonEmpty {
+		if strings.Contains(line, "/") && !strings.Contains(line, ":") {
+			pathLike++
+		}
+	}
+	if len(nonEmpty) >= 3 && pathLike == len(nonEmpty) {
+		return []string{"find"}, filter.FilterFind
+	}
+	if strings.HasPrefix(strings.TrimSpace(sample), "{") || strings.HasPrefix(strings.TrimSpace(sample), "[") {
+		return []string{"jq"}, filter.FilterJSON
+	}
+	return []string{"unknown"}, filter.FilterGeneric
+}
+
 func insertShellTrackRow(command string, before, after int64, durationMs int64, matchedFilter string, missingCount int) error {
 	store, err := track.Open(track.DefaultPath())
 	if err != nil {
@@ -457,8 +652,12 @@ func init() {
 	shellReadCmd.Flags().BoolVar(&shellReadJSON, "json", false, "emit JSON output")
 	shellReadCmd.Flags().BoolVarP(&shellReadUltraCompact, "ultra-compact", "u", false, "maximum token reduction")
 	shellReadCmd.Flags().BoolVar(&shellReadNoTrack, "no-track", false, "skip tracking DB write")
+	shellPipeCmd.Flags().StringVar(&shellPipeFilter, "filter", "auto", "filter id or 'auto'")
+	shellPipeCmd.Flags().BoolVar(&shellPipePassthrough, "passthrough", false, "relay stdin to stdout without filtering")
+	shellPipeCmd.Flags().BoolVar(&shellPipeJSON, "json", false, "emit JSON envelope")
+	shellPipeCmd.Flags().BoolVarP(&shellPipeUltraCompact, "ultra-compact", "u", false, "maximum token reduction")
 	shellRewriteCmd.Flags().StringSliceVar(&shellRewriteExclude, "exclude", nil, "commands to bypass rewrite")
-	shellCmd.AddCommand(shellRunCmd, shellGainCmd, shellReadCmd, shellRewriteCmd)
+	shellCmd.AddCommand(shellRunCmd, shellGainCmd, shellReadCmd, shellPipeCmd, shellRewriteCmd)
 }
 
 func truncateRunes(s string, n int) string {

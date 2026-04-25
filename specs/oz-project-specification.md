@@ -205,8 +205,14 @@ token/perf savings summaries.
 
 `oz shell` also includes a planned language-aware reader surface:
 
+- `oz shell pipe` for stdin-based command-output compaction (explicit `--filter` or `auto`)
 - `oz shell read <file...>` for file input
 - `oz shell read -` for stdin input
+
+`oz shell pipe` is intended for pipeline workflows where command execution happens outside
+`oz shell run` but deterministic compaction is still needed before LLM consumption. It supports
+strict stdin size caps, explicit filter selection, auto-detect fallback, passthrough mode, and
+JSON envelope output compatible with shell tracking metrics.
 
 `oz shell read` is intended for read-heavy workflows (`cat`-style usage) and applies
 deterministic, language-aware filtering with strict safety fallback to raw content when

@@ -47,6 +47,10 @@ func saveShellGlobals(t *testing.T) {
 	prevReadJSON := shellReadJSON
 	prevReadUltraCompact := shellReadUltraCompact
 	prevReadNoTrack := shellReadNoTrack
+	prevPipeFilter := shellPipeFilter
+	prevPipePassthrough := shellPipePassthrough
+	prevPipeJSON := shellPipeJSON
+	prevPipeUltraCompact := shellPipeUltraCompact
 	t.Cleanup(func() {
 		shellMode = prevMode
 		shellTee = prevTee
@@ -66,6 +70,10 @@ func saveShellGlobals(t *testing.T) {
 		shellReadJSON = prevReadJSON
 		shellReadUltraCompact = prevReadUltraCompact
 		shellReadNoTrack = prevReadNoTrack
+		shellPipeFilter = prevPipeFilter
+		shellPipePassthrough = prevPipePassthrough
+		shellPipeJSON = prevPipeJSON
+		shellPipeUltraCompact = prevPipeUltraCompact
 	})
 }
 
@@ -731,5 +739,105 @@ func TestRunShellReadTracksCanonicalCommand(t *testing.T) {
 	want := "oz shell read -- " + path
 	if runs[0].Command != want {
 		t.Fatalf("tracked command=%q, want %q", runs[0].Command, want)
+	}
+}
+
+func TestRunShellPipePassthrough(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetIn(strings.NewReader("a\nb\n"))
+
+	shellPipePassthrough = true
+	if err := runShellPipe(cmd, nil); err != nil {
+		t.Fatalf("runShellPipe: %v", err)
+	}
+	if got := stdout.String(); got != "a\nb\n" {
+		t.Fatalf("stdout=%q want %q", got, "a\nb\n")
+	}
+}
+
+func TestRunShellPipeExplicitFilter(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetIn(strings.NewReader("src/main.rs:42:fn main() {}\n"))
+
+	shellPipeFilter = "rg"
+	if err := runShellPipe(cmd, nil); err != nil {
+		t.Fatalf("runShellPipe: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "src/main.rs") {
+		t.Fatalf("expected rg compact output, got %q", stdout.String())
+	}
+}
+
+func TestRunShellPipeAutoDetectFind(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetIn(strings.NewReader("./a/b/c.go\n./a/b/d.go\n./x/y/z.go\n"))
+
+	shellPipeFilter = "auto"
+	if err := runShellPipe(cmd, nil); err != nil {
+		t.Fatalf("runShellPipe: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "find summary") {
+		t.Fatalf("expected find compact output, got %q", stdout.String())
+	}
+}
+
+func TestRunShellPipeJSONEnvelope(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	stdout := &bytes.Buffer{}
+	cmd := &cobra.Command{}
+	cmd.SetOut(stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetIn(strings.NewReader(`{"ok":true}` + "\n"))
+
+	shellPipeFilter = "json"
+	shellPipeJSON = true
+	if err := runShellPipe(cmd, nil); err != nil {
+		t.Fatalf("runShellPipe: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if payload["matched_filter"] != "json" {
+		t.Fatalf("matched_filter=%v want json", payload["matched_filter"])
+	}
+}
+
+func TestRunShellPipeUnknownFilter(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetIn(strings.NewReader("x\n"))
+
+	shellPipeFilter = "nope"
+	err := runShellPipe(cmd, nil)
+	if err == nil {
+		t.Fatalf("expected error for unknown filter")
+	}
+	if !strings.Contains(err.Error(), "unknown pipe filter") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
