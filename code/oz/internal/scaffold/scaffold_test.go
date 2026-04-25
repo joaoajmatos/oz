@@ -217,6 +217,34 @@ func TestWriteCLAUDEMD(t *testing.T) {
 	}
 }
 
+func TestWriteCursorHooks_IncludesShellRewriteHook(t *testing.T) {
+	dir := t.TempDir()
+	if err := scaffold.WriteCursorHooks(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	hooksJSON := readFile(t, filepath.Join(dir, ".cursor", "hooks.json"))
+	for _, want := range []string{
+		"\"command\": \".oz/hooks/oz-pre-commit.sh\"",
+		"\"command\": \".oz/hooks/oz-shell-rewrite.sh\"",
+	} {
+		if !strings.Contains(hooksJSON, want) {
+			t.Errorf(".cursor/hooks.json: expected %q", want)
+		}
+	}
+
+	for _, script := range []string{
+		".oz/hooks/oz-session-init.sh",
+		".oz/hooks/oz-after-edit.sh",
+		".oz/hooks/oz-pre-commit.sh",
+		".oz/hooks/oz-shell-rewrite.sh",
+	} {
+		if _, err := os.Stat(filepath.Join(dir, script)); err != nil {
+			t.Errorf("expected hook script %q to exist: %v", script, err)
+		}
+	}
+}
+
 func TestScaffold_SkillFiles(t *testing.T) {
 	dir := t.TempDir()
 	if err := scaffold.Scaffold(dir, defaultCfg); err != nil {

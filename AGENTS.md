@@ -15,6 +15,10 @@ with clean integrations for Claude Code, Cursor, and any other editor or model.
 2. Open the **Definition** path (`AGENT.md` for that agent).
 3. Follow the read-chain defined there before starting any task. Do not skip steps.
 
+For command and file-read workflows, prefer `oz` wrappers (`oz shell run`, `oz shell read`,
+`oz shell pipe`) over direct shell/file tooling so hook behavior and shell compression remain
+consistent across agents and editors.
+
 Each agent authorizes `skills/oz/` for the full `oz` CLI and MCP workflow (`validate`,
 `context` build/query/serve, `audit`, optional enrich/review) so this workspace dogfoods the
 shipped toolset.

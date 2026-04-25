@@ -3,6 +3,8 @@ package cmd
 import (
 	"bytes"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -92,5 +94,37 @@ func TestAddPM_DuplicateWithoutForce(t *testing.T) {
 	rootCmd.SetArgs([]string{"add", "pm", dir})
 	if err := rootCmd.Execute(); err == nil {
 		t.Fatal("expected error on duplicate add")
+	}
+}
+
+func TestAddCursor_WritesShellRewriteHook(t *testing.T) {
+	dir := t.TempDir()
+	cfg := scaffold.Config{
+		Name: "p", Description: "d", CodeMode: "inline",
+		Agents: []scaffold.AgentConfig{{Name: "c", Type: "coding"}},
+	}
+	if err := scaffold.Scaffold(dir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	rootCmd.SetOut(&stdout)
+	rootCmd.SetErr(&stderr)
+	rootCmd.SetArgs([]string{"add", "cursor", dir})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("Execute: %v stderr=%s", err, stderr.String())
+	}
+
+	hooksJSON, err := os.ReadFile(filepath.Join(dir, ".cursor", "hooks.json"))
+	if err != nil {
+		t.Fatalf("read hooks.json: %v", err)
+	}
+	for _, want := range []string{
+		"\"command\": \".oz/hooks/oz-pre-commit.sh\"",
+		"\"command\": \".oz/hooks/oz-shell-rewrite.sh\"",
+	} {
+		if !strings.Contains(string(hooksJSON), want) {
+			t.Errorf(".cursor/hooks.json: expected %q", want)
+		}
 	}
 }

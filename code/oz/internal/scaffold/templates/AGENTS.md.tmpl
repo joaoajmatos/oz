@@ -12,6 +12,10 @@
 2. Open the **Definition** path (`AGENT.md` for that agent).
 3. Follow the read-chain there before starting any task.
 
+For command and file-read workflows, prefer `oz` wrappers (`oz shell run`, `oz shell read`,
+`oz shell pipe`) over direct shell/file tooling so hook behavior and shell compression remain
+consistent across agents and editors.
+
 ## Agents
 
 **Use when** is a routing hint: describe *situations* (paths, commands, doc types), not a generic job title. One line per cell; do not use `|` inside the cell (it breaks the markdown table).

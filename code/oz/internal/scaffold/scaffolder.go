@@ -229,6 +229,9 @@ func WriteCursorHooks(root string) error {
 	if err := writeHookScripts(root); err != nil {
 		return err
 	}
+	if err := os.MkdirAll(filepath.Join(root, ".cursor"), 0755); err != nil {
+		return fmt.Errorf("creating .cursor: %w", err)
+	}
 	return writeTemplate(filepath.Join(root, ".cursor/hooks.json"), "templates/hooks/cursor-hooks.json.tmpl", nil)
 }
 
