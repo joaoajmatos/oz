@@ -9,6 +9,8 @@ import (
 
 // BenchmarkExecRoundTrip measures subprocess fork+capture baseline.
 func BenchmarkExecRoundTrip(b *testing.B) {
+	b.ReportAllocs()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		cmd := exec.Command("echo", "hello world")
 		if _, err := cmd.CombinedOutput(); err != nil {
@@ -19,6 +21,8 @@ func BenchmarkExecRoundTrip(b *testing.B) {
 
 // BenchmarkExecRoundTrip_P95 reports p50/p95 subprocess latency in ms.
 func BenchmarkExecRoundTrip_P95(b *testing.B) {
+	b.ReportAllocs()
+	b.ResetTimer()
 	latencies := make([]float64, 0, b.N)
 	for i := 0; i < b.N; i++ {
 		start := time.Now()
