@@ -36,6 +36,7 @@ func saveShellGlobals(t *testing.T) {
 	prevUltra := shellUltraCompact
 	prevGainJSON := shellGainJSON
 	prevGainAllTime := shellGainAllTime
+	prevGainInteractive := shellGainInteractive
 	prevGainDays := shellGainDays
 	prevGainPeriod := shellGainPeriod
 	prevVerbosity := shellVerbosity
@@ -51,6 +52,7 @@ func saveShellGlobals(t *testing.T) {
 	prevPipePassthrough := shellPipePassthrough
 	prevPipeJSON := shellPipeJSON
 	prevPipeUltraCompact := shellPipeUltraCompact
+	prevPipeNoTrack := shellPipeNoTrack
 	t.Cleanup(func() {
 		shellMode = prevMode
 		shellTee = prevTee
@@ -59,6 +61,7 @@ func saveShellGlobals(t *testing.T) {
 		shellUltraCompact = prevUltra
 		shellGainJSON = prevGainJSON
 		shellGainAllTime = prevGainAllTime
+		shellGainInteractive = prevGainInteractive
 		shellGainDays = prevGainDays
 		shellGainPeriod = prevGainPeriod
 		shellVerbosity = prevVerbosity
@@ -74,6 +77,7 @@ func saveShellGlobals(t *testing.T) {
 		shellPipePassthrough = prevPipePassthrough
 		shellPipeJSON = prevPipeJSON
 		shellPipeUltraCompact = prevPipeUltraCompact
+		shellPipeNoTrack = prevPipeNoTrack
 	})
 }
 
@@ -455,8 +459,9 @@ func TestRunShellGainHumanOutputIncludesSections(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	now := time.Now().Unix()
+	longCommand := "oz shell read -- internal/shell/readfilter/pipeline.go --max-lines 200"
 	_ = store.Insert(track.Run{Command: "git status", RecordedAt: now, DurationMs: 3, TokenBefore: 20, TokenAfter: 10, TokenSaved: 10, ReductionPct: 50, MatchedFilter: "git.status", ExitCode: 0})
-	_ = store.Insert(track.Run{Command: "go test ./...", RecordedAt: now, DurationMs: 4, TokenBefore: 30, TokenAfter: 10, TokenSaved: 20, ReductionPct: 66, MatchedFilter: "go.test", ExitCode: 0})
+	_ = store.Insert(track.Run{Command: longCommand, RecordedAt: now, DurationMs: 4, TokenBefore: 30, TokenAfter: 10, TokenSaved: 20, ReductionPct: 66, MatchedFilter: "go.test", ExitCode: 0})
 	_ = store.Close()
 
 	stdout := &bytes.Buffer{}
@@ -471,10 +476,58 @@ func TestRunShellGainHumanOutputIncludesSections(t *testing.T) {
 		t.Fatalf("runShellGain returned error: %v", err)
 	}
 	out := stdout.String()
-	for _, needle := range []string{"Trend", "Command breakdown", "Top savers"} {
+	for _, needle := range []string{"Trend", "Command breakdown", "Filter breakdown", "Run outcomes", "Top reducers", "Top savers"} {
 		if !strings.Contains(out, needle) {
 			t.Fatalf("expected %q in output, got:\n%s", needle, out)
 		}
+	}
+	if !strings.Contains(out, longCommand) {
+		t.Fatalf("expected full command without truncation, got:\n%s", out)
+	}
+}
+
+func TestRunShellGainInteractiveRequiresTTY(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	customDataHome := t.TempDir()
+	original := os.Getenv("XDG_DATA_HOME")
+	t.Cleanup(func() {
+		if original == "" {
+			_ = os.Unsetenv("XDG_DATA_HOME")
+		} else {
+			_ = os.Setenv("XDG_DATA_HOME", original)
+		}
+	})
+	if err := os.Setenv("XDG_DATA_HOME", customDataHome); err != nil {
+		t.Fatalf("set XDG_DATA_HOME: %v", err)
+	}
+
+	dbPath := filepath.Join(customDataHome, "oz", "shell-track.db")
+	store, err := track.Open(dbPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	now := time.Now().Unix()
+	_ = store.Insert(track.Run{Command: "git status", RecordedAt: now, DurationMs: 3, TokenBefore: 20, TokenAfter: 10, TokenSaved: 10, ReductionPct: 50, MatchedFilter: "git.status", ExitCode: 0})
+	_ = store.Close()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetIn(strings.NewReader(""))
+	shellGainJSON = false
+	shellGainAllTime = true
+	shellGainDays = 90
+	shellGainPeriod = string(gain.PeriodDaily)
+	shellGainInteractive = true
+
+	err = runShellGain(cmd, nil)
+	if err == nil {
+		t.Fatalf("expected tty requirement error")
+	}
+	if !strings.Contains(err.Error(), "requires a TTY") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
@@ -820,6 +873,56 @@ func TestRunShellPipeJSONEnvelope(t *testing.T) {
 	}
 	if payload["matched_filter"] != "json" {
 		t.Fatalf("matched_filter=%v want json", payload["matched_filter"])
+	}
+}
+
+func TestRunShellPipeTracksGainRow(t *testing.T) {
+	lockShellTest(t)
+	saveShellGlobals(t)
+
+	customDataHome := t.TempDir()
+	original := os.Getenv("XDG_DATA_HOME")
+	t.Cleanup(func() {
+		if original == "" {
+			_ = os.Unsetenv("XDG_DATA_HOME")
+		} else {
+			_ = os.Setenv("XDG_DATA_HOME", original)
+		}
+	})
+	if err := os.Setenv("XDG_DATA_HOME", customDataHome); err != nil {
+		t.Fatalf("set XDG_DATA_HOME: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetIn(strings.NewReader("src/main.rs:42:fn main() {}\n"))
+
+	shellPipeFilter = "rg"
+	shellPipeNoTrack = false
+	if err := runShellPipe(cmd, nil); err != nil {
+		t.Fatalf("runShellPipe: %v", err)
+	}
+
+	store, err := track.Open(track.DefaultPath())
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = store.Close()
+	})
+	runs, err := store.Query(track.QueryOpts{Limit: 1})
+	if err != nil {
+		t.Fatalf("query runs: %v", err)
+	}
+	if len(runs) == 0 {
+		t.Fatalf("expected at least one tracked run")
+	}
+	if runs[0].Command != "oz shell pipe" {
+		t.Fatalf("tracked command=%q, want %q", runs[0].Command, "oz shell pipe")
+	}
+	if runs[0].MatchedFilter != "rg" {
+		t.Fatalf("matched filter=%q, want %q", runs[0].MatchedFilter, "rg")
 	}
 }
 

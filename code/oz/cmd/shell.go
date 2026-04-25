@@ -6,10 +6,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/huh"
 	_ "github.com/joaoajmatos/oz/internal/shell/readfilter/langs"
+	"github.com/mattn/go-isatty"
 
 	"github.com/joaoajmatos/oz/internal/shell/envelope"
 	"github.com/joaoajmatos/oz/internal/shell/filter"
@@ -18,6 +21,7 @@ import (
 	"github.com/joaoajmatos/oz/internal/shell/readfilter"
 	shellrun "github.com/joaoajmatos/oz/internal/shell/run"
 	"github.com/joaoajmatos/oz/internal/shell/track"
+	"github.com/joaoajmatos/oz/internal/termstyle"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +30,7 @@ var (
 	shellJSON, shellNoTrack          bool
 	shellUltraCompact, shellGainJSON bool
 	shellGainAllTime                 bool
+	shellGainInteractive             bool
 	shellGainDays                    int
 	shellGainPeriod                  string
 	shellVerbosity                   int
@@ -40,6 +45,7 @@ var (
 	shellPipePassthrough             bool
 	shellPipeJSON                    bool
 	shellPipeUltraCompact            bool
+	shellPipeNoTrack                 bool
 )
 
 const shellPipeRawCap = 2 * 1024 * 1024
@@ -204,7 +210,7 @@ func runShellGain(cmd *cobra.Command, _ []string) error {
 	if report.Summary.RetentionDays == 0 {
 		windowLabel = "all-time"
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "oz shell gain (%s, %s)\n", windowLabel, report.Period)
+	fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", termstyle.Brand.Render("oz shell gain"), termstyle.Subtle.Render(fmt.Sprintf("(%s, %s)", windowLabel, report.Period)))
 	fmt.Fprintf(cmd.OutOrStdout(), "  invocations: %d\n", report.Summary.InvocationCount)
 	fmt.Fprintf(cmd.OutOrStdout(), "  tokens before: %d\n", report.Summary.TokenBeforeTotal)
 	fmt.Fprintf(cmd.OutOrStdout(), "  tokens after: %d\n", report.Summary.TokenAfterTotal)
@@ -214,8 +220,8 @@ func runShellGain(cmd *cobra.Command, _ []string) error {
 
 	if len(report.Trend) > 0 {
 		fmt.Fprintln(cmd.OutOrStdout(), "")
-		fmt.Fprintln(cmd.OutOrStdout(), "Trend")
-		fmt.Fprintln(cmd.OutOrStdout(), "  bucket        invocations  saved   avg_reduction")
+		fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Trend"))
+		fmt.Fprintln(cmd.OutOrStdout(), "  "+termstyle.Subtle.Render("bucket        invocations  saved   avg_reduction"))
 		for _, row := range report.Trend {
 			fmt.Fprintf(cmd.OutOrStdout(), "  %-12s  %-11d  %-6d  %6.2f%%\n", row.Label, row.InvocationCount, row.TokenSavedTotal, row.ReductionPctAvg)
 		}
@@ -223,21 +229,136 @@ func runShellGain(cmd *cobra.Command, _ []string) error {
 
 	if len(report.CommandBreakdown) > 0 {
 		fmt.Fprintln(cmd.OutOrStdout(), "")
-		fmt.Fprintln(cmd.OutOrStdout(), "Command breakdown")
-		fmt.Fprintln(cmd.OutOrStdout(), "  command                      invocations  saved   avg_reduction")
+		fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Command breakdown"))
 		for _, row := range report.CommandBreakdown {
-			fmt.Fprintf(cmd.OutOrStdout(), "  %-27s  %-11d  %-6d  %6.2f%%\n", truncateRunes(row.Command, 27), row.InvocationCount, row.TokenSavedTotal, row.ReductionPctAvg)
+			fmt.Fprintf(cmd.OutOrStdout(), "  - %s\n", termstyle.Command.Render(row.Command))
+			fmt.Fprintf(cmd.OutOrStdout(), "    invocations: %-11d  saved: %-8d  avg_reduction: %.2f%%\n", row.InvocationCount, row.TokenSavedTotal, row.ReductionPctAvg)
+		}
+	}
+
+	if len(report.FilterBreakdown) > 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "")
+		fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Filter breakdown"))
+		fmt.Fprintln(cmd.OutOrStdout(), "  "+termstyle.Subtle.Render("filter        invocations  saved   avg_reduction"))
+		for _, row := range report.FilterBreakdown {
+			fmt.Fprintf(cmd.OutOrStdout(), "  %-12s  %-11d  %-6d  %6.2f%%\n", row.MatchedFilter, row.InvocationCount, row.TokenSavedTotal, row.ReductionPctAvg)
+		}
+	}
+
+	if len(report.ExitBreakdown) > 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "")
+		fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Run outcomes"))
+		for _, row := range report.ExitBreakdown {
+			label := "success"
+			if row.ExitCode != 0 {
+				label = "non-zero"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "  exit=%d (%s): %d\n", row.ExitCode, label, row.InvocationCount)
+		}
+	}
+
+	topReducers := topByReduction(report.CommandBreakdown, 5)
+	if len(topReducers) > 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "")
+		fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Top reducers"))
+		for i, row := range topReducers {
+			fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s (%d invocations, %.2f%% avg reduction)\n", i+1, row.Command, row.InvocationCount, row.ReductionPctAvg)
 		}
 	}
 
 	if len(report.TopSavers) > 0 {
 		fmt.Fprintln(cmd.OutOrStdout(), "")
-		fmt.Fprintln(cmd.OutOrStdout(), "Top savers")
+		fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Top savers"))
 		for i, row := range report.TopSavers {
 			fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s (%d saved)\n", i+1, row.Command, row.TokenSavedTotal)
 		}
 	}
+	if shellGainInteractive {
+		if !canRunGainExplorer(cmd) {
+			return fmt.Errorf("--interactive requires a TTY for stdin and stdout")
+		}
+		if err := runShellGainExplorer(cmd, report); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func canRunGainExplorer(cmd *cobra.Command) bool {
+	stdinFile, stdinOK := cmd.InOrStdin().(*os.File)
+	stdoutFile, stdoutOK := cmd.OutOrStdout().(*os.File)
+	if !stdinOK || !stdoutOK {
+		return false
+	}
+	return isatty.IsTerminal(stdinFile.Fd()) && isatty.IsTerminal(stdoutFile.Fd())
+}
+
+type gainViewChoice string
+
+const (
+	gainViewSummary   gainViewChoice = "summary"
+	gainViewTrend     gainViewChoice = "trend"
+	gainViewBreakdown gainViewChoice = "breakdown"
+	gainViewReducers  gainViewChoice = "reducers"
+	gainViewSavers    gainViewChoice = "savers"
+	gainViewQuit      gainViewChoice = "quit"
+)
+
+func runShellGainExplorer(cmd *cobra.Command, report gain.DetailedReport) error {
+	choice := gainViewSummary
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[gainViewChoice]().
+				Title("Inspect shell gain report").
+				Description("Choose a section to focus on. Select quit to finish.").
+				Options(
+					huh.NewOption("Summary", gainViewSummary),
+					huh.NewOption("Trend", gainViewTrend),
+					huh.NewOption("Command breakdown", gainViewBreakdown),
+					huh.NewOption("Top reducers", gainViewReducers),
+					huh.NewOption("Top savers", gainViewSavers),
+					huh.NewOption("Quit", gainViewQuit),
+				).
+				Value(&choice),
+		),
+	).WithTheme(ozTheme())
+
+	for {
+		if err := form.Run(); err != nil {
+			if err == huh.ErrUserAborted {
+				return nil
+			}
+			return fmt.Errorf("interactive gain explorer: %w", err)
+		}
+		switch choice {
+		case gainViewSummary:
+			fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Summary focus"))
+			fmt.Fprintf(cmd.OutOrStdout(), "  tokens saved: %d  |  avg reduction: %.2f%%  |  avg duration: %.2fms\n", report.Summary.TokenSavedTotal, report.Summary.ReductionPctAvg, report.Summary.DurationMsAvg)
+		case gainViewTrend:
+			fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Trend focus"))
+			for _, row := range report.Trend {
+				fmt.Fprintf(cmd.OutOrStdout(), "  %s  saved=%d  reduction=%.2f%%\n", row.Label, row.TokenSavedTotal, row.ReductionPctAvg)
+			}
+		case gainViewBreakdown:
+			fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Command breakdown focus"))
+			for _, row := range report.CommandBreakdown {
+				fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", row.Command)
+			}
+		case gainViewReducers:
+			fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Top reducers focus"))
+			for i, row := range topByReduction(report.CommandBreakdown, 5) {
+				fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s (%.2f%%)\n", i+1, row.Command, row.ReductionPctAvg)
+			}
+		case gainViewSavers:
+			fmt.Fprintln(cmd.OutOrStdout(), termstyle.Section.Render("Top savers focus"))
+			for i, row := range report.TopSavers {
+				fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s (%d saved)\n", i+1, row.Command, row.TokenSavedTotal)
+			}
+		default:
+			return nil
+		}
+		fmt.Fprintln(cmd.OutOrStdout())
+	}
 }
 
 func runShellRewrite(cmd *cobra.Command, args []string) error {
@@ -443,6 +564,17 @@ func runShellPipe(cmd *cobra.Command, _ []string) error {
 		outStderr = ""
 		matchedFilter = filter.FilterGeneric
 	}
+	beforeTokens := envelope.EstimateTokens(input)
+	afterTokens := envelope.EstimateTokens(outStdout + outStderr)
+	tokenSaved := beforeTokens - afterTokens
+	reductionPct := 0.0
+	if beforeTokens > 0 {
+		reductionPct = (float64(tokenSaved) / float64(beforeTokens)) * 100
+	}
+
+	if !shellPipeNoTrack {
+		_ = insertShellTrackEnvelope("oz shell pipe", 0, int64(beforeTokens), int64(afterTokens), string(matchedFilter), 0)
+	}
 
 	if shellPipeJSON {
 		result := envelope.RunResult{
@@ -452,16 +584,14 @@ func runShellPipe(cmd *cobra.Command, _ []string) error {
 			MatchedFilter:  string(matchedFilter),
 			ExitCode:       0,
 			DurationMs:     0,
-			TokenEstBefore: envelope.EstimateTokens(input),
-			TokenEstAfter:  envelope.EstimateTokens(outStdout + outStderr),
+			TokenEstBefore: beforeTokens,
+			TokenEstAfter:  afterTokens,
 			Stdout:         outStdout,
 			Stderr:         outStderr,
 			Warnings:       warnings,
 		}
-		result.TokenEstSaved = result.TokenEstBefore - result.TokenEstAfter
-		if result.TokenEstBefore > 0 {
-			result.TokenReductionPct = (float64(result.TokenEstSaved) / float64(result.TokenEstBefore)) * 100
-		}
+		result.TokenEstSaved = tokenSaved
+		result.TokenReductionPct = reductionPct
 		data, err := json.MarshalIndent(result, "", "  ")
 		if err != nil {
 			return fmt.Errorf("marshal pipe json: %w", err)
@@ -592,6 +722,14 @@ func autoDetectPipeFilter(input string) ([]string, filter.ID) {
 }
 
 func insertShellTrackRow(command string, before, after int64, durationMs int64, matchedFilter string, missingCount int) error {
+	exitCode := 0
+	if missingCount > 0 {
+		exitCode = 2
+	}
+	return insertShellTrackEnvelope(command, durationMs, before, after, matchedFilter, exitCode)
+}
+
+func insertShellTrackEnvelope(command string, durationMs int64, before, after int64, matchedFilter string, exitCode int) error {
 	store, err := track.Open(track.DefaultPath())
 	if err != nil {
 		return err
@@ -599,10 +737,6 @@ func insertShellTrackRow(command string, before, after int64, durationMs int64, 
 	defer func() {
 		_ = store.Close()
 	}()
-	exitCode := 0
-	if missingCount > 0 {
-		exitCode = 2
-	}
 	saved := before - after
 	reduction := 0.0
 	if before > 0 {
@@ -651,6 +785,7 @@ func init() {
 	shellGainCmd.Flags().IntVar(&shellGainDays, "days", 90, "retention window in days (0 = all)")
 	shellGainCmd.Flags().BoolVar(&shellGainAllTime, "all-time", false, "use all tracked history")
 	shellGainCmd.Flags().StringVar(&shellGainPeriod, "period", string(gain.PeriodDaily), "trend period: daily|weekly|monthly")
+	shellGainCmd.Flags().BoolVar(&shellGainInteractive, "interactive", false, "open interactive section explorer (huh)")
 	shellReadCmd.Flags().IntVar(&shellReadMaxLines, "max-lines", 0, "show at most N lines")
 	shellReadCmd.Flags().IntVar(&shellReadTailLines, "tail-lines", 0, "show last N lines")
 	shellReadCmd.Flags().BoolVarP(&shellReadLineNumbers, "line-numbers", "n", false, "include line numbers")
@@ -662,17 +797,27 @@ func init() {
 	shellPipeCmd.Flags().BoolVar(&shellPipePassthrough, "passthrough", false, "relay stdin to stdout without filtering")
 	shellPipeCmd.Flags().BoolVar(&shellPipeJSON, "json", false, "emit JSON envelope")
 	shellPipeCmd.Flags().BoolVarP(&shellPipeUltraCompact, "ultra-compact", "u", false, "maximum token reduction")
+	shellPipeCmd.Flags().BoolVar(&shellPipeNoTrack, "no-track", false, "skip tracking DB write")
 	shellRewriteCmd.Flags().StringSliceVar(&shellRewriteExclude, "exclude", nil, "commands to bypass rewrite")
 	shellCmd.AddCommand(shellRunCmd, shellGainCmd, shellReadCmd, shellPipeCmd, shellRewriteCmd)
 }
 
-func truncateRunes(s string, n int) string {
-	runes := []rune(s)
-	if len(runes) <= n {
-		return s
+func topByReduction(rows []gain.CommandStat, limit int) []gain.CommandStat {
+	if len(rows) == 0 || limit <= 0 {
+		return nil
 	}
-	if n <= 1 {
-		return string(runes[:n])
+	sorted := append([]gain.CommandStat(nil), rows...)
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].ReductionPctAvg == sorted[j].ReductionPctAvg {
+			if sorted[i].InvocationCount == sorted[j].InvocationCount {
+				return sorted[i].Command < sorted[j].Command
+			}
+			return sorted[i].InvocationCount > sorted[j].InvocationCount
+		}
+		return sorted[i].ReductionPctAvg > sorted[j].ReductionPctAvg
+	})
+	if len(sorted) > limit {
+		sorted = sorted[:limit]
 	}
-	return string(runes[:n-1]) + "…"
+	return sorted
 }

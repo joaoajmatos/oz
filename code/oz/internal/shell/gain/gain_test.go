@@ -47,9 +47,9 @@ func TestBuildDetailedDailyAndTopSavers(t *testing.T) {
 
 	base := time.Unix(1700000000, 0).UTC()
 	runs := []track.Run{
-		{Command: "git status", RecordedAt: base.Unix(), TokenSaved: 40, ReductionPct: 40, DurationMs: 10, TokenBefore: 100, TokenAfter: 60},
-		{Command: "git status", RecordedAt: base.Unix(), TokenSaved: 20, ReductionPct: 20, DurationMs: 20, TokenBefore: 100, TokenAfter: 80},
-		{Command: "go test ./...", RecordedAt: base.Add(24 * time.Hour).Unix(), TokenSaved: 90, ReductionPct: 90, DurationMs: 30, TokenBefore: 100, TokenAfter: 10},
+		{Command: "git status", RecordedAt: base.Unix(), TokenSaved: 40, ReductionPct: 40, DurationMs: 10, TokenBefore: 100, TokenAfter: 60, MatchedFilter: "git.status", ExitCode: 0},
+		{Command: "git status", RecordedAt: base.Unix(), TokenSaved: 20, ReductionPct: 20, DurationMs: 20, TokenBefore: 100, TokenAfter: 80, MatchedFilter: "git.status", ExitCode: 1},
+		{Command: "go test ./...", RecordedAt: base.Add(24 * time.Hour).Unix(), TokenSaved: 90, ReductionPct: 90, DurationMs: 30, TokenBefore: 100, TokenAfter: 10, MatchedFilter: "go.test", ExitCode: 0},
 	}
 
 	report := gain.BuildDetailed(runs, 90, gain.PeriodDaily, base.Add(24*time.Hour))
@@ -61,6 +61,12 @@ func TestBuildDetailedDailyAndTopSavers(t *testing.T) {
 	}
 	if len(report.CommandBreakdown) != 2 {
 		t.Fatalf("command breakdown rows=%d, want 2", len(report.CommandBreakdown))
+	}
+	if len(report.FilterBreakdown) != 2 {
+		t.Fatalf("filter breakdown rows=%d, want 2", len(report.FilterBreakdown))
+	}
+	if len(report.ExitBreakdown) != 2 {
+		t.Fatalf("exit breakdown rows=%d, want 2", len(report.ExitBreakdown))
 	}
 	if len(report.TopSavers) == 0 || report.TopSavers[0].Command != "go test ./..." {
 		t.Fatalf("unexpected top saver: %#v", report.TopSavers)

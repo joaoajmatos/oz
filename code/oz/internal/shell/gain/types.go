@@ -33,11 +33,25 @@ type CommandStat struct {
 	ReductionPctAvg float64 `json:"reduction_pct_avg"`
 }
 
+type FilterStat struct {
+	MatchedFilter   string  `json:"matched_filter"`
+	InvocationCount int64   `json:"invocation_count"`
+	TokenSavedTotal int64   `json:"token_saved_total"`
+	ReductionPctAvg float64 `json:"reduction_pct_avg"`
+}
+
+type ExitStat struct {
+	ExitCode        int   `json:"exit_code"`
+	InvocationCount int64 `json:"invocation_count"`
+}
+
 type DetailedReport struct {
 	Summary          Report        `json:"summary"`
 	Period           Period        `json:"period"`
 	Trend            []TrendPoint  `json:"trend"`
 	CommandBreakdown []CommandStat `json:"command_breakdown"`
+	FilterBreakdown  []FilterStat  `json:"filter_breakdown"`
+	ExitBreakdown    []ExitStat    `json:"exit_breakdown"`
 	TopSavers        []CommandStat `json:"top_savers"`
 }
 

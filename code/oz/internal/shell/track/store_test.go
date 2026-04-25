@@ -192,6 +192,38 @@ func TestStoreConcurrentInsertAndQuery(t *testing.T) {
 	}
 }
 
+func TestOpenMigratesLegacyReadMatchedFilters(t *testing.T) {
+	t.Parallel()
+
+	dbPath := filepath.Join(t.TempDir(), "track.db")
+	store, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	now := time.Now().Unix()
+	mustInsert(t, store, Run{Command: "legacy", RecordedAt: now, DurationMs: 1, TokenBefore: 10, TokenAfter: 10, TokenSaved: 0, ReductionPct: 0, MatchedFilter: "read:go", ExitCode: 0})
+	if err := store.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	store, err = Open(dbPath)
+	if err != nil {
+		t.Fatalf("re-open store: %v", err)
+	}
+	defer closeStore(t, store)
+
+	runs, err := store.Query(QueryOpts{Limit: 1})
+	if err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	if len(runs) != 1 {
+		t.Fatalf("expected 1 run, got %d", len(runs))
+	}
+	if runs[0].MatchedFilter != "read.go" {
+		t.Fatalf("matched filter=%q, want %q", runs[0].MatchedFilter, "read.go")
+	}
+}
+
 func openTestStore(t *testing.T) *Store {
 	t.Helper()
 

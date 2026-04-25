@@ -56,6 +56,13 @@ func BuildDetailed(runs []track.Run, retentionDays int, period Period, now time.
 		reduction   float64
 	}
 	commandAgg := map[string]cmdAgg{}
+	type filterAgg struct {
+		invocations int64
+		saved       int64
+		reduction   float64
+	}
+	filterBreakdown := map[string]filterAgg{}
+	exitBreakdown := map[int]int64{}
 	for _, run := range runs {
 		label := bucketLabel(run.RecordedAt, period)
 		b := buckets[label]
@@ -69,6 +76,18 @@ func BuildDetailed(runs []track.Run, retentionDays int, period Period, now time.
 		c.saved += run.TokenSaved
 		c.reduction += run.ReductionPct
 		commandAgg[run.Command] = c
+
+		matched := run.MatchedFilter
+		if matched == "" {
+			matched = "unknown"
+		}
+		f := filterBreakdown[matched]
+		f.invocations++
+		f.saved += run.TokenSaved
+		f.reduction += run.ReductionPct
+		filterBreakdown[matched] = f
+
+		exitBreakdown[run.ExitCode]++
 	}
 
 	bucketKeys := make([]string, 0, len(buckets))
@@ -112,6 +131,40 @@ func BuildDetailed(runs []track.Run, retentionDays int, period Period, now time.
 		}
 		return report.CommandBreakdown[i].Command < report.CommandBreakdown[j].Command
 	})
+
+	filters := make([]FilterStat, 0, len(filterBreakdown))
+	for matchedFilter, agg := range filterBreakdown {
+		avgReduction := 0.0
+		if agg.invocations > 0 {
+			avgReduction = agg.reduction / float64(agg.invocations)
+		}
+		filters = append(filters, FilterStat{
+			MatchedFilter:   matchedFilter,
+			InvocationCount: agg.invocations,
+			TokenSavedTotal: agg.saved,
+			ReductionPctAvg: avgReduction,
+		})
+	}
+	report.FilterBreakdown = append([]FilterStat(nil), filters...)
+	sort.Slice(report.FilterBreakdown, func(i, j int) bool {
+		if report.FilterBreakdown[i].MatchedFilter == report.FilterBreakdown[j].MatchedFilter {
+			return report.FilterBreakdown[i].InvocationCount < report.FilterBreakdown[j].InvocationCount
+		}
+		return report.FilterBreakdown[i].MatchedFilter < report.FilterBreakdown[j].MatchedFilter
+	})
+
+	exitCodes := make([]int, 0, len(exitBreakdown))
+	for code := range exitBreakdown {
+		exitCodes = append(exitCodes, code)
+	}
+	sort.Ints(exitCodes)
+	report.ExitBreakdown = make([]ExitStat, 0, len(exitCodes))
+	for _, code := range exitCodes {
+		report.ExitBreakdown = append(report.ExitBreakdown, ExitStat{
+			ExitCode:        code,
+			InvocationCount: exitBreakdown[code],
+		})
+	}
 
 	report.TopSavers = append([]CommandStat(nil), commands...)
 	sort.Slice(report.TopSavers, func(i, j int) bool {

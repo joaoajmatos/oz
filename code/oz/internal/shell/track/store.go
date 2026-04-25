@@ -49,8 +49,22 @@ func Open(path string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("create runs table: %w", err)
 	}
+	if err := migrateLegacyMatchedFilters(db); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("migrate tracking rows: %w", err)
+	}
 
 	return &Store{db: db}, nil
+}
+
+func migrateLegacyMatchedFilters(db *sql.DB) error {
+	_, err := db.Exec(`UPDATE runs
+SET matched_filter = 'read.' || substr(matched_filter, 6)
+WHERE matched_filter LIKE 'read:%'`)
+	if err != nil {
+		return fmt.Errorf("normalize read matched_filter labels: %w", err)
+	}
+	return nil
 }
 
 func (s *Store) Insert(r Run) error {
