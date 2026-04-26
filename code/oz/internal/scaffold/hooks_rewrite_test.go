@@ -109,6 +109,76 @@ func TestClaudeRewriteHook_Contracts(t *testing.T) {
 	})
 }
 
+func TestRewriteShim_DispatchesByProvider(t *testing.T) {
+	t.Parallel()
+
+	t.Run("cursor path via stdin", func(t *testing.T) {
+		t.Parallel()
+
+		root := t.TempDir()
+		if err := scaffold.WriteCursorHooks(root); err != nil {
+			t.Fatalf("WriteCursorHooks: %v", err)
+		}
+
+		pathEnv := installFakeOz(t, map[string]string{
+			"git status": "oz shell run -- git status",
+		})
+		script := filepath.Join(root, ".oz", "hooks", "oz-shell-rewrite.sh")
+
+		out, err := runHook(t, script, `{"command":"git status"}`, map[string]string{
+			"PATH": pathEnv,
+		})
+		if err != nil {
+			t.Fatalf("run shim: %v", err)
+		}
+		for _, want := range []string{
+			`"permission": "allow"`,
+			`"updated_input"`,
+			`"command": "oz shell run -- git status"`,
+		} {
+			if !strings.Contains(out, want) {
+				t.Fatalf("expected %q in output:\n%s", want, out)
+			}
+		}
+	})
+
+	t.Run("claude path via env payload", func(t *testing.T) {
+		t.Parallel()
+
+		root := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(root, ".claude"), 0o755); err != nil {
+			t.Fatalf("mkdir .claude: %v", err)
+		}
+		if err := scaffold.WriteClaudeHooks(root); err != nil {
+			t.Fatalf("WriteClaudeHooks: %v", err)
+		}
+
+		pathEnv := installFakeOz(t, map[string]string{
+			"git status": "oz shell run -- git status",
+		})
+		script := filepath.Join(root, ".oz", "hooks", "oz-shell-rewrite.sh")
+
+		out, err := runHook(t, script, "", map[string]string{
+			"PATH":             pathEnv,
+			"CLAUDE_TOOL_INPUT": `{"tool_input":{"command":"git status"}}`,
+		})
+		if err != nil {
+			t.Fatalf("run shim: %v", err)
+		}
+		for _, want := range []string{
+			`"hookSpecificOutput"`,
+			`"hookEventName": "PreToolUse"`,
+			`"permissionDecision": "allow"`,
+			`"updatedInput"`,
+			`"command": "oz shell run -- git status"`,
+		} {
+			if !strings.Contains(out, want) {
+				t.Fatalf("expected %q in output:\n%s", want, out)
+			}
+		}
+	})
+}
+
 func installFakeOz(t *testing.T, rewrites map[string]string) string {
 	t.Helper()
 
@@ -143,6 +213,7 @@ func runHook(t *testing.T, script, stdin string, extraEnv map[string]string) (st
 	t.Helper()
 
 	cmd := exec.Command(script)
+	cmd.Dir = filepath.Dir(filepath.Dir(filepath.Dir(script)))
 	cmd.Stdin = strings.NewReader(stdin)
 	cmd.Env = os.Environ()
 	for k, v := range extraEnv {
