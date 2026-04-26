@@ -246,6 +246,8 @@ func writeHookScripts(root string) error {
 		{".oz/hooks/oz-after-edit.sh", "templates/hooks/oz-after-edit.sh.tmpl"},
 		{".oz/hooks/oz-pre-commit.sh", "templates/hooks/oz-pre-commit.sh.tmpl"},
 		{".oz/hooks/oz-shell-rewrite-cursor.sh", "templates/hooks/oz-shell-rewrite-cursor.sh.tmpl"},
+		{".oz/hooks/oz-read-rewrite-cursor.sh", "templates/hooks/oz-read-rewrite-cursor.sh.tmpl"},
+		{".oz/hooks/oz-read-policy-cursor.sh", "templates/hooks/oz-read-policy-cursor.sh.tmpl"},
 		{".oz/hooks/oz-shell-rewrite-claude.sh", "templates/hooks/oz-shell-rewrite-claude.sh.tmpl"},
 		{".oz/hooks/oz-shell-rewrite.sh", "templates/hooks/oz-shell-rewrite.sh.tmpl"},
 	}
@@ -282,6 +284,8 @@ func createCodeDir(root, mode string, data templateData) error {
 //   - .oz/hooks/oz-after-edit.sh    (executable)
 //   - .oz/hooks/oz-pre-commit.sh    (executable)
 //   - .oz/hooks/oz-shell-rewrite-cursor.sh (executable)
+//   - .oz/hooks/oz-read-rewrite-cursor.sh  (executable)
+//   - .oz/hooks/oz-read-policy-cursor.sh   (executable)
 //   - .oz/hooks/oz-shell-rewrite-claude.sh (executable)
 //   - .oz/hooks/oz-shell-rewrite.sh        (compatibility shim, executable)
 //   - .cursor/hooks.json

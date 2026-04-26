@@ -75,7 +75,7 @@ func TestClaudeRewriteHook_Contracts(t *testing.T) {
 	t.Run("rewrite emits hookSpecificOutput", func(t *testing.T) {
 		t.Parallel()
 		out, err := runHook(t, script, "", map[string]string{
-			"PATH":             pathEnv,
+			"PATH":              pathEnv,
 			"CLAUDE_TOOL_INPUT": `{"tool_input":{"command":"git status"}}`,
 		})
 		if err != nil {
@@ -97,7 +97,7 @@ func TestClaudeRewriteHook_Contracts(t *testing.T) {
 	t.Run("no rewrite emits nothing", func(t *testing.T) {
 		t.Parallel()
 		out, err := runHook(t, script, "", map[string]string{
-			"PATH":             pathEnv,
+			"PATH":              pathEnv,
 			"CLAUDE_TOOL_INPUT": `{"tool_input":{"command":"echo hi"}}`,
 		})
 		if err != nil {
@@ -159,7 +159,7 @@ func TestRewriteShim_DispatchesByProvider(t *testing.T) {
 		script := filepath.Join(root, ".oz", "hooks", "oz-shell-rewrite.sh")
 
 		out, err := runHook(t, script, "", map[string]string{
-			"PATH":             pathEnv,
+			"PATH":              pathEnv,
 			"CLAUDE_TOOL_INPUT": `{"tool_input":{"command":"git status"}}`,
 		})
 		if err != nil {
@@ -177,6 +177,63 @@ func TestRewriteShim_DispatchesByProvider(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestCursorReadRewriteHook_UpdatesReadInput(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	if err := scaffold.WriteCursorHooks(root); err != nil {
+		t.Fatalf("WriteCursorHooks: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "OZ.md"), []byte("name: test\n"), 0o644); err != nil {
+		t.Fatalf("write OZ.md: %v", err)
+	}
+
+	script := filepath.Join(root, ".oz", "hooks", "oz-read-rewrite-cursor.sh")
+	out, err := runHook(t, script, `{"tool_name":"Read","tool_input":{"file_path":"/tmp/example.txt"}}`, nil)
+	if err != nil {
+		t.Fatalf("run hook: %v", err)
+	}
+
+	for _, want := range []string{
+		`"permission": "allow"`,
+		`"updated_input"`,
+		`"file_path": ""`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected %q in output:\n%s", want, out)
+		}
+	}
+}
+
+func TestCursorReadPolicyHook_DeniesReadFile(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	if err := scaffold.WriteCursorHooks(root); err != nil {
+		t.Fatalf("WriteCursorHooks: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "OZ.md"), []byte("name: test\n"), 0o644); err != nil {
+		t.Fatalf("write OZ.md: %v", err)
+	}
+
+	script := filepath.Join(root, ".oz", "hooks", "oz-read-policy-cursor.sh")
+	out, err := runHook(t, script, `{"file_path":"/tmp/example.txt"}`, nil)
+	if err != nil {
+		t.Fatalf("run hook: %v", err)
+	}
+
+	for _, want := range []string{
+		`"permission": "deny"`,
+		`"user_message":`,
+		`oz shell read <path>`,
+		`Blocked path: /tmp/example.txt`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected %q in output:\n%s", want, out)
+		}
+	}
 }
 
 func installFakeOz(t *testing.T, rewrites map[string]string) string {

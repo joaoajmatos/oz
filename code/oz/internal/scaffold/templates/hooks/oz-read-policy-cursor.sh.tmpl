@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PAYLOAD="$(cat)"
+if [[ -z "$PAYLOAD" ]]; then
+  echo '{}'
+  exit 0
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo '{"permission":"deny","user_message":"oz policy: native ReadFile is blocked in this workspace. Use `oz shell read <path>` (or `oz shell read -` for stdin)."}'
+  exit 0
+fi
+
+python3 - "$PAYLOAD" <<'PY'
+import json
+import os
+import sys
+
+raw = sys.argv[1]
+try:
+    payload = json.loads(raw)
+except json.JSONDecodeError:
+    print("{}")
+    raise SystemExit(0)
+
+file_path = payload.get("file_path") or ""
+
+# Enforce in oz workspaces only (OZ.md present in cwd).
+if not os.path.exists("OZ.md"):
+    print("{}")
+    raise SystemExit(0)
+
+msg = (
+    "oz policy: native ReadFile is blocked in this workspace. "
+    "Use `oz shell read <path>` (or `oz shell read -` for stdin)."
+)
+if file_path:
+    msg += f" Blocked path: {file_path}"
+
+print(json.dumps({"permission": "deny", "user_message": msg}))
+PY

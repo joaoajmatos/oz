@@ -198,6 +198,11 @@ Both install the same three hook scripts under **`.oz/hooks/`**; Cursor also wri
 
 `oz init` can install the same hooks during workspace creation. Optional **maintainer** / **pm** packages are installed with **`oz add maintainer`** / **`oz add pm`**.
 
+Enforcement boundary:
+
+- Cursor enforces shell + read paths in layers: `beforeShellExecution` rewrites commands through `oz shell ...`, `preToolUse` (`matcher: "Read"`) applies read-input mutation first, and `beforeReadFile` denies native reads as fallback with guidance to use `oz shell read <path>`.
+- Claude currently hard-enforces shell rewrite paths; native file-read enforcement depends on host-level read hooks.
+
 ---
 
 ## MCP (Model Context Protocol)

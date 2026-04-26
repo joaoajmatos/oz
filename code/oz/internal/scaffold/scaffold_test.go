@@ -227,6 +227,9 @@ func TestWriteCursorHooks_IncludesShellRewriteHook(t *testing.T) {
 	for _, want := range []string{
 		"\"command\": \".oz/hooks/oz-pre-commit.sh\"",
 		"\"command\": \".oz/hooks/oz-shell-rewrite-cursor.sh\"",
+		"\"command\": \".oz/hooks/oz-read-rewrite-cursor.sh\"",
+		"\"command\": \".oz/hooks/oz-read-policy-cursor.sh\"",
+		"\"matcher\": \"Read\"",
 	} {
 		if !strings.Contains(hooksJSON, want) {
 			t.Errorf(".cursor/hooks.json: expected %q", want)
@@ -238,6 +241,8 @@ func TestWriteCursorHooks_IncludesShellRewriteHook(t *testing.T) {
 		".oz/hooks/oz-after-edit.sh",
 		".oz/hooks/oz-pre-commit.sh",
 		".oz/hooks/oz-shell-rewrite-cursor.sh",
+		".oz/hooks/oz-read-rewrite-cursor.sh",
+		".oz/hooks/oz-read-policy-cursor.sh",
 		".oz/hooks/oz-shell-rewrite-claude.sh",
 		".oz/hooks/oz-shell-rewrite.sh",
 	} {

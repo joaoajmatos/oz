@@ -15,9 +15,16 @@ with clean integrations for Claude Code, Cursor, and any other editor or model.
 2. Open the **Definition** path (`AGENT.md` for that agent).
 3. Follow the read-chain defined there before starting any task. Do not skip steps.
 
-For command and file-read workflows, prefer `oz` wrappers (`oz shell run`, `oz shell read`,
-`oz shell pipe`) over direct shell/file tooling so hook behavior and shell compression remain
-consistent across agents and editors.
+For command and file-read workflows, **must** use `oz` wrappers (`oz shell run`,
+`oz shell read`, `oz shell pipe`). Direct shell/file tooling is disallowed unless the
+`oz` wrapper path is unavailable for the task. This keeps hook behavior and shell
+compression consistent across agents and editors.
+
+Enforcement boundary: Cursor hooks enforce this policy in layers: shell commands
+through `beforeShellExecution`, read-mutation attempt through `preToolUse` (`matcher: "Read"`),
+and native file-read fallback deny through `beforeReadFile` with guidance.
+Claude hooks currently hard-enforce shell rewrite paths; non-shell tool policy remains
+instructional unless the host adds equivalent file-read interception.
 
 Each agent authorizes `skills/oz/` for the full `oz` CLI and MCP workflow (`validate`,
 `context` build/query/serve, `audit`, optional enrich/review) so this workspace dogfoods the

@@ -20,6 +20,17 @@
       {
         "command": ".oz/hooks/oz-shell-rewrite-cursor.sh"
       }
+    ],
+    "preToolUse": [
+      {
+        "matcher": "Read",
+        "command": ".oz/hooks/oz-read-rewrite-cursor.sh"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": ".oz/hooks/oz-read-policy-cursor.sh"
+      }
     ]
   }
 }

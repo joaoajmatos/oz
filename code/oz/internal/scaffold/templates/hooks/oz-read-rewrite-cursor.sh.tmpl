@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PAYLOAD="$(cat)"
+if [[ -z "$PAYLOAD" ]]; then
+  echo '{}'
+  exit 0
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo '{}'
+  exit 0
+fi
+
+python3 - "$PAYLOAD" <<'PYIN'
+import json
+import os
+import sys
+
+raw = sys.argv[1]
+try:
+    payload = json.loads(raw)
+except json.JSONDecodeError:
+    print("{}")
+    raise SystemExit(0)
+
+if not os.path.exists("OZ.md"):
+    print("{}")
+    raise SystemExit(0)
+
+if payload.get("tool_name") not in ("Read", "ReadFile"):
+    print("{}")
+    raise SystemExit(0)
+
+tool_input = payload.get("tool_input") or {}
+file_path = tool_input.get("file_path")
+if not isinstance(file_path, str) or not file_path:
+    print("{}")
+    raise SystemExit(0)
+
+updated = dict(tool_input)
+updated["file_path"] = ""
+
+print(json.dumps({
+    "permission": "allow",
+    "updated_input": updated,
+}))
+PYIN

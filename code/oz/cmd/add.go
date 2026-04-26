@@ -148,6 +148,8 @@ func runAddClaude(_ *cobra.Command, args []string) error {
 	fmt.Println("  .oz/hooks/oz-pre-commit.sh")
 	fmt.Println("  .oz/hooks/oz-shell-rewrite-claude.sh")
 	fmt.Println("  .oz/hooks/oz-shell-rewrite-cursor.sh")
+	fmt.Println("  .oz/hooks/oz-read-rewrite-cursor.sh")
+	fmt.Println("  .oz/hooks/oz-read-policy-cursor.sh")
 	fmt.Println("  .oz/hooks/oz-shell-rewrite.sh")
 	return nil
 }
@@ -169,6 +171,8 @@ func runAddCursor(_ *cobra.Command, args []string) error {
 	fmt.Println("  .oz/hooks/oz-after-edit.sh")
 	fmt.Println("  .oz/hooks/oz-pre-commit.sh")
 	fmt.Println("  .oz/hooks/oz-shell-rewrite-cursor.sh")
+	fmt.Println("  .oz/hooks/oz-read-rewrite-cursor.sh")
+	fmt.Println("  .oz/hooks/oz-read-policy-cursor.sh")
 	fmt.Println("  .oz/hooks/oz-shell-rewrite-claude.sh")
 	fmt.Println("  .oz/hooks/oz-shell-rewrite.sh")
 	return nil
