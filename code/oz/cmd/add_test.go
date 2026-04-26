@@ -121,7 +121,7 @@ func TestAddCursor_WritesShellRewriteHook(t *testing.T) {
 	}
 	for _, want := range []string{
 		"\"command\": \".oz/hooks/oz-pre-commit.sh\"",
-		"\"command\": \".oz/hooks/oz-shell-rewrite.sh\"",
+		"\"command\": \".oz/hooks/oz-shell-rewrite-cursor.sh\"",
 	} {
 		if !strings.Contains(string(hooksJSON), want) {
 			t.Errorf(".cursor/hooks.json: expected %q", want)

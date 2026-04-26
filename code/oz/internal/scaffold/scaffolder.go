@@ -214,7 +214,7 @@ func WriteCLAUDEMD(root, name, description string) error {
 
 // WriteClaudeHooks writes Claude Code hook configuration to an existing oz workspace:
 //   - .claude/settings.json  (merged if already present)
-//   - .oz/hooks/oz-*.sh      (shared hook scripts, executable)
+//   - .oz/hooks/oz-*.sh      (shared + provider-specific hook scripts, executable)
 func WriteClaudeHooks(root string) error {
 	if err := writeHookScripts(root); err != nil {
 		return err
@@ -224,7 +224,7 @@ func WriteClaudeHooks(root string) error {
 
 // WriteCursorHooks writes Cursor hook configuration to an existing oz workspace:
 //   - .cursor/hooks.json
-//   - .oz/hooks/oz-*.sh      (shared hook scripts, executable)
+//   - .oz/hooks/oz-*.sh      (shared + provider-specific hook scripts, executable)
 func WriteCursorHooks(root string) error {
 	if err := writeHookScripts(root); err != nil {
 		return err
@@ -245,6 +245,8 @@ func writeHookScripts(root string) error {
 		{".oz/hooks/oz-session-init.sh", "templates/hooks/oz-session-init.sh.tmpl"},
 		{".oz/hooks/oz-after-edit.sh", "templates/hooks/oz-after-edit.sh.tmpl"},
 		{".oz/hooks/oz-pre-commit.sh", "templates/hooks/oz-pre-commit.sh.tmpl"},
+		{".oz/hooks/oz-shell-rewrite-cursor.sh", "templates/hooks/oz-shell-rewrite-cursor.sh.tmpl"},
+		{".oz/hooks/oz-shell-rewrite-claude.sh", "templates/hooks/oz-shell-rewrite-claude.sh.tmpl"},
 		{".oz/hooks/oz-shell-rewrite.sh", "templates/hooks/oz-shell-rewrite.sh.tmpl"},
 	}
 	for _, s := range scripts {
@@ -279,7 +281,9 @@ func createCodeDir(root, mode string, data templateData) error {
 //   - .oz/hooks/oz-session-init.sh  (executable)
 //   - .oz/hooks/oz-after-edit.sh    (executable)
 //   - .oz/hooks/oz-pre-commit.sh    (executable)
-//   - .oz/hooks/oz-shell-rewrite.sh (executable)
+//   - .oz/hooks/oz-shell-rewrite-cursor.sh (executable)
+//   - .oz/hooks/oz-shell-rewrite-claude.sh (executable)
+//   - .oz/hooks/oz-shell-rewrite.sh        (compatibility shim, executable)
 //   - .cursor/hooks.json
 //   - .claude/settings.json         (merged if file already exists)
 func createHooksFiles(root string) error {
