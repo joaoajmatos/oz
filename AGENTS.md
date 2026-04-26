@@ -11,20 +11,43 @@ with clean integrations for Claude Code, Cursor, and any other editor or model.
 
 ## How to navigate this workspace
 
-1. In **Agents** below, pick the row whose **Use when** column best matches your situation (not every keyword has to match).
-2. Open the **Definition** path (`AGENT.md` for that agent).
-3. Follow the read-chain defined there before starting any task. Do not skip steps.
+1. Craft a one-line task statement and run `oz context query "<task>"` first.
+2. Use the routing packet to choose the best agent (prefer `best_agent`, then confirm with the top candidates).
+3. Open the chosen **Definition** path (`AGENT.md`) and follow its read-chain before starting edits.
+4. Use `oz shell read` for targeted follow-up reads after routing; avoid broad manual file reading before query.
+
+Default behavior contract (mandatory):
+- In an oz workspace, **always start with `oz context query`** before manual codebase exploration.
+- If the query depends on stale or missing graph artifacts, run `oz context build` and then re-run the same query.
+- Only skip query-first for explicit user requests that are pure shell one-liners (for example, `date`) or for tasks that are fully outside the workspace.
+- If you skip query-first, state the reason in one sentence before doing so.
+
+Query crafting quick guide:
+- Keep it one sentence with action + artifact + scope.
+- Include concrete paths, command names, or output files when known.
+- Prefer intent words like "implement", "debug", "refactor", "audit", "validate".
+
+Examples:
+- `oz context query "implement shell observe subcommand in code/oz/cmd with cobra tests"`
+- `oz context query "debug oz context build failure when codeindex scans go files under code/oz/internal"`
+- `oz context query "audit AGENTS.md and scaffold templates for routing-packet-first onboarding"`
 
 For command and file-read workflows, **must** use `oz` wrappers (`oz shell run`,
 `oz shell read`, `oz shell pipe`). Direct shell/file tooling is disallowed unless the
 `oz` wrapper path is unavailable for the task. This keeps hook behavior and shell
 compression consistent across agents and editors.
 
-Enforcement boundary: Cursor hooks enforce this policy in layers: shell commands
-through `beforeShellExecution`, read-mutation attempt through `preToolUse` (`matcher: "Read"`),
-and native file-read fallback deny through `beforeReadFile` with guidance.
-Claude hooks currently hard-enforce shell rewrite paths; non-shell tool policy remains
-instructional unless the host adds equivalent file-read interception.
+**File writes are out of scope for oz shell.** `oz shell run` is an output-compression
+wrapper, not a shell. Use the host editor's native `Write`/`Edit` tools to create or
+modify files — these are already compliant with oz policy and are not intercepted. Never
+use shell heredocs or Python subprocesses to write files; the stdin pipe breaks inside
+the wrapper and the shell environment errors are not recoverable.
+
+Enforcement boundary: Both Claude Code and Cursor hooks enforce this policy.
+Claude Code: shell rewrites via `PreToolUse(Bash)` → `oz-shell-rewrite-claude.sh`;
+in-workspace native reads denied via `PreToolUse(Read)` → `oz-read-policy-claude.sh`.
+Cursor: shell rewrites via `beforeShellExecution` → `oz-shell-rewrite-cursor.sh`;
+out-of-workspace reads denied via `beforeReadFile` → `oz-read-policy-cursor.sh`.
 
 Each agent authorizes `skills/oz/` for the full `oz` CLI and MCP workflow (`validate`,
 `context` build/query/serve, `audit`, optional enrich/review) so this workspace dogfoods the

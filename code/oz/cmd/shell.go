@@ -744,6 +744,7 @@ func insertShellTrackEnvelope(command string, durationMs int64, before, after in
 	}
 	return store.Insert(track.Run{
 		Command:       command,
+		Session:       activeObserveSession(),
 		RecordedAt:    time.Now().Unix(),
 		DurationMs:    durationMs,
 		TokenBefore:   before,

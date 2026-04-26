@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/joaoajmatos/oz/internal/convention"
@@ -235,6 +236,53 @@ func WriteCursorHooks(root string) error {
 	return writeTemplate(filepath.Join(root, ".cursor/hooks.json"), "templates/hooks/cursor-hooks.json.tmpl", nil)
 }
 
+// WriteCursorSkills writes the oz and oz-shell skills required by Cursor integration:
+//   - skills/oz/SKILL.md
+//   - skills/oz/references/audit-and-validate.md
+//   - skills/oz/references/context-and-mcp.md
+//   - skills/oz-shell/SKILL.md
+func WriteCursorSkills(root string) error {
+	type skillFile struct {
+		dest string
+		tmpl string
+	}
+	files := []skillFile{
+		{"skills/oz/SKILL.md", "templates/skills/oz/SKILL.md.tmpl"},
+		{"skills/oz/references/audit-and-validate.md", "templates/skills/oz/references/audit-and-validate.md.tmpl"},
+		{"skills/oz/references/context-and-mcp.md", "templates/skills/oz/references/context-and-mcp.md.tmpl"},
+		{"skills/oz-shell/SKILL.md", "templates/skills/oz-shell/SKILL.md.tmpl"},
+	}
+	for _, f := range files {
+		dest := filepath.Join(root, f.dest)
+		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+			return fmt.Errorf("creating %s: %w", filepath.Dir(f.dest), err)
+		}
+		if err := writeTemplate(dest, f.tmpl, nil); err != nil {
+			return err
+		}
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("resolving user home directory: %w", err)
+	}
+	cursorSkillsRoot := filepath.Join(home, ".cursor", "skills-cursor")
+	for _, f := range files {
+		// Cursor discovers global skills under ~/.cursor/skills-cursor/<skill-name>/...
+		parts := strings.SplitN(f.dest, string(filepath.Separator), 3)
+		if len(parts) < 3 {
+			return fmt.Errorf("invalid skill destination path %q", f.dest)
+		}
+		dest := filepath.Join(cursorSkillsRoot, parts[1], parts[2])
+		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+			return fmt.Errorf("creating %s: %w", filepath.Dir(dest), err)
+		}
+		if err := writeTemplate(dest, f.tmpl, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // writeHookScripts writes the shared hook scripts to .oz/hooks/ with 0755.
 func writeHookScripts(root string) error {
 	hooksDir := filepath.Join(root, ".oz", "hooks")
@@ -249,6 +297,7 @@ func writeHookScripts(root string) error {
 		{".oz/hooks/oz-read-rewrite-cursor.sh", "templates/hooks/oz-read-rewrite-cursor.sh.tmpl"},
 		{".oz/hooks/oz-read-policy-cursor.sh", "templates/hooks/oz-read-policy-cursor.sh.tmpl"},
 		{".oz/hooks/oz-shell-rewrite-claude.sh", "templates/hooks/oz-shell-rewrite-claude.sh.tmpl"},
+		{".oz/hooks/oz-read-policy-claude.sh", "templates/hooks/oz-read-policy-claude.sh.tmpl"},
 		{".oz/hooks/oz-shell-rewrite.sh", "templates/hooks/oz-shell-rewrite.sh.tmpl"},
 	}
 	for _, s := range scripts {
@@ -287,6 +336,7 @@ func createCodeDir(root, mode string, data templateData) error {
 //   - .oz/hooks/oz-read-rewrite-cursor.sh  (executable)
 //   - .oz/hooks/oz-read-policy-cursor.sh   (executable)
 //   - .oz/hooks/oz-shell-rewrite-claude.sh (executable)
+//   - .oz/hooks/oz-read-policy-claude.sh   (executable)
 //   - .oz/hooks/oz-shell-rewrite.sh        (compatibility shim, executable)
 //   - .cursor/hooks.json
 //   - .claude/settings.json         (merged if file already exists)
@@ -307,6 +357,9 @@ func createHooksFiles(root string) error {
 // preserving any existing keys (e.g. permissions).
 func mergeClaudeSettings(root string) error {
 	settingsPath := filepath.Join(root, ".claude", "settings.json")
+	if err := os.MkdirAll(filepath.Dir(settingsPath), 0755); err != nil {
+		return fmt.Errorf("creating .claude: %w", err)
+	}
 
 	// Load oz hook stanza from embedded template.
 	raw, err := scaffoldTemplates.ReadFile("templates/hooks/claude-settings.json.tmpl")

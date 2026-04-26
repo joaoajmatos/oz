@@ -39,7 +39,8 @@ var addClaudeCmd = &cobra.Command{
 
 Writes CLAUDE.md (loaded automatically by Claude Code) and installs Claude Code
 hook configuration (.claude/settings.json) plus the shared hook scripts under
-.cursor/hooks/. Hooks enforce oz convention on every edit and gate git commits.
+.oz/hooks/. Installs oz skills in both workspace skills/ and ~/.cursor/skills-cursor/.
+Hooks enforce oz convention on every edit and gate git commits.
 
 With no argument, the current directory is used; the nearest ancestor containing
 AGENTS.md and OZ.md is treated as the workspace root.`,
@@ -52,7 +53,8 @@ var addCursorCmd = &cobra.Command{
 	Short: "Add Cursor integration (hooks)",
 	Long: `Add Cursor integration to an existing oz workspace.
 
-Writes .cursor/hooks.json and installs the shared hook scripts under .cursor/hooks/.
+Writes .cursor/hooks.json, installs the shared hook scripts under .oz/hooks/, and
+installs oz skills in both workspace skills/ and ~/.cursor/skills-cursor/.
 Hooks enforce oz convention on every edit and gate git commits.
 
 With no argument, the current directory is used; the nearest ancestor containing
@@ -138,6 +140,9 @@ func runAddClaude(_ *cobra.Command, args []string) error {
 	if err := scaffold.WriteClaudeHooks(root); err != nil {
 		return fmt.Errorf("writing Claude Code hooks: %w", err)
 	}
+	if err := scaffold.WriteCursorSkills(root); err != nil {
+		return fmt.Errorf("writing Cursor skills: %w", err)
+	}
 
 	fmt.Printf("%s %s\n", termstyle.OK.Render("✓"), termstyle.Subtle.Render("Added Claude Code integration"))
 	fmt.Printf("  %s %s\n", termstyle.Subtle.Render("workspace"), root)
@@ -151,6 +156,14 @@ func runAddClaude(_ *cobra.Command, args []string) error {
 	fmt.Println("  .oz/hooks/oz-read-rewrite-cursor.sh")
 	fmt.Println("  .oz/hooks/oz-read-policy-cursor.sh")
 	fmt.Println("  .oz/hooks/oz-shell-rewrite.sh")
+	fmt.Println("  skills/oz/SKILL.md")
+	fmt.Println("  skills/oz/references/audit-and-validate.md")
+	fmt.Println("  skills/oz/references/context-and-mcp.md")
+	fmt.Println("  skills/oz-shell/SKILL.md")
+	fmt.Println("  ~/.cursor/skills-cursor/oz/SKILL.md")
+	fmt.Println("  ~/.cursor/skills-cursor/oz/references/audit-and-validate.md")
+	fmt.Println("  ~/.cursor/skills-cursor/oz/references/context-and-mcp.md")
+	fmt.Println("  ~/.cursor/skills-cursor/oz-shell/SKILL.md")
 	return nil
 }
 
@@ -162,6 +175,9 @@ func runAddCursor(_ *cobra.Command, args []string) error {
 
 	if err := scaffold.WriteCursorHooks(root); err != nil {
 		return fmt.Errorf("writing Cursor hooks: %w", err)
+	}
+	if err := scaffold.WriteCursorSkills(root); err != nil {
+		return fmt.Errorf("writing Cursor skills: %w", err)
 	}
 
 	fmt.Printf("%s %s\n", termstyle.OK.Render("✓"), termstyle.Subtle.Render("Added Cursor integration"))
@@ -175,6 +191,14 @@ func runAddCursor(_ *cobra.Command, args []string) error {
 	fmt.Println("  .oz/hooks/oz-read-policy-cursor.sh")
 	fmt.Println("  .oz/hooks/oz-shell-rewrite-claude.sh")
 	fmt.Println("  .oz/hooks/oz-shell-rewrite.sh")
+	fmt.Println("  skills/oz/SKILL.md")
+	fmt.Println("  skills/oz/references/audit-and-validate.md")
+	fmt.Println("  skills/oz/references/context-and-mcp.md")
+	fmt.Println("  skills/oz-shell/SKILL.md")
+	fmt.Println("  ~/.cursor/skills-cursor/oz/SKILL.md")
+	fmt.Println("  ~/.cursor/skills-cursor/oz/references/audit-and-validate.md")
+	fmt.Println("  ~/.cursor/skills-cursor/oz/references/context-and-mcp.md")
+	fmt.Println("  ~/.cursor/skills-cursor/oz-shell/SKILL.md")
 	return nil
 }
 

@@ -49,12 +49,28 @@ func Open(path string) (*Store, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("create runs table: %w", err)
 	}
+	if err := migrateAddSessionColumn(db); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("migrate tracking schema: %w", err)
+	}
 	if err := migrateLegacyMatchedFilters(db); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("migrate tracking rows: %w", err)
 	}
 
 	return &Store{db: db}, nil
+}
+
+func migrateAddSessionColumn(db *sql.DB) error {
+	_, err := db.Exec(`ALTER TABLE runs ADD COLUMN session TEXT NOT NULL DEFAULT ''`)
+	if err != nil {
+		errMsg := strings.ToLower(err.Error())
+		if strings.Contains(errMsg, "already exists") || strings.Contains(errMsg, "duplicate column") {
+			return nil
+		}
+		return fmt.Errorf("add runs.session column: %w", err)
+	}
+	return nil
 }
 
 func migrateLegacyMatchedFilters(db *sql.DB) error {
@@ -76,10 +92,10 @@ func (s *Store) Insert(r Run) error {
 
 	_, err := s.db.Exec(
 		`INSERT INTO runs (
-			command, recorded_at, duration_ms, token_before, token_after,
+			command, session, recorded_at, duration_ms, token_before, token_after,
 			token_saved, reduction_pct, matched_filter, exit_code
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		r.Command, r.RecordedAt, r.DurationMs, r.TokenBefore, r.TokenAfter,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		r.Command, r.Session, r.RecordedAt, r.DurationMs, r.TokenBefore, r.TokenAfter,
 		r.TokenSaved, r.ReductionPct, r.MatchedFilter, r.ExitCode,
 	)
 	if err != nil {
@@ -93,7 +109,7 @@ func (s *Store) Query(opts QueryOpts) ([]Run, error) {
 		return nil, fmt.Errorf("store is not open")
 	}
 
-	args := make([]any, 0, 3)
+	args := make([]any, 0, 4)
 	clauses := []string{"1=1"}
 	if opts.Since > 0 {
 		clauses = append(clauses, "recorded_at >= ?")
@@ -103,8 +119,12 @@ func (s *Store) Query(opts QueryOpts) ([]Run, error) {
 		clauses = append(clauses, "command LIKE ?")
 		args = append(args, "%"+opts.Command+"%")
 	}
+	if opts.Session != "" {
+		clauses = append(clauses, "session = ?")
+		args = append(args, opts.Session)
+	}
 
-	query := `SELECT id, command, recorded_at, duration_ms, token_before, token_after, token_saved, reduction_pct, matched_filter, exit_code FROM runs WHERE ` +
+	query := `SELECT id, command, session, recorded_at, duration_ms, token_before, token_after, token_saved, reduction_pct, matched_filter, exit_code FROM runs WHERE ` +
 		strings.Join(clauses, " AND ") +
 		` ORDER BY recorded_at DESC, id DESC`
 	if opts.Limit > 0 {
@@ -124,6 +144,7 @@ func (s *Store) Query(opts QueryOpts) ([]Run, error) {
 		if err := rows.Scan(
 			&r.ID,
 			&r.Command,
+			&r.Session,
 			&r.RecordedAt,
 			&r.DurationMs,
 			&r.TokenBefore,

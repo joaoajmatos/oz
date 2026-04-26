@@ -28,13 +28,13 @@ type integrationRow struct {
 var integrationCatalog = []integrationRow{
 	{
 		id:      "claude",
-		summary: "Claude Code — CLAUDE.md, .claude/settings.json, shared hook scripts",
+		summary: "Claude Code — CLAUDE.md, .claude/settings.json, shared .oz hooks, global ~/.cursor skills",
 		example: "oz add claude [path]",
 		flags:   "--force  overwrite CLAUDE.md if it already exists",
 	},
 	{
 		id:      "cursor",
-		summary: "Cursor — hooks.json + shared hook scripts under .cursor/hooks/",
+		summary: "Cursor — hooks.json, shared .oz hooks, workspace skills, global ~/.cursor skills",
 		example: "oz add cursor [path]",
 		flags:   "",
 	},

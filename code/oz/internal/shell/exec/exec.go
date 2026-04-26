@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	osexec "os/exec"
 	"time"
 )
@@ -23,6 +24,7 @@ func Run(args []string) (Result, error) {
 
 	cmd := osexec.Command(args[0], args[1:]...)
 	var stdout, stderr bytes.Buffer
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 

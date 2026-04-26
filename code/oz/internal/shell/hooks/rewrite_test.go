@@ -219,6 +219,23 @@ func containsOzShellRead(s string) bool {
 		s[:len("oz shell read")] == "oz shell read"
 }
 
+func TestDecideRedirectCommandsPassThrough(t *testing.T) {
+	t.Parallel()
+
+	cases := []string{
+		"cat > foo.go",
+		"python3 - <<'PY'\nsome script\nPY",
+		"sh -c \"cat > file <<'EOF'\ncontent\nEOF\"",
+		"cmd < input.txt",
+	}
+	for _, in := range cases {
+		decision := hooks.Decide(in, hooks.RewriteConfig())
+		if decision.Allowed {
+			t.Fatalf("command with redirect %q should not be rewritten, got %q", in, decision.Rewritten)
+		}
+	}
+}
+
 func TestDecideRewritePipeOnlyLeftSide(t *testing.T) {
 	t.Parallel()
 

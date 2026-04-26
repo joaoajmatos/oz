@@ -120,6 +120,12 @@ func rewriteSegment(segment string, cfg Config) string {
 	if rewritten, ok := tryRewriteFileRead(trimmed); ok {
 		return leading + rewritten + trailing
 	}
+	// Don't wrap commands with shell redirections — oz shell run cannot pass them
+	// through correctly. The shell operator is consumed by the parent shell and the
+	// subprocess never sees it. Pass these segments through unchanged.
+	if strings.ContainsAny(trimmed, "<>") {
+		return segment
+	}
 	return leading + "oz shell run -- " + trimmed + trailing
 }
 

@@ -179,7 +179,7 @@ func TestRewriteShim_DispatchesByProvider(t *testing.T) {
 	})
 }
 
-func TestCursorReadRewriteHook_UpdatesReadInput(t *testing.T) {
+func TestCursorReadRewriteHook_AllowsReadWithGuidance(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
@@ -198,8 +198,8 @@ func TestCursorReadRewriteHook_UpdatesReadInput(t *testing.T) {
 
 	for _, want := range []string{
 		`"permission": "allow"`,
-		`"updated_input"`,
-		`"file_path": ""`,
+		`"agent_message":`,
+		`oz shell read <path>`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("expected %q in output:\n%s", want, out)
@@ -207,7 +207,7 @@ func TestCursorReadRewriteHook_UpdatesReadInput(t *testing.T) {
 	}
 }
 
-func TestCursorReadPolicyHook_AllowsWorkspaceRead(t *testing.T) {
+func TestCursorReadPolicyHook_AllowsWorkspaceReadWithGuidance(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
@@ -227,12 +227,18 @@ func TestCursorReadPolicyHook_AllowsWorkspaceRead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run hook: %v", err)
 	}
-	if strings.TrimSpace(out) != "{}" {
-		t.Fatalf("expected {}, got %q", strings.TrimSpace(out))
+	for _, want := range []string{
+		`"permission": "allow"`,
+		`"user_message":`,
+		`oz shell read <path>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected %q in output:\n%s", want, out)
+		}
 	}
 }
 
-func TestCursorReadPolicyHook_DeniesReadFile(t *testing.T) {
+func TestCursorReadPolicyHook_AllowsOutOfWorkspaceReadWithGuidance(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
@@ -250,10 +256,10 @@ func TestCursorReadPolicyHook_DeniesReadFile(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		`"permission": "deny"`,
+		`"permission": "allow"`,
 		`"user_message":`,
 		`oz shell read <path>`,
-		`Blocked path: /outside/example.txt`,
+		`Path: /outside/example.txt`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("expected %q in output:\n%s", want, out)

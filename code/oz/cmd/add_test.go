@@ -99,6 +99,15 @@ func TestAddPM_DuplicateWithoutForce(t *testing.T) {
 
 func TestAddCursor_WritesShellRewriteHook(t *testing.T) {
 	dir := t.TempDir()
+	home := t.TempDir()
+	oldHome := os.Getenv("HOME")
+	t.Cleanup(func() {
+		_ = os.Setenv("HOME", oldHome)
+	})
+	if err := os.Setenv("HOME", home); err != nil {
+		t.Fatalf("set HOME: %v", err)
+	}
+
 	cfg := scaffold.Config{
 		Name: "p", Description: "d", CodeMode: "inline",
 		Agents: []scaffold.AgentConfig{{Name: "c", Type: "coding"}},
@@ -128,6 +137,78 @@ func TestAddCursor_WritesShellRewriteHook(t *testing.T) {
 	} {
 		if !strings.Contains(string(hooksJSON), want) {
 			t.Errorf(".cursor/hooks.json: expected %q", want)
+		}
+	}
+
+	for _, rel := range []string{
+		"skills/oz/SKILL.md",
+		"skills/oz/references/audit-and-validate.md",
+		"skills/oz/references/context-and-mcp.md",
+		"skills/oz-shell/SKILL.md",
+	} {
+		if _, err := os.Stat(filepath.Join(dir, rel)); err != nil {
+			t.Errorf("expected %s to exist: %v", rel, err)
+		}
+	}
+
+	for _, rel := range []string{
+		".cursor/skills-cursor/oz/SKILL.md",
+		".cursor/skills-cursor/oz/references/audit-and-validate.md",
+		".cursor/skills-cursor/oz/references/context-and-mcp.md",
+		".cursor/skills-cursor/oz-shell/SKILL.md",
+	} {
+		if _, err := os.Stat(filepath.Join(home, rel)); err != nil {
+			t.Errorf("expected global cursor skill %s to exist: %v", rel, err)
+		}
+	}
+}
+
+func TestAddClaude_WritesGlobalCursorSkills(t *testing.T) {
+	dir := t.TempDir()
+	home := t.TempDir()
+	oldHome := os.Getenv("HOME")
+	t.Cleanup(func() {
+		_ = os.Setenv("HOME", oldHome)
+	})
+	if err := os.Setenv("HOME", home); err != nil {
+		t.Fatalf("set HOME: %v", err)
+	}
+
+	cfg := scaffold.Config{
+		Name: "p", Description: "d", CodeMode: "inline",
+		Agents: []scaffold.AgentConfig{{Name: "c", Type: "coding"}},
+	}
+	if err := scaffold.Scaffold(dir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	rootCmd.SetOut(&stdout)
+	rootCmd.SetErr(&stderr)
+	rootCmd.SetArgs([]string{"add", "claude", dir})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("Execute: %v stderr=%s", err, stderr.String())
+	}
+
+	for _, rel := range []string{
+		"skills/oz/SKILL.md",
+		"skills/oz/references/audit-and-validate.md",
+		"skills/oz/references/context-and-mcp.md",
+		"skills/oz-shell/SKILL.md",
+	} {
+		if _, err := os.Stat(filepath.Join(dir, rel)); err != nil {
+			t.Errorf("expected %s to exist: %v", rel, err)
+		}
+	}
+
+	for _, rel := range []string{
+		".cursor/skills-cursor/oz/SKILL.md",
+		".cursor/skills-cursor/oz/references/audit-and-validate.md",
+		".cursor/skills-cursor/oz/references/context-and-mcp.md",
+		".cursor/skills-cursor/oz-shell/SKILL.md",
+	} {
+		if _, err := os.Stat(filepath.Join(home, rel)); err != nil {
+			t.Errorf("expected global cursor skill %s to exist: %v", rel, err)
 		}
 	}
 }
