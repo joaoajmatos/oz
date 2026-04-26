@@ -207,6 +207,31 @@ func TestCursorReadRewriteHook_UpdatesReadInput(t *testing.T) {
 	}
 }
 
+func TestCursorReadPolicyHook_AllowsWorkspaceRead(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	if err := scaffold.WriteCursorHooks(root); err != nil {
+		t.Fatalf("WriteCursorHooks: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "OZ.md"), []byte("name: test\n"), 0o644); err != nil {
+		t.Fatalf("write OZ.md: %v", err)
+	}
+	file := filepath.Join(root, "README.md")
+	if err := os.WriteFile(file, []byte("ok\n"), 0o644); err != nil {
+		t.Fatalf("write README.md: %v", err)
+	}
+
+	script := filepath.Join(root, ".oz", "hooks", "oz-read-policy-cursor.sh")
+	out, err := runHook(t, script, `{"file_path":"`+file+`"}`, nil)
+	if err != nil {
+		t.Fatalf("run hook: %v", err)
+	}
+	if strings.TrimSpace(out) != "{}" {
+		t.Fatalf("expected {}, got %q", strings.TrimSpace(out))
+	}
+}
+
 func TestCursorReadPolicyHook_DeniesReadFile(t *testing.T) {
 	t.Parallel()
 
@@ -219,7 +244,7 @@ func TestCursorReadPolicyHook_DeniesReadFile(t *testing.T) {
 	}
 
 	script := filepath.Join(root, ".oz", "hooks", "oz-read-policy-cursor.sh")
-	out, err := runHook(t, script, `{"file_path":"/tmp/example.txt"}`, nil)
+	out, err := runHook(t, script, `{"file_path":"/outside/example.txt"}`, nil)
 	if err != nil {
 		t.Fatalf("run hook: %v", err)
 	}
@@ -228,7 +253,7 @@ func TestCursorReadPolicyHook_DeniesReadFile(t *testing.T) {
 		`"permission": "deny"`,
 		`"user_message":`,
 		`oz shell read <path>`,
-		`Blocked path: /tmp/example.txt`,
+		`Blocked path: /outside/example.txt`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("expected %q in output:\n%s", want, out)

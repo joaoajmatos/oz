@@ -26,13 +26,19 @@ except json.JSONDecodeError:
 
 file_path = payload.get("file_path") or ""
 
-# Enforce in oz workspaces only (AGENTS.md present in cwd).
-if not os.path.exists("AGENTS.md"):
+# Enforce in oz workspaces only (OZ.md present in cwd).
+if not os.path.exists("OZ.md"):
+    print("{}")
+    raise SystemExit(0)
+
+workspace_root = os.path.realpath(os.getcwd())
+normalized = os.path.realpath(file_path) if file_path else ""
+if normalized and (normalized == workspace_root or normalized.startswith(workspace_root + os.sep)):
     print("{}")
     raise SystemExit(0)
 
 msg = (
-    "oz policy: native ReadFile is blocked in this workspace. "
+    "oz policy: out-of-workspace native ReadFile is blocked. "
     "Use `oz shell read <path>` (or `oz shell read -` for stdin)."
 )
 if file_path:
